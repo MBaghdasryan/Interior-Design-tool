@@ -1,0 +1,16 @@
+.env
+node_modules/
+dist/
+data/
+__pycache__/
+.pytest_cache/
+*.pyc
+*:Zone.Identifier
+*.tsbuildinfo
+.ruff_cache/
+*.db
+*.sqlite3
+.env.*
+!.env.example
+# third-party reference album (real client project) — kept locally, not published
+Պարույր_Սևակ_5_*.pdf

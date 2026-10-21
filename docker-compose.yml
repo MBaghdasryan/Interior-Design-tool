@@ -1,0 +1,40 @@
+# Renovara — local / VPS stack. `docker compose up --build`, then open http://localhost:8085
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: forma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forma}
+      POSTGRES_DB: forma
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forma"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://forma:${POSTGRES_PASSWORD:-forma}@db:5432/forma
+      STORAGE_DIR: /data/storage
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      CORS_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:8080}
+    volumes: [storage:/data]
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/ready')"]
+      interval: 10s
+      retries: 10
+    ports: ["8000:8000"]
+
+  web:
+    build: ./apps/web
+    depends_on: [api]
+    ports: ["8085:80"]
+
+volumes:
+  pgdata:
+  storage:

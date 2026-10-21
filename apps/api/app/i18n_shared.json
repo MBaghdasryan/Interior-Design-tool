@@ -1,0 +1,487 @@
+{
+ "enum.group.appliances": {
+  "hy": "Կենցաղային տեխնիկա",
+  "ru": "Техника",
+  "en": "Appliances"
+ },
+ "enum.group.contingency": {
+  "hy": "Պահուստ",
+  "ru": "Резерв",
+  "en": "Contingency"
+ },
+ "enum.group.custom": {
+  "hy": "Պատվերով արտադրանք",
+  "ru": "Изделия на заказ",
+  "en": "Custom-made"
+ },
+ "enum.group.decor": {
+  "hy": "Դեկոր և տեքստիլ",
+  "ru": "Декор и текстиль",
+  "en": "Decor & textile"
+ },
+ "enum.group.delivery": {
+  "hy": "Առաքում",
+  "ru": "Доставка",
+  "en": "Delivery"
+ },
+ "enum.group.doors": {
+  "hy": "Դռներ",
+  "ru": "Двери",
+  "en": "Doors"
+ },
+ "enum.group.finishing": {
+  "hy": "Հարդարման նյութեր",
+  "ru": "Отделочные материалы",
+  "en": "Finishing materials"
+ },
+ "enum.group.furniture": {
+  "hy": "Կահույք",
+  "ru": "Мебель",
+  "en": "Furniture"
+ },
+ "enum.group.installation": {
+  "hy": "Մոնտաժ և հավաքում",
+  "ru": "Монтаж и сборка",
+  "en": "Installation"
+ },
+ "enum.group.lighting": {
+  "hy": "Լուսավորություն",
+  "ru": "Освещение",
+  "en": "Lighting"
+ },
+ "enum.group.plumbing": {
+  "hy": "Սանտեխնիկա",
+  "ru": "Сантехника",
+  "en": "Plumbing"
+ },
+ "enum.group.works": {
+  "hy": "Աշխատանքներ",
+  "ru": "Работы",
+  "en": "Works"
+ },
+ "enum.price.concept": {
+  "hy": "Կոնցեպտ",
+  "ru": "Концепт",
+  "en": "Concept"
+ },
+ "enum.price.confirmed": {
+  "hy": "Խանութի գին",
+  "ru": "Цена магазина",
+  "en": "Store price"
+ },
+ "enum.price.demo": {
+  "hy": "DEMO",
+  "ru": "DEMO",
+  "en": "DEMO"
+ },
+ "enum.price.estimated": {
+  "hy": "Մոտավոր",
+  "ru": "Ориентировочно",
+  "en": "Estimated"
+ },
+ "enum.price.quote_required": {
+  "hy": "Ըստ հարցման",
+  "ru": "По запросу",
+  "en": "On request"
+ },
+ "enum.room.balcony": {
+  "hy": "Պատշգամբ",
+  "ru": "Балкон",
+  "en": "Balcony"
+ },
+ "enum.room.bathroom": {
+  "hy": "Սանհանգույց",
+  "ru": "Санузел",
+  "en": "Bathroom"
+ },
+ "enum.room.bedroom": {
+  "hy": "Ննջասենյակ",
+  "ru": "Спальня",
+  "en": "Bedroom"
+ },
+ "enum.room.hallway": {
+  "hy": "Նախասենյակ",
+  "ru": "Прихожая",
+  "en": "Hallway"
+ },
+ "enum.room.kids": {
+  "hy": "Մանկական",
+  "ru": "Детская",
+  "en": "Kids room"
+ },
+ "enum.room.kitchen": {
+  "hy": "Խոհանոց",
+  "ru": "Кухня",
+  "en": "Kitchen"
+ },
+ "enum.room.kitchen_living": {
+  "hy": "Խոհանոց-հյուրասենյակ",
+  "ru": "Кухня-гостиная",
+  "en": "Kitchen-living"
+ },
+ "enum.room.laundry": {
+  "hy": "Լվացքատուն",
+  "ru": "Постирочная",
+  "en": "Laundry"
+ },
+ "enum.room.living": {
+  "hy": "Հյուրասենյակ",
+  "ru": "Гостиная",
+  "en": "Living room"
+ },
+ "enum.room.office": {
+  "hy": "Աշխատասենյակ",
+  "ru": "Кабинет",
+  "en": "Study"
+ },
+ "enum.room.storage": {
+  "hy": "Պահեստ",
+  "ru": "Кладовая",
+  "en": "Storage"
+ },
+ "enum.room.wardrobe": {
+  "hy": "Հանդերձարան",
+  "ru": "Гардеробная",
+  "en": "Walk-in closet"
+ },
+ "enum.room.wc": {
+  "hy": "Զուգարան",
+  "ru": "Туалет",
+  "en": "WC"
+ },
+ "enum.style.classic": {
+  "hy": "Նեոդասական",
+  "ru": "Неоклассика",
+  "en": "Neoclassic"
+ },
+ "enum.style.contemporary": {
+  "hy": "Ժամանակակից",
+  "ru": "Современный",
+  "en": "Contemporary"
+ },
+ "enum.style.modern_loft": {
+  "hy": "Ժամանակակից լոֆթ",
+  "ru": "Современный лофт",
+  "en": "Modern loft"
+ },
+ "enum.style.soft_scandi": {
+  "hy": "Փափուկ սկանդինավյան",
+  "ru": "Мягкий сканди",
+  "en": "Soft Scandi"
+ },
+ "enum.style.warm_minimal": {
+  "hy": "Ջերմ մինիմալիզմ",
+  "ru": "Тёплый минимализм",
+  "en": "Warm minimalism"
+ },
+ "enum.tier.business": {
+  "hy": "Բիզնես",
+  "ru": "Бизнес",
+  "en": "Business"
+ },
+ "enum.tier.comfort": {
+  "hy": "Կոմֆորտ",
+  "ru": "Комфорт",
+  "en": "Comfort"
+ },
+ "enum.tier.economy": {
+  "hy": "Էկոնոմ",
+  "ru": "Эконом",
+  "en": "Economy"
+ },
+ "enum.tier.optimal": {
+  "hy": "Օպտիմալ",
+  "ru": "Оптимальный",
+  "en": "Optimal"
+ },
+ "enum.tier.premium": {
+  "hy": "Պրեմիում",
+  "ru": "Премиум",
+  "en": "Premium"
+ },
+ "estimate.line_contingency": {
+  "hy": "Պահուստ չնախատեսված աշխատանքների համար",
+  "ru": "Резерв на непредвиденные работы",
+  "en": "Contingency reserve"
+ },
+ "estimate.line_delivery": {
+  "hy": "Առաքում — {supplier}",
+  "ru": "Доставка — {supplier}",
+  "en": "Delivery — {supplier}"
+ },
+ "estimate.line_installation": {
+  "hy": "Մոնտաժ/հավաքում — {supplier}",
+  "ru": "Сборка/монтаж — {supplier}",
+  "en": "Installation — {supplier}"
+ },
+ "notice.concept_accuracy": {
+  "hy": "Concept Estimate մակարդակ․ մակերեսներն ու ծավալները մոտավոր են մինչև չափագրության հաստատումը։",
+  "ru": "Уровень Concept Estimate: площади и объёмы ориентировочные до подтверждения обмеров.",
+  "en": "Concept Estimate: areas and quantities are indicative until the survey is confirmed."
+ },
+ "notice.demo_catalog": {
+  "hy": "Նախահաշիվը պարունակում է DEMO կատալոգի տվյալներ — դրանք իրական առաջարկներ չեն։",
+  "ru": "Смета содержит DEMO-данные демонстрационного каталога — это не реальные предложения.",
+  "en": "The estimate contains DEMO catalogue data — these are not real offers."
+ },
+ "notice.engineering_preliminary": {
+  "hy": "Էլեկտրական, լուսավորության, սանտեխնիկական և ջեռուցման սխեմաները նախնական առաջարկ են՝ մինչև մասնագետի ստուգումը։",
+  "ru": "Электрика, свет, сантехника и отопление — предварительное предложение до проверки профильным специалистом.",
+  "en": "Electrical, lighting, plumbing and heating layouts are a preliminary proposal pending specialist review."
+ },
+ "notice.prices_public_sources": {
+  "hy": "Գներն ու առկայությունը վերցված են հրապարակային աղբյուրներից և կարող են փոխվել։ Վճարումից առաջ պահանջվում է մատակարարի հաստատում։",
+  "ru": "Цены и наличие получены из публичных источников и могут измениться. Перед оплатой требуется подтверждение поставщика.",
+  "en": "Prices and availability come from public sources and may change. Supplier confirmation is required before payment."
+ },
+ "notice.quote_lines_excluded": {
+  "hy": "«Ըստ հարցման» {n} դիրքը ներառված չէ գումարում․ միջակայքի վերին սահմանը գնահատված է կատեգորիայի բնորոշ գներով։",
+  "ru": "{n} позиций «по запросу» не включены в сумму; верхняя граница диапазона — оценка по типовым ценам.",
+  "en": "{n} on-request items are excluded from the total; the upper bound uses typical category prices."
+ },
+ "rules.balcony_door_blocked": {
+  "hy": "{code}-ը փակում է {opening} պատշգամբի դուռը",
+  "ru": "{code} перекрывает балконную дверь {opening}",
+  "en": "{code} blocks balcony door {opening}"
+ },
+ "rules.bearing_unconfirmed": {
+  "hy": "{wall} պատի կրողունակությունը հաստատված չէ — ապամոնտաժից առաջ անհրաժեշտ է եզրակացություն",
+  "ru": "Стена {wall}: несущая способность не подтверждена — нужно заключение",
+  "en": "Wall {wall}: load-bearing status unconfirmed — expert opinion required"
+ },
+ "rules.collision": {
+  "hy": "Հատում․ {a_code} և {b_code}",
+  "ru": "Пересечение: {a_code} и {b_code}",
+  "en": "Collision: {a_code} and {b_code}"
+ },
+ "rules.door_swing": {
+  "hy": "{door} դուռը բացվելիս դիպչում է {code}-ին",
+  "ru": "Дверь {door} при открывании задевает {code}",
+  "en": "Door {door} hits {code} when opening"
+ },
+ "rules.kitchen_missing": {
+  "hy": "Խոհանոցային կահույքը տեղադրված չէ",
+  "ru": "Кухонный гарнитур не размещён",
+  "en": "Kitchen run not placed"
+ },
+ "rules.load_bearing_demolition": {
+  "hy": "{wall} կրող պատի ապամոնտաժն արգելված է առանց ուժեղացման նախագծի",
+  "ru": "Демонтаж несущей стены {wall} запрещён без проекта усиления",
+  "en": "Demolishing load-bearing wall {wall} requires a reinforcement design"
+ },
+ "rules.made_to_measure_needs_verification": {
+  "hy": "{n} իր պատրաստվում է ըստ չափերի — պատվերը հնարավոր է չափագրության ստուգումից հետո",
+  "ru": "{n} изделий по размерам — заказ только после верификации обмеров",
+  "en": "{n} made-to-measure items — order only after survey verification"
+ },
+ "rules.outside_room": {
+  "hy": "{code} ({object}) դուրս է գալիս տարածքի սահմաններից",
+  "ru": "{code} ({object}) выходит за границы помещения",
+  "en": "{code} ({object}) extends outside the room"
+ },
+ "rules.passage_blocked": {
+  "hy": "{code}-ի առջևի անցումը {mm} մմ-ից պակաս է (խանգարում է {other_code})",
+  "ru": "Проход перед {code} менее {mm} мм (мешает {other_code})",
+  "en": "Clearance in front of {code} is under {mm} mm ({other_code} is in the way)"
+ },
+ "rules.passage_wall": {
+  "hy": "{code}-ի առջև չկա {mm} մմ ազատ անցում",
+  "ru": "Перед {code} нет {mm} мм свободного прохода",
+  "en": "Less than {mm} mm clearance in front of {code}"
+ },
+ "rules.radiator_blocked": {
+  "hy": "{code}-ը փակում է {radiator} ռադիատորը",
+  "ru": "{code} закрывает радиатор {radiator}",
+  "en": "{code} covers radiator {radiator}"
+ },
+ "rules.sink_far_from_drain": {
+  "hy": "Լվացարանը ջրահեռացման կետից հեռու է {m} մ — անհրաժեշտ է թեքություն/պոմպ",
+  "ru": "Мойка удалена от водоотведения на {m} м — нужен уклон/насос",
+  "en": "Sink is {m} m from the drain — slope or pump needed"
+ },
+ "rules.sockets_low": {
+  "hy": "{n} վարդակ՝ առաջարկվող {need}-ի փոխարեն",
+  "ru": "{n} розеток при рекомендуемых {need}",
+  "en": "{n} sockets, {need} recommended"
+ },
+ "rules.triangle_ok": {
+  "hy": "Աշխատանքային եռանկյունի՝ {m} մ",
+  "ru": "Рабочий треугольник {m} м",
+  "en": "Work triangle {m} m"
+ },
+ "rules.triangle_out_of_range": {
+  "hy": "Աշխատանքային եռանկյունին {m} մ է (նորմա՝ 3.6–7.9 մ)",
+  "ru": "Рабочий треугольник {m} м (норма 3.6–7.9 м)",
+  "en": "Work triangle {m} m (recommended 3.6–7.9 m)"
+ },
+ "rules.window_blocked": {
+  "hy": "{code}-ը փակում է {opening} պատուհանի մատչելիությունը",
+  "ru": "{code} перекрывает доступ к окну {opening}",
+  "en": "{code} blocks access to window {opening}"
+ },
+ "unit.—": {
+  "hy": "—",
+  "ru": "—",
+  "en": "—"
+ },
+ "unit.kg": {
+  "hy": "կգ",
+  "ru": "кг",
+  "en": "kg"
+ },
+ "unit.l": {
+  "hy": "լ",
+  "ru": "л",
+  "en": "L"
+ },
+ "unit.m": {
+  "hy": "մ",
+  "ru": "м",
+  "en": "m"
+ },
+ "unit.m2": {
+  "hy": "մ²",
+  "ru": "м²",
+  "en": "m²"
+ },
+ "unit.pack": {
+  "hy": "տուփ",
+  "ru": "упак.",
+  "en": "packs"
+ },
+ "unit.pcs": {
+  "hy": "հատ",
+  "ru": "шт",
+  "en": "pcs"
+ },
+ "unit.кг": {
+  "hy": "կգ",
+  "ru": "кг",
+  "en": "kg"
+ },
+ "unit.компл.": {
+  "hy": "կոմպլ.",
+  "ru": "компл.",
+  "en": "set"
+ },
+ "unit.л": {
+  "hy": "լ",
+  "ru": "л",
+  "en": "L"
+ },
+ "unit.лист": {
+  "hy": "թերթ",
+  "ru": "лист",
+  "en": "sheets"
+ },
+ "unit.м²": {
+  "hy": "մ²",
+  "ru": "м²",
+  "en": "m²"
+ },
+ "unit.рейс": {
+  "hy": "առաքում",
+  "ru": "рейс",
+  "en": "trip"
+ },
+ "unit.рулон 5 м": {
+  "hy": "գլան 5 մ",
+  "ru": "рулон 5 м",
+  "en": "5 m rolls"
+ },
+ "unit.точка": {
+  "hy": "կետ",
+  "ru": "точка",
+  "en": "point"
+ },
+ "unit.упак.": {
+  "hy": "տուփ",
+  "ru": "упак.",
+  "en": "packs"
+ },
+ "unit.усл.": {
+  "hy": "ծառ.",
+  "ru": "усл.",
+  "en": "service"
+ },
+ "unit.шт": {
+  "hy": "հատ",
+  "ru": "шт",
+  "en": "pcs"
+ },
+ "works.ceiling_gkl_m2": {
+  "hy": "ԳՍԹ առաստաղ ներկումով",
+  "ru": "Потолок ГКЛ с окраской",
+  "en": "Drywall ceiling, painted"
+ },
+ "works.ceiling_stretch_m2": {
+  "hy": "Ձգվող առաստաղ",
+  "ru": "Натяжной потолок",
+  "en": "Stretch ceiling"
+ },
+ "works.cleaning_m2": {
+  "hy": "Վերջնական մաքրում",
+  "ru": "Финальная уборка",
+  "en": "Final cleaning"
+ },
+ "works.demolition_m2": {
+  "hy": "Միջնապատերի ապամոնտաժ",
+  "ru": "Демонтаж перегородок",
+  "en": "Partition demolition"
+ },
+ "works.door_install": {
+  "hy": "Դռան տեղադրում",
+  "ru": "Установка двери",
+  "en": "Door installation"
+ },
+ "works.electric_point": {
+  "hy": "Էլեկտրամոնտաժ (կետ)",
+  "ru": "Электромонтаж (точка)",
+  "en": "Electrical (point)"
+ },
+ "works.floor_lay_m2": {
+  "hy": "Հատակի ծածկույթի տեղադրում",
+  "ru": "Укладка напольного покрытия",
+  "en": "Floor laying"
+ },
+ "works.light_point": {
+  "hy": "Լուսատուի մոնտաժ",
+  "ru": "Монтаж светильника",
+  "en": "Light fitting installation"
+ },
+ "works.partition_drywall_m2": {
+  "hy": "ԳՍԹ միջնապատերի մոնտաժ",
+  "ru": "Монтаж перегородок ГКЛ",
+  "en": "Drywall partitions"
+ },
+ "works.plaster_m2": {
+  "hy": "Պատերի սվաղում",
+  "ru": "Штукатурка стен по маякам",
+  "en": "Wall plastering"
+ },
+ "works.plumbing_point": {
+  "hy": "Սանտեխնիկական մոնտաժ (կետ)",
+  "ru": "Сантехнический монтаж (точка)",
+  "en": "Plumbing (point)"
+ },
+ "works.putty_paint_m2": {
+  "hy": "Պատերի ծեփում և ներկում",
+  "ru": "Шпаклёвка и окраска стен",
+  "en": "Skim coat and painting"
+ },
+ "works.screed_m2": {
+  "hy": "Հատակի լցվածք",
+  "ru": "Стяжка пола",
+  "en": "Floor screed"
+ },
+ "works.tiling_m2": {
+  "hy": "Սալիկապատում",
+  "ru": "Укладка плитки",
+  "en": "Tiling"
+ },
+ "works.warm_floor_m2": {
+  "hy": "Էլեկտրական տաք հատակ",
+  "ru": "Тёплый пол электрический",
+  "en": "Electric underfloor heating"
+ }
+}

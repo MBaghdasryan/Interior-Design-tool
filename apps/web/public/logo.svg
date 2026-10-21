@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="rt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3e2d1"/><stop offset=".45" stop-color="#d49a7c"/><stop offset="1" stop-color="#a8573a"/></linearGradient>
+    <linearGradient id="rs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8c6c"/><stop offset="1" stop-color="#98a787"/></linearGradient>
+    <linearGradient id="rw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf3"/><stop offset="1" stop-color="#ead9c6"/></linearGradient>
+    <linearGradient id="rf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9d7c3"/><stop offset="1" stop-color="#f6ebde"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#2e2e2e"/>
+  <g transform="translate(11 11) scale(.42)">
+    <path d="M0 0H58C82 0 98 15 97 34C96 49 86 58 72 61L100 100H0Z" fill="url(#rt)"/>
+    <path d="M0 0L22 13V88L0 100Z" fill="url(#rs)"/>
+    <path d="M22 13H56C61 28 60 43 55 54L82 88H22Z" fill="url(#rw)"/>
+    <path d="M32 54L50 47V88H32Z" fill="#d9c9b7"/>
+    <path d="M0 100L22 88H82L100 100Z" fill="url(#rf)"/>
+  </g>
+</svg>
