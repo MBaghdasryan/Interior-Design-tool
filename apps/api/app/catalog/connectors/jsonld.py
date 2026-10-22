@@ -79,6 +79,7 @@ def parse_product_page(html: str, url: str, source: dict, parser_version: str, n
     crumbs = next((x for x in _iter_jsonld(html) if x.get("@type") == "BreadcrumbList"), None)
     crumb_names = [i.get("name", "") for i in (crumbs or {}).get("itemListElement", [])]
     category = crumb_names[-2] if len(crumb_names) >= 2 else None
+    category = category or (product.get("category") if isinstance(product.get("category"), str) else None)
 
     offers = product.get("offers") or {}
     if isinstance(offers, list):
@@ -205,7 +206,7 @@ class JsonLdSitemapConnector(ExternalCatalogConnector):
                         p = parse_product_page(self._get(link), link, self.source, self.parser_version)
                     except FetchBlocked:
                         continue
-                    if p and is_accessory(p.name):
+                    if p and is_accessory(p.name, p.category):
                         seen.add(link)
                         continue
                     if p:

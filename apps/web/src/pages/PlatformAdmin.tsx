@@ -29,6 +29,10 @@ export default function PlatformAdmin() {
   }, []);
   useEffect(() => { load(); }, [load]);
   const patch = async (s: Src, body: Partial<Src>) => { await api(`/admin/sources/${s.id}`, { method: "PATCH", json: body }); load(); };
+  const index = async (s: Src) => {
+    try { await api(`/admin/sources/${s.id}/index`, { method: "POST", json: { batch: 60 } }); toast(t("adm.index_started", { name: s.name })); }
+    catch (x) { toast((x as Error).message, true); }
+  };
   const test = async (s: Src) => { const r = await api<{ status: string; message: string }>(`/admin/sources/${s.id}/test`, { method: "POST" }); toast(`${s.name}: ${t(`enum.source_status.${r.status}`)}`); load(); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
@@ -60,7 +64,8 @@ export default function PlatformAdmin() {
                   <td className="right">{s.records}</td><td className="right">{s.pending_review}</td>
                   <td className="small">{s.success_rate === null ? "—" : `${Math.round(s.success_rate * 100)}%`}{s.avg_latency_ms ? <div className="tiny muted">{s.avg_latency_ms} ms</div> : null}</td>
                   <td className="tiny muted">{dt(s.last_check_at)}{s.last_errors[0] && <div style={{ color: "var(--danger)" }}>{s.last_errors[0]}</div>}</td>
-                  <td><button className="btn sm" onClick={() => test(s)}>{t("adm.test")}</button></td>
+                  <td className="row gap-4"><button className="btn sm" onClick={() => test(s)}>{t("adm.test")}</button>
+                    {s.connector_type === "jsonld_index" && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}</td>
                 </tr>))}</tbody>
             </table>
           </div>

@@ -120,7 +120,8 @@ def normalize_availability(raw: str | None) -> str:
 
 # Keyword classifier (HY/RU/EN). Deterministic; an LLM may only propose, never override silently.
 CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
-    ("spot_light", ["ներկառուցվող", "встраив", "downlight", "точечн", "спот"]),
+    # "built-in" alone (ներկառուցվող / встраив) also describes ovens, hobs and washbasins → needs a light word ("a+b" = all parts)
+    ("spot_light", ["downlight", "spotlight", "точечн", "спот", "ներկառուցվող+լուսատու", "встраив+светильник", "recessed+light", "led պանել", "led панел", "led panel"]),
     ("pendant_light", ["կախովի", "подвес", "pendant"]),
     ("led_strip", ["led ժապավեն", "лента", "led strip"]),
     ("wall_light", ["բրա", "бра", "wall lamp", "настенный светильник"]),
@@ -139,10 +140,11 @@ CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("towel_dryer", ["полотенцесуш", "towel", "սրբիչ"]),
     ("fridge", ["холодильник", "refrigerator", "fridge", "սառնարան"]),
     ("washer", ["стиральн", "washing machine", "լվացքի մեքենա"]),
-    ("dishwasher", ["посудомо", "dishwasher", "սպասք"]),
+    ("dishwasher", ["посудомо", "dishwasher", "սպասք լվաց"]),  # «սպասք» alone = dishware
     ("cooktop", ["варочн", "cooktop", "hob", "եփման"]),
     ("oven", ["духов", "oven", "ջեռոց"]),
     ("hood", ["вытяжк", "hood", "օդաքարշ"]),
+    ("tv_unit", ["тумба под тв", "тв-тумба", "tv stand", "tv unit", "tv cabinet", "հեռուստացույցի տակդիր", "tv տումբա"]),
     ("tv", ["телевизор", "tv ", "հեռուստացույց"]),
     ("sofa", ["диван", "sofa", "բազմոց"]),
     ("armchair", ["кресло", "armchair", "բազկաթոռ"]),
@@ -158,10 +160,11 @@ CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
 # Words that disqualify a category match (wine cooler is not a fridge, a bath panel is not a bath…)
 CATEGORY_EXCLUDE: dict[str, list[str]] = {
     "fridge": ["գինու", "wine", "винн", "винный", "mini bar", "мини-бар"],
+    "wall_paint": ["ներկառուցվ"],  # «ներկ» (paint) is also the stem of «ներկառուցվող» (built-in)
     "bathtub": ["էկրան", "экран", "panel", "панель", "шторк", "վարագույր"],
     "bed": ["բաժակ", "стакан", "glass", "постельн", "белье", "սպիտակեղեն"],
     "dining_chair": ["կոմպյուտերային", "компьютерн", "gaming"],
-    "wardrobe": ["шкаф для обуви", "կոշիկ"],
+    "wardrobe": ["шкаф для обуви", "կոշիկ", "օդաքա", "вытяж"],  # «hood cabinet» is a cooker hood
     "tv": ["кронштейн", "bracket", "пульт"],
 }
 
@@ -169,18 +172,20 @@ CATEGORY_EXCLUDE: dict[str, list[str]] = {
 def classify(*texts: str | None) -> str | None:
     blob = " ".join(t for t in texts if t).lower()
     for cat, words in CATEGORY_KEYWORDS:
-        if any(w in blob for w in words) and not any(x in blob for x in CATEGORY_EXCLUDE.get(cat, [])):
+        if any(all(part in blob for part in w.split("+")) for w in words) and not any(x in blob for x in CATEGORY_EXCLUDE.get(cat, [])):
             return cat
     return None
 
 
-ACCESSORY_WORDS = ["կափարիչ", "крышка", "cover", "кронштейн", "bracket", "запчаст", "spare", "адаптер", "adapter", "ремкомплект", "заглушк", "плафон для", "лампа для",
+ACCESSORY_WORDS = ["կախիչ", "tv mount", "wall mount", "крепление для тв", "ֆիլտր", "фильтр", "filter", "բաժանարար", "разветвит", "splitter",
+                   "кабель", "cable", "մալուխ", "կափարիչ", "крышка", "cover", "кронштейн", "bracket", "запчаст", "spare", "адаптер", "adapter", "ремкомплект", "заглушк", "плафон для", "лампа для",
                    "էկրան լոգ", "экран для ванн", "bath panel", "сифон", "սիֆոն", "кнопка смыва", "ножк", "уплотнит"]
 
 
-def is_accessory(name: str | None) -> bool:
-    """Accessories/spare parts listed on category pages must not be offered as the main product."""
-    n = (name or "").lower()
+def is_accessory(name: str | None, category: str | None = None) -> bool:
+    """Accessories/spare parts (mounts, filters, cables, covers…) must not be offered as the main product.
+    The store's own category is checked too: VLV names are often bare model codes."""
+    n = f"{name or ''} {category or ''}".lower()
     return any(w in n for w in ACCESSORY_WORDS)
 
 

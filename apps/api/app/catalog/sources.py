@@ -11,6 +11,9 @@ AUDIT_DATE = "2026-10-21"
 SEED_POLICY = {
     "domus": {"enabled": True, "live_enabled": True, "connector_type": "jsonld_sitemap", "policy_status": "approved"},
     "profal": {"enabled": True, "live_enabled": False, "connector_type": "rfq", "policy_status": "approved"},
+    # audit 2026-10-22: robots allows /Product/{id} (crawl-delay 3 s); listings are script-rendered from the
+    # disallowed /filter endpoint, so VLV is indexed in the background from its sitemap, never searched live
+    "vlv": {"enabled": True, "live_enabled": True, "connector_type": "jsonld_index", "policy_status": "approved"},
 }
 DEFAULT_POLICY = {"enabled": False, "live_enabled": False, "policy_status": "pending"}
 
@@ -90,11 +93,18 @@ SOURCES: list[dict] = [
     {
         "key": "vlv", "name": "VLV Centre", "domain": "https://vlv.am",
         "allowed_hosts": ["vlv.am", "www.vlv.am"],
-        "categories": ["appliances", "furniture", "plumbing", "decor"], "languages": ["hy", "ru", "en"], "method": "jsonld_sitemap", "connector_status": "needs_audit",
+        "categories": ["appliances", "furniture", "plumbing", "decor", "lighting"], "languages": ["hy", "ru", "en"], "method": "jsonld_index", "connector_status": "ok",
         "rate_limit_s": 3.0,
-        "policy": {"robots": "allowed", "crawl_delay_s": 3, "search_disallowed": True, "disallow": ["/ajax-search-product", "/price/ajax", "/cart/*"],
-                   "sitemaps": ["https://vlv.am/sitemap.xml"], "jsonld_product": None, "terms_reviewed": False, "audit": AUDIT_DATE},
-        "notes": "Crawl-delay 3 с; поиск и ценовые AJAX-эндпоинты запрещены. Discovery — только через sitemap/каталог.",
+        "policy": {"robots": "allowed", "crawl_delay_s": 3, "search_disallowed": True,
+                   "disallow": ["/search", "/filter", "/ajax-search-product", "/price/ajax", "/cart/*", "/archives"],
+                   "sitemaps": ["https://vlv.am/sitemap.xml"], "max_bytes": 12_000_000, "product_url_regex": r"/Product/\d+$",
+                   "jsonld_product": True, "listings_script_rendered": True, "terms_reviewed": False, "terms_page_found": False,
+                   "permission_request": "recommended", "audit": "2026-10-22"},
+        "notes": "Аудит 2026-10-22: robots.txt разрешает карточки /Product/{id}, crawl-delay 3 с; поиск, /filter и ценовые AJAX запрещены. "
+                 "Карточки содержат schema.org Product (sku, brand, category, offers.price AMD, availability, image). Страницы категорий "
+                 "собираются скриптом из запрещённого /filter — поэтому каталог индексируется фоном по sitemap (8.5 МБ, ~13 тыс. карточек) "
+                 "с паузой 3 с, в проектах используется только индекс. Страница условий использования не найдена — рекомендуется письменно "
+                 "уведомить магазин и запросить официальный фид.",
         "priority": "high",
     },
     {

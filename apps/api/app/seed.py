@@ -93,7 +93,7 @@ def seed_external_sources(db: Session) -> list[dict]:
     report = []
     for src in SOURCES:
         dom = canonical_domain(src["domain"])
-        policy = {**DEFAULT_POLICY, "connector_type": {"rfq": "rfq", "jsonld_sitemap": "jsonld_sitemap"}.get(src["method"], "feed"), **SEED_POLICY.get(src["key"], {})}
+        policy = {**DEFAULT_POLICY, "connector_type": {"rfq": "rfq", "jsonld_sitemap": "jsonld_sitemap", "jsonld_index": "jsonld_index"}.get(src["method"], "feed"), **SEED_POLICY.get(src["key"], {})}
         row = db.scalar(select(m.ExternalSource).where(m.ExternalSource.canonical_domain == dom)) or \
             db.scalar(select(m.ExternalSource).where(m.ExternalSource.key == src["key"]))
         fields = {k: v for k, v in src.items() if k not in ("priority",)}

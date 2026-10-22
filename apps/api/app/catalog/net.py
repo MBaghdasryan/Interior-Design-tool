@@ -113,7 +113,7 @@ class SafeFetcher:
 
     ALLOWED_TYPES = ("text/html", "application/xml", "text/xml", "application/json", "application/ld+json", "text/plain")
 
-    def _check_response(self, r: httpx.Response, url: str) -> None:
+    def _check_response(self, r: httpx.Response, url: str, max_bytes: int | None = None) -> None:
         """Post-connection checks: DNS-rebinding (actual peer IP), content-type, size."""
         stream = r.extensions.get("network_stream")
         peer = stream.get_extra_info("server_addr") if stream is not None else None
@@ -122,10 +122,13 @@ class SafeFetcher:
         ctype = r.headers.get("content-type", "text/html").split(";")[0].strip().lower()
         if r.status_code < 300 and ctype not in self.ALLOWED_TYPES:
             raise FetchBlocked(f"unexpected content-type {ctype} for {url}")
-        if len(r.content) > self.settings.external_fetch_max_bytes:
-            raise FetchBlocked(f"response larger than {self.settings.external_fetch_max_bytes} bytes")
+        limit = max_bytes or self.settings.external_fetch_max_bytes
+        if len(r.content) > limit:
+            raise FetchBlocked(f"response larger than {limit} bytes")
 
-    def fetch(self, url: str, allowed_hosts: list[str], rate_limit_s: float | None = None, max_redirects: int | None = None, retries: int | None = None) -> httpx.Response:
+    def fetch(self, url: str, allowed_hosts: list[str], rate_limit_s: float | None = None, max_redirects: int | None = None, retries: int | None = None,
+              max_bytes: int | None = None) -> httpx.Response:
+        """`max_bytes` overrides the global size limit for one request (e.g. a large audited sitemap)."""
         rate_limit_s = self.settings.external_fetch_rate_limit_s if rate_limit_s is None else rate_limit_s
         max_redirects = self.settings.external_fetch_max_redirects if max_redirects is None else max_redirects
         retries = self.settings.external_fetch_max_retries if retries is None else retries
@@ -165,7 +168,7 @@ class SafeFetcher:
                 continue  # redirect target is re-validated at the top of the loop
             if r.status_code in (401, 403):
                 raise FetchBlocked(f"access denied ({r.status_code}) — not bypassing")
-            self._check_response(r, url)
+            self._check_response(r, url, max_bytes)
             br.failures = 0
             return r
         raise FetchBlocked("too many redirects")

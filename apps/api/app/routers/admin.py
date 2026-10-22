@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ from ..catalog.discovery import source_dict
 from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
-from ..jobs.runner import job_dict
+from ..jobs.runner import enqueue, job_dict
 from ..security import Principal, audit, require
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -77,6 +77,25 @@ def test_source(sid: str, p: Principal = Depends(require("sources:manage")), db:
     db.add(m.ExternalConnectorRun(source_id=s.id, kind="health", status=h.status, latency_ms=h.latency_ms, errors=[] if h.status == "ok" else [h.message]))
     db.commit()
     return {"status": h.status, "message": h.message, "latency_ms": h.latency_ms, "policy": conn.get_policy_status()}
+
+
+class IndexIn(BaseModel):
+    batch: int = Field(default=60, ge=1, le=300)
+
+
+@router.post("/sources/{sid}/index")
+def index_source(sid: str, body: IndexIn, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+    """Queue one background index batch (crawl-delay respected; ~batch × 3 s)."""
+    s = db.get(m.ExternalSource, sid)
+    if not s:
+        raise ApiError(404, "not_found")
+    if s.connector_type != "jsonld_index":
+        raise ApiError(422, "validation", fields=["connector_type"])
+
+    job = enqueue(db, "source_index", project_id=None, params={"source_id": s.id, "batch": body.batch})
+    audit(db, p, "source.index", "external_source", sid, data={"batch": body.batch})
+    db.commit()
+    return job_dict(job)
 
 
 @router.get("/jobs")

@@ -14,7 +14,7 @@ def main() -> None:
         for r in db.scalars(select(m.ExternalProductRecord)):
             d = dict(r.data)
             name = d.get("name") or ""
-            if is_accessory(name):
+            if is_accessory(name, d.get("category")):
                 if r.review_status != "rejected":
                     r.review_status = "rejected"
                     rejected += 1

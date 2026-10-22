@@ -28,6 +28,22 @@ class FeedConnector(ExternalCatalogConnector):
                                message="Автоматическое обновление недоступно. Требуется каталог поставщика или ручное подтверждение.")
 
 
+class IndexedConnector(FeedConnector):
+    """Sources whose listing pages are rendered by scripts behind robots-disallowed
+    endpoints (VLV): a background index crawler (`app.catalog.indexer`) walks the
+    product sitemap at the site's crawl-delay and fills the cache; discovery reads
+    the cache only, so a project run never triggers live crawling."""
+
+    parser_version = "jsonld-index-1.0"
+
+    def get_connector_health(self) -> ConnectorHealth:
+        idx = self.source.get("stats", {}).get("index", {})
+        n, total = idx.get("indexed", 0), idx.get("total", 0)
+        if n:
+            return ConnectorHealth(status="ok", message=f"Индекс: {n} товаров для интерьера; пройдено {idx.get('cursor', 0)} из {total} карточек")
+        return ConnectorHealth(status="needs_index", message="Индекс ещё не построен — запустите индексацию источника")
+
+
 class RfqConnector(ExternalCatalogConnector):
     """Custom-made systems without public prices (Profal). Never returns invented
     products: discovery produces an RFQ requirement for the need instead."""
@@ -53,4 +69,6 @@ def build_connector(source: dict, *, live: bool, cache_lookup, fetcher=None) -> 
         return JsonLdSitemapConnector(source, fetcher=fetcher, live=live and bool(source.get("live_enabled")), cache_lookup=cache_lookup)
     if method == "rfq":
         return RfqConnector(source)
+    if method == "jsonld_index":
+        return IndexedConnector(source, cache_lookup=cache_lookup)
     return FeedConnector(source, cache_lookup=cache_lookup)

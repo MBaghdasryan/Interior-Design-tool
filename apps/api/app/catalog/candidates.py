@@ -152,7 +152,10 @@ def score(c: Candidate, *, category: str, style: str | None, tier: str, target_p
     fresh = 0.5
     if c.checked_at:
         try:
-            age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(c.checked_at)).total_seconds() / 3600
+            checked = datetime.fromisoformat(c.checked_at)
+            if checked.tzinfo is None:  # timestamps from SQLite / older records are naive UTC
+                checked = checked.replace(tzinfo=timezone.utc)
+            age_h = (datetime.now(timezone.utc) - checked).total_seconds() / 3600
             fresh = 1.0 if age_h < 24 else 0.6 if age_h < 24 * 7 else 0.2
         except ValueError:
             pass

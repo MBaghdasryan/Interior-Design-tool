@@ -9,7 +9,8 @@ from sqlalchemy import text
 from .config import get_settings
 from .db import Base, SessionLocal, engine
 from .errors import http_error_handler, validation_error_handler
-from .jobs import documents, pipeline, recognize  # noqa: F401  (register job handlers)
+from .jobs import catalog as catalog_jobs  # noqa: F401  (register job handlers)
+from .jobs import documents, pipeline, recognize  # noqa: F401
 from .routers import admin, auth, catalog, commerce, partners, projects
 from .routers import documents as documents_router
 

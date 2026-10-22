@@ -70,4 +70,11 @@ export const account: Dict = {
   "nav.account": e("Հաշիվ", "Аккаунт", "Account"),
   "nav.section.account": e("Հաշիվ", "Аккаунт", "Account"),
   "nav.section.onboarding": e("Սկիզբ", "Начало работы", "Getting started"),
+  "adm.index": e("Ինդեքսավորել", "Индексировать", "Index"),
+  "adm.index_hint": e("60 քարտ՝ կայքի դադարով (3 վ) — մոտ 3 րոպե", "60 карточек с паузой сайта (3 с) — около 3 минут", "60 product pages at the site's crawl-delay (3 s) — about 3 minutes"),
+  "adm.index_started": e("{name}․ ինդեքսավորումը սկսված է", "{name}: индексация запущена", "{name}: indexing started"),
+  "enum.source_status.needs_index": e("Ինդեքսը կառուցված չէ", "Индекс не построен", "Index not built"),
+  "steps.crawl.title": e("Աղբյուրի քարտերի ինդեքսավորում", "Индексация карточек источника", "Indexing source product pages"),
+  "steps.crawl.detail": e("Անցել է {fetched} քարտ, ինդեքսում՝ {indexed}, ոչ ինտերիերի համար՝ {irrelevant} ({cursor}/{total})", "Пройдено карточек: {fetched}, в индекс: {indexed}, не для интерьера: {irrelevant} ({cursor}/{total})", "Pages: {fetched}, indexed: {indexed}, not interior: {irrelevant} ({cursor}/{total})"),
+  "enum.source_status.degraded": e("Մասնակի աշխատանք", "Работает частично", "Degraded"),
 };

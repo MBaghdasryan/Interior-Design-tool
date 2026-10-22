@@ -181,9 +181,11 @@ def test_source_seed_is_idempotent_and_domus_only_live(client):
         rows = db.query(ExternalSource).all()
         assert len(rows) == 8 and all(r["action"] == "unchanged" for r in again)
         assert len({r.canonical_domain for r in rows}) == 8
-        assert [r.key for r in rows if r.live_enabled] == ["domus"]
+        # live: Domus (per-need discovery) and VLV (background index only, audit 2026-10-22)
+        assert sorted(r.key for r in rows if r.live_enabled) == ["domus", "vlv"]
+        assert next(r for r in rows if r.key == "vlv").connector_type == "jsonld_index"
         assert next(r for r in rows if r.key == "profal").connector_type == "rfq"
-        assert {r.key for r in rows if not r.enabled} == {"idealsystem", "nortun", "effectgroup", "lideria", "vlv", "vega"}
+        assert {r.key for r in rows if not r.enabled} == {"idealsystem", "nortun", "effectgroup", "lideria", "vega"}
 
 
 def test_category_exclusions_from_live_findings():
