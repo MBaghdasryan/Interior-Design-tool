@@ -11,7 +11,7 @@ from .errors import http_error_handler, validation_error_handler
 from .jobs import catalog as catalog_jobs  # noqa: F401  (register job handlers)
 from .jobs import documents, pipeline, recognize, render  # noqa: F401
 from .observability import RequestIdMiddleware, setup_logging, setup_sentry, setup_tracing
-from .routers import admin, auth, catalog, commerce, notifications, partners, payments, projects, suppliers
+from .routers import admin, auth, catalog, commerce, custom, notifications, partners, payments, projects, suppliers
 from .routers import documents as documents_router
 
 settings = get_settings()
@@ -24,7 +24,7 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_list, allow_crede
 app.add_middleware(RequestIdMiddleware)
 setup_tracing(app, engine, endpoint=settings.otel_exporter_otlp_endpoint, service_name=settings.otel_service_name)
 
-for r in (auth.router, projects.router, commerce.router, documents_router.router, catalog.router, admin.router, partners.router, notifications.router, payments.router, suppliers.router):
+for r in (auth.router, projects.router, commerce.router, documents_router.router, catalog.router, admin.router, partners.router, notifications.router, payments.router, suppliers.router, custom.router):
     app.include_router(r)
 
 

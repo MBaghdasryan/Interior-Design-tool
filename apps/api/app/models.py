@@ -269,6 +269,8 @@ class Supplier(TimestampMixin, Base):
     verification: Mapped[str] = mapped_column(String(20), default="verified")  # pending | verified | rejected
     onboarding: Mapped[dict] = mapped_column(JSON, default=dict)  # {agreement: {version, at, by, ip}, verified_by, note, tax_id}
     category_map: Mapped[dict] = mapped_column(JSON, default=dict)  # supplier category label → taxonomy key
+    # custom furniture (P2-5): manufacturer's own rates and production limits; empty = quotes only
+    custom_rates: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Product(TimestampMixin, Base):
@@ -728,6 +730,34 @@ class ProductEmbedding(Base):
     vector: Mapped[list] = mapped_column(JSON)
     text_hash: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+
+class CustomConfig(TimestampMixin, Base):
+    """Custom furniture configuration (P2-5). Every saved change is a new spec version."""
+    __tablename__ = "custom_configs"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    family: Mapped[str] = mapped_column(String(20))
+    supplier_id: Mapped[str | None] = mapped_column(String(32), nullable=True)  # manufacturer
+    spec: Mapped[dict] = mapped_column(JSON, default=dict)
+    spec_version: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft | valid | ordered
+    issues: Mapped[list] = mapped_column(JSON, default=list)
+    pricing: Mapped[dict] = mapped_column(JSON, default=dict)
+    order_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+
+class CustomConfigVersion(TimestampMixin, Base):
+    __tablename__ = "custom_config_versions"
+    __table_args__ = (UniqueConstraint("config_id", "version"),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    config_id: Mapped[str] = mapped_column(ForeignKey("custom_configs.id", ondelete="CASCADE"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    spec: Mapped[dict] = mapped_column(JSON)
+    pricing: Mapped[dict] = mapped_column(JSON, default=dict)
+    author: Mapped[str] = mapped_column(String(200), default="")
 
 
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)

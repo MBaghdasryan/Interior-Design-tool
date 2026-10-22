@@ -63,7 +63,8 @@ def _value(schema: dict, comps: dict):
     if t == "boolean":
         return True
     if schema.get("pattern"):
-        return {"^(approved|changes_requested)$": "approved", "^(quoted|declined)$": "declined"}.get(schema["pattern"], "x")
+        alt = re.fullmatch(r"\^\(([a-z_]+)(?:\|[a-z_|]+)?\)\$", schema["pattern"])  # ^(a|b|c)$ → a
+        return alt.group(1) if alt else "x"
     return "x" * max(schema.get("minLength", 2), 2)
 
 

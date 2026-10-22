@@ -113,6 +113,15 @@ def recheck_cart(db: Session, cart: m.Cart) -> dict:
                     src = db.get(m.ExternalSource, rec.source_id)
                     if (now - _aware(rec.retrieved_at)).total_seconds() / 3600 > float(((src.ttl_h if src else None) or {}).get("price", s.external_price_ttl_h)):
                         stale.append(it.name)
+            elif kind == "custom":
+                from ..custom import engine
+
+                cfg = db.get(m.CustomConfig, it.ref.split(":")[1])
+                sup = db.get(m.Supplier, o.supplier_id) if o.supplier_id else None
+                pr = engine.price(cfg.spec, sup.custom_rates or None) if cfg and sup else {}
+                price = pr.get("total_amd")
+                if price is None:
+                    unavailable.append(it.name)
             else:
                 price = it.unit_price
             if price is not None and it.unit_price is not None and abs(price - it.unit_price) >= 1:

@@ -207,3 +207,35 @@ export function PartnerDataCard() {
     </section>
   );
 }
+
+interface Rates { rates: { body?: Record<string, number>; front?: Record<string, number>; back?: number | null; edge_per_m?: number | null; hardware?: Record<string, number>; assembly_pct?: number; lead_time_days?: number | null };
+  body: string[]; fronts: string[]; hardware: string[]; kind: string }
+
+/** Manufacturer rates for the custom furniture configurator; without them configurations stay «on request». */
+export function CustomRatesCard() {
+  const { t } = useT();
+  const toast = useToast();
+  const [d, setD] = useState<Rates | null>(null);
+  useEffect(() => { api<Rates>("/supplier/custom-rates").then(setD).catch(() => {}); }, []);
+  if (!d || d.kind !== "manufacturer") return null;
+  const r = d.rates;
+  const setMap = (k: "body" | "front" | "hardware", key: string, v: string) => setD({ ...d, rates: { ...r, [k]: { ...(r[k] || {}), [key]: Number(v) || 0 } } });
+  const num = (label: string, value: number | null | undefined, on: (v: string) => void) => (
+    <label key={label} className="col gap-4"><span className="tiny muted">{label}</span><input className="input" style={{ width: 120 }} inputMode="numeric" value={value ?? ""} onChange={(e) => on(e.target.value)} /></label>);
+  const save = async () => { try { setD(await api<Rates>("/supplier/custom-rates", { method: "PUT", json: r })); toast(t("sob.saved")); } catch (x) { toast((x as Error).message, true); } };
+  return (
+    <section className="card pad col gap-10" aria-labelledby="crt-h">
+      <div className="row between"><h3 id="crt-h">{t("crt.title")}</h3><button className="btn sm primary" onClick={save}>{t("common.save")}</button></div>
+      <p className="tiny muted">{t("crt.lead")}</p>
+      <b className="small">{t("crt.body")}</b><div className="row gap-8 wrap">{d.body.map((k) => num(t(`cst.mat.${k}`), r.body?.[k], (v) => setMap("body", k, v)))}</div>
+      <b className="small">{t("crt.front")}</b><div className="row gap-8 wrap">{d.fronts.map((k) => num(t(`cst.mat.${k}`), r.front?.[k], (v) => setMap("front", k, v)))}</div>
+      <b className="small">{t("crt.hardware")}</b><div className="row gap-8 wrap">{d.hardware.map((k) => num(t(`cst.hw.${k}`), r.hardware?.[k], (v) => setMap("hardware", k, v)))}</div>
+      <div className="row gap-8 wrap">
+        {num(t("crt.back"), r.back, (v) => setD({ ...d, rates: { ...r, back: v === "" ? null : Number(v) } }))}
+        {num(t("crt.edge"), r.edge_per_m, (v) => setD({ ...d, rates: { ...r, edge_per_m: v === "" ? null : Number(v) } }))}
+        {num(t("crt.assembly"), r.assembly_pct, (v) => setD({ ...d, rates: { ...r, assembly_pct: Number(v) || 0 } }))}
+        {num(t("crt.lead"), r.lead_time_days, (v) => setD({ ...d, rates: { ...r, lead_time_days: v === "" ? null : Number(v) } }))}
+      </div>
+    </section>
+  );
+}

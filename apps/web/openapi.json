@@ -463,6 +463,59 @@
     "title": "CompleteIn",
     "type": "object"
    },
+   "ConfigIn": {
+    "properties": {
+     "available_length_mm": {
+      "anyOf": [
+       {
+        "maximum": 20000.0,
+        "minimum": 300.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Available Length Mm"
+     },
+     "family": {
+      "pattern": "^(kitchen|wardrobe|walkin|tv)$",
+      "title": "Family",
+      "type": "string"
+     },
+     "modules": {
+      "items": {
+       "type": "object"
+      },
+      "maxItems": 60,
+      "title": "Modules",
+      "type": "array"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "supplier_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Id"
+     }
+    },
+    "required": [
+     "name",
+     "family"
+    ],
+    "title": "ConfigIn",
+    "type": "object"
+   },
    "ConfirmIn": {
     "properties": {
      "note": {
@@ -1447,6 +1500,85 @@
      "status"
     ],
     "title": "QuoteIn",
+    "type": "object"
+   },
+   "RatesIn": {
+    "properties": {
+     "assembly_pct": {
+      "default": 0,
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Assembly Pct",
+      "type": "number"
+     },
+     "back": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Back"
+     },
+     "body": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "default": {},
+      "title": "Body",
+      "type": "object"
+     },
+     "edge_per_m": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Edge Per M"
+     },
+     "front": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "default": {},
+      "title": "Front",
+      "type": "object"
+     },
+     "hardware": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "default": {},
+      "title": "Hardware",
+      "type": "object"
+     },
+     "lead_time_days": {
+      "anyOf": [
+       {
+        "maximum": 365.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lead Time Days"
+     },
+     "limits": {
+      "default": {},
+      "title": "Limits",
+      "type": "object"
+     }
+    },
+    "title": "RatesIn",
     "type": "object"
    },
    "RegenIn": {
@@ -6100,6 +6232,53 @@
     "summary": "Public Config"
    }
   },
+  "/api/v1/custom/library": {
+   "get": {
+    "operationId": "library_api_v1_custom_library_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Library",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
   "/api/v1/files/{key}": {
    "get": {
     "operationId": "download_api_v1_files__key__get",
@@ -7409,6 +7588,535 @@
     "summary": "Resolve Comment",
     "tags": [
      "projects"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom": {
+   "get": {
+    "operationId": "list_configs_api_v1_projects__pid__custom_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Configs",
+    "tags": [
+     "custom"
+    ]
+   },
+   "post": {
+    "operationId": "create_config_api_v1_projects__pid__custom_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfigIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Config",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom/{cid}": {
+   "delete": {
+    "operationId": "delete_config_api_v1_projects__pid__custom__cid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Config",
+    "tags": [
+     "custom"
+    ]
+   },
+   "put": {
+    "operationId": "update_config_api_v1_projects__pid__custom__cid__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfigIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Update Config",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom/{cid}/drawing.dxf": {
+   "get": {
+    "operationId": "drawing_dxf_api_v1_projects__pid__custom__cid__drawing_dxf_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Drawing Dxf",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom/{cid}/drawing.pdf": {
+   "get": {
+    "operationId": "drawing_pdf_api_v1_projects__pid__custom__cid__drawing_pdf_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "lang",
+      "required": false,
+      "schema": {
+       "default": "hy",
+       "title": "Lang",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Drawing Pdf",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom/{cid}/order": {
+   "post": {
+    "description": "Creates a manufacturer order (cart → recheck → request, like any order). Production Ready only.",
+    "operationId": "order_config_api_v1_projects__pid__custom__cid__order_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Order Config",
+    "tags": [
+     "custom"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/custom/{cid}/versions": {
+   "get": {
+    "operationId": "config_versions_api_v1_projects__pid__custom__cid__versions_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "cid",
+      "required": true,
+      "schema": {
+       "title": "Cid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Config Versions",
+    "tags": [
+     "custom"
     ]
    }
   },
@@ -10775,6 +11483,108 @@
     "summary": "Put Category Map",
     "tags": [
      "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/custom-rates": {
+   "get": {
+    "operationId": "get_rates_api_v1_supplier_custom_rates_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Rates",
+    "tags": [
+     "custom"
+    ]
+   },
+   "put": {
+    "operationId": "put_rates_api_v1_supplier_custom_rates_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RatesIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Rates",
+    "tags": [
+     "custom"
     ]
    }
   },

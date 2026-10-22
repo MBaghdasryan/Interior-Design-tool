@@ -163,7 +163,8 @@ export default function Results() {
             <div className="col gap-10">
               <table className="table"><thead><tr><th>{t("common.supplier")}</th><th className="right">{t("res.sup.col.items")}</th><th className="right">{t("common.sum")}</th><th>{t("res.sup.col.lead")}</th></tr></thead>
                 <tbody>{suppliers.map(([k, s]) => <tr key={k}><td><b>{s.name}</b> {s.demo && <Badge tone="danger">DEMO</Badge>}</td><td className="right">{s.items}</td><td className="right mono">{amd(s.total)}</td><td>{s.lead ? t("common.days", { n: s.lead }) : "—"}</td></tr>)}</tbody></table>
-              <Link className="btn" to={`/app/p/${pid}/procurement`}><Store size={16} /> {t("res.rfq_cta")}</Link>
+              <div className="row gap-6 wrap"><Link className="btn" to={`/app/p/${pid}/procurement`}><Store size={16} /> {t("res.rfq_cta")}</Link>
+                <Link className="btn ghost" to={`/app/p/${pid}/custom`}>{t("cst.title")}</Link></div>
             </div>
           )}
           {tab === "timeline" && <Timeline lead={cur.metrics.lead_days_max} />}

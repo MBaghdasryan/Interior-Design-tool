@@ -4,7 +4,7 @@ import { api, ApiError, type Schemas } from "../lib/api";
 import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, PriceStatus, Switch, useToast } from "../components/ui";
-import { AssetsCard, OnboardingCard, PartnerDataCard } from "../components/SupplierPartner";
+import { AssetsCard, CustomRatesCard, OnboardingCard, PartnerDataCard } from "../components/SupplierPartner";
 
 interface Ov { supplier: { name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
 interface P { id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
@@ -57,6 +57,7 @@ export default function SupplierCabinet() {
       <SupplierOrders />
       <AssetsCard products={items} />
       <PartnerDataCard />
+      <CustomRatesCard />
       <FeedCard />
       <div className="card" style={{ overflow: "auto", maxHeight: 520 }}>
         <table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("supc.col.name")}</th><th>{t("common.category")}</th><th className="right">{t("common.price")}</th><th>{t("common.status")}</th><th>{t("common.in_stock")}</th><th>{t("common.dims")}</th><th>{t("supc.col.3d")}</th></tr></thead>
