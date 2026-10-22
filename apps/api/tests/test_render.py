@@ -126,3 +126,33 @@ def test_render_endpoints(client, designer, monkeypatch):
     assert bad.status_code == 422
     ok = client.post(f"/api/v1/projects/{pid}/renders/{renders[0]['id']}/regenerate", headers=designer, json={"object_ids": [obj], "instruction": "lighter fabric"}).json()
     assert ok["status"] == "succeeded", ok
+
+
+def test_color_score_is_a_pixel_measurement():
+    from app.render.service import color_score
+
+    assert color_score((200, 160, 120), "#c8a078") == 1.0  # same colour
+    assert color_score((210, 168, 126), "#c8a078") >= 0.9  # lighting shift
+    assert color_score((40, 60, 160), "#c8a078") == 0.0  # blue instead of oak
+    assert color_score(None, "#ffffff") == 0.0
+
+
+def test_album_and_client_use_the_photoreal_render(client, designer):
+    """ДН4 shows the stored render with an honest caption; the client viewer lists it."""
+    import pymupdf
+
+    from app.album.builder import build_album
+
+    with SessionLocal() as db:
+        proj, v, ver = _variant(db)
+        scene = Scene.model_validate(ver.scene)
+        room = next(r for r in scene.rooms if any(c.room_id == r.id for c in scene.cameras) and any(o.room_id == r.id for o in scene.objects))
+        render_room(db, proj, v, ver, room.id, provider=FakeImage())
+        pdf, sheets = build_album(db, proj, v, ver, lang="en")
+        share = proj.share_token
+    doc = pymupdf.open(stream=pdf, filetype="pdf")
+    pages = [p for p in doc if "AI visualisation" in p.get_text()]
+    assert pages and pages[0].get_images(), "render embedded as an image on the visual sheet"
+    assert "product match not verified" in pages[0].get_text()  # stub grounding: no claim
+    cv = client.get(f"/api/v1/client/{share}").json()
+    assert any(r["room_id"] == room.id and r["url"] for vv in cv["variants"] for r in vv.get("renders", []))

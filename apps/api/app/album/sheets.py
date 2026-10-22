@@ -83,7 +83,8 @@ def fmt_amd(v) -> str:
 
 class AlbumBuilder:
     def __init__(self, scene: Scene, base: Scene, estimate: dict, issues: list[dict], meta: AlbumMeta, *, project: dict, variant: dict,
-                 viewer_url: str, approvals: list[dict]):
+                 viewer_url: str, approvals: list[dict], renders: dict[str, list[tuple[bytes, dict]]] | None = None):
+        self.renders = renders or {}  # room_id -> [(jpeg bytes, meta)] photoreal renders of this version
         self.scene = scene
         self.base = base
         self.est = estimate
@@ -979,6 +980,10 @@ class AlbumBuilder:
         n = max(1, len(cams))
         gap = 4 * mm
         w = (x1 - x0 - gap * (n - 1)) / n
+        if self.renders.get(room.id):
+            self._photoreal(c, room, self.renders[room.id])
+            self.page(c, spec, code, None)
+            return
         faces = render3d.room_interior_faces(self.scene, room.id)
         for i, cam in enumerate(cams):
             rect = (x0 + i * (w + gap), y0 + 20 * mm, x0 + i * (w + gap) + w, y1 - 18 * mm)
@@ -987,6 +992,28 @@ class AlbumBuilder:
         text(c, x0, y0 + 12 * mm, t("schematic_note", self.lang), 6.5, color=GREY)
         text(c, x0, y1 - 10 * mm, f"{room.number}. {room_name(room, self.lang)} — {variant_title(self.variant, self.lang)}", 10, bold=True)
         self.page(c, spec, code, None)
+
+    def _photoreal(self, c, room, renders):
+        """AI visualisation sheet: the render (fit to the drawing area) + an honest caption with the
+        product-match score and the items that are only visual analogs."""
+        x0, y0, x1, y1 = DRAW_AREA
+        jpeg, meta = renders[0]
+        w, h = meta.get("width") or 16, meta.get("height") or 9
+        aw, ah = x1 - x0, y1 - y0 - 34 * mm
+        k = min(aw / w, ah / h)
+        iw, ih = w * k, h * k
+        c.drawImage(ImageReader(io.BytesIO(jpeg)), x0 + (aw - iw) / 2, y0 + 24 * mm + (ah - ih) / 2, iw, ih)
+        text(c, x0, y1 - 8 * mm, f"{room.number}. {room_name(room, self.lang)} — {variant_title(self.variant, self.lang)}", 10, bold=True)
+        g = meta.get("grounding") or {}
+        score = g.get("score")
+        cap = tx("ai_render", self.lang, model=meta.get("model", "")) + " · " + (
+            tx("ai_render_match", self.lang, pct=round(score * 100)) if score is not None and g.get("verified", True) else tx("ai_render_unverified", self.lang))
+        text(c, x0, y0 + 16 * mm, cap, 7.5, color=GREY)
+        analogs = g.get("visual_analogs") or []
+        if analogs:
+            text(c, x0, y0 + 11 * mm, tx("ai_render_analogs", self.lang, codes=", ".join(analogs)), 7, color=RED)
+        for i, ln in enumerate(wrap(tx("ai_render_note", self.lang), x1 - x0, 6.5)[:2]):
+            text(c, x0, y0 + 6 * mm - i * 3.4 * mm, ln, 6.5, color=GREY)
 
     # ------------------------------------------------------------ ДН5 specification / estimate
     def s_spec(self, c, spec, code):

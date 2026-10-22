@@ -156,6 +156,14 @@ def client_view(token: str, db: Session = Depends(get_db)):
         ver = db.get(m.DesignVersion, v.current_version_id)
         d = variant_dict(v, ver)
         # the client sees prices, but not internal supplier commission data
+        if ver:
+            from ..render.service import latest_renders
+            from ..storage import get_storage
+
+            d["renders"] = [{"room_id": room, "url": get_storage().signed_url(docs[0].storage_key), "width": docs[0].meta.get("width"),
+                             "height": docs[0].meta.get("height"), "score": (docs[0].meta.get("grounding") or {}).get("score"),
+                             "visual_analogs": (docs[0].meta.get("grounding") or {}).get("visual_analogs", [])}
+                            for room, docs in latest_renders(db, ver.id).items() if docs]
         out.append(d)
     comments = db.scalars(select(m.Comment).where(m.Comment.project_id == proj.id).order_by(m.Comment.created_at)).all()
     return {"project": {"title": proj.title, "address": proj.address, "area_m2": proj.area_m2, "accuracy_level": proj.accuracy_level, "status": proj.status},

@@ -11,7 +11,7 @@ from .draw import AlbumMeta
 from .sheets import AlbumBuilder
 
 # bump when sheet rendering changes, so an album job for the same version is not served from the idempotency cache
-RENDERER_VERSION = "2026-10-22.4"
+RENDERER_VERSION = "2026-10-22.5"
 ACCURACY = {"concept": "Concept Estimate", "verified": "Verified Design", "production": "Production Ready"}
 
 
@@ -33,6 +33,11 @@ def build_album(db: Session, project: m.Project, variant: m.DesignVariant, versi
         demo=any(ln.get("price_status") == "demo" for ln in est.get("lines", [])),
     )
     viewer_url = f"{s.public_base_url}/client/{project.share_token}"
+    from ..render.service import latest_renders
+    from ..storage import get_storage
+
+    renders = {room: [(get_storage().get(docs[0].storage_key), docs[0].meta)] for room, docs in latest_renders(db, version.id).items() if docs}
     builder = AlbumBuilder(scene, base, est, version.issues or [], meta, project={"confidence": project.confidence},
-                           variant={"title": variant.title, "style": variant.style, "tier": variant.tier}, viewer_url=viewer_url, approvals=approvals)
+                           variant={"title": variant.title, "style": variant.style, "tier": variant.tier}, viewer_url=viewer_url, approvals=approvals,
+                           renders=renders)
     return builder.build(sections)

@@ -28,7 +28,7 @@ def build_manifest(db: Session, scene: Scene, room_id: str, visible: dict[str, d
             "code": o.code or o.id, "object_id": o.id, "category": o.category, "type": label(o.category, "en"),
             "name": (c.name if c else o.name) or label(o.category, "en"), "sku": c.sku if c else "", "supplier": c.supplier_name if c else "",
             "url": c.url if c else "", "image_url": c.image_url if c else "", "color_hex": o.color_hex,
-            "size_mm": [round(o.w), round(o.d), round(o.h)], "position": visible[o.id]["position"], "pixels": visible[o.id]["pixels"],
+            "size_mm": [round(o.w), round(o.d), round(o.h)], "position": visible[o.id]["position"], "pixels": visible[o.id]["pixels"], "bbox": visible[o.id]["bbox"],
             "mode": "real" if c and not getattr(c, "is_demo", False) and c.sku else ("demo" if c else "concept"),
         })
     items.sort(key=lambda x: -x["pixels"])

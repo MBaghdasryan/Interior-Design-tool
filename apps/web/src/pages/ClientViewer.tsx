@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle2, MessageSquare, Send, ShoppingCart } from "lucide-react";
-import { api, type SceneObject, type Variant } from "../lib/api";
+import { api, fileUrl, type SceneObject, type Variant } from "../lib/api";
 import { amd, catName, lineName, variantTitle } from "../lib/format";
 import { useT } from "../i18n";
 import BeforeAfter from "../components/BeforeAfter";
@@ -54,6 +54,12 @@ export default function ClientViewer() {
       </div>
       <div style={{ padding: 16 }} className="col gap-16">
         {tab === "look" && <>
+          {(v.renders || []).map((r) => (
+            <figure key={r.room_id} className="card" style={{ overflow: "hidden", margin: 0 }}>
+              <img src={fileUrl(r.url)} alt={t("render.alt")} loading="lazy" style={{ width: "100%", display: "block", aspectRatio: `${r.width} / ${r.height}` }} />
+              <figcaption className="pad small muted">{t(`enum.room.${scene.rooms.find((x) => x.id === r.room_id)?.type || "living"}`)} · {t("render.note")}</figcaption>
+            </figure>
+          ))}
           <div className="card" style={{ overflow: "hidden" }}><BeforeAfter scene={scene} height={340} quality="high" /></div>
           <div className="grid g2">{scene.rooms.filter((r) => ["kitchen_living", "bedroom", "living", "kids"].includes(r.type)).map((r) => <div key={r.id} className="canvas-wrap" style={{ height: 200 }}><Scene3D scene={scene} mode="room" roomId={r.id} height={200} /><span className="label-pill" style={{ left: 8, top: "auto", bottom: 8, padding: "3px 10px", fontSize: 12, background: "rgba(46,46,46,.7)" }}>{t(`enum.room.${r.type}`)}</span></div>)}</div>
           <p className="muted">{t(`enum.style_sub.${v.style}`)}</p>

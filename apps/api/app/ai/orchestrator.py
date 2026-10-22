@@ -27,7 +27,7 @@ TASKS: dict[str, tuple[type[BaseModel], str]] = {
     "change_command": (ChangePlan, "v1"),
     "floorplan_vision": (FloorplanRecognition, "v1"),
     "variant_copy": (VariantCopy, "v1"),
-    "render_grounding": (GroundingCheck, "v1"),
+    "render_grounding": (GroundingCheck, "v2"),
 }
 # Preferred provider order per task when ai_default_provider=auto
 ROUTING: dict[str, list[str]] = {

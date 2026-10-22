@@ -48,17 +48,71 @@ def _to_jpeg(png: bytes, quality: int = 90) -> bytes:
     return buf.getvalue()
 
 
-def grounding(db: Session, project: m.Project, render_png: bytes, control_png: bytes, manifest: list[dict]) -> dict:
-    """Vision check of the render against the manifest → per-item scores and a summary."""
+def _lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
+    def lin(c):
+        c /= 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(v) for v in rgb)
+    x, y, z = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, 0.2126 * r + 0.7152 * g + 0.0722 * b, (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+
+    def f(t):
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+    fx, fy, fz = f(x), f(y), f(z)
+    return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+
+def measured_color(render_png: bytes, seg_png: bytes, legend: dict, object_id: str) -> tuple[int, int, int] | None:
+    """Median colour of the render inside the object's own (eroded) mask — a pixel measurement."""
+    from PIL import ImageFilter, ImageStat
+
+    render = Image.open(io.BytesIO(render_png)).convert("RGB")
+    mask = Image.open(io.BytesIO(control.mask_for(seg_png, legend, {object_id}, grow_px=0))).convert("L").resize(render.size)
+    mask = mask.filter(ImageFilter.MinFilter(9))  # stay inside the object, away from its edges
+    if not mask.getbbox():
+        return None
+    return tuple(int(v) for v in ImageStat.Stat(render, mask).median)
+
+
+def color_score(measured: tuple[int, int, int] | None, expected_hex: str) -> float:
+    if measured is None:
+        return 0.0
+    exp = tuple(int(expected_hex.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+    de = sum((a - b) ** 2 for a, b in zip(_lab(measured), _lab(exp))) ** 0.5  # CIE76 ΔE; lighting shifts colours, hence the wide band
+    return round(max(0.0, min(1.0, 1 - (de - 10) / 40)), 2)
+
+
+def _crop(render_png: bytes, bbox: list[int], ctrl_size: tuple[int, int], pad: float = 0.12) -> bytes:
+    img = Image.open(io.BytesIO(render_png)).convert("RGB")
+    sx, sy = img.size[0] / ctrl_size[0], img.size[1] / ctrl_size[1]
+    x0, y0, x1, y1 = bbox
+    w, h = (x1 - x0) * sx, (y1 - y0) * sy
+    box = (max(0, int(x0 * sx - w * pad)), max(0, int(y0 * sy - h * pad)), min(img.size[0], int(x1 * sx + w * pad)), min(img.size[1], int(y1 * sy + h * pad)))
+    crop = img.crop(box)
+    crop.thumbnail((512, 512))
+    buf = io.BytesIO()
+    crop.save(buf, "JPEG", quality=85)
+    return buf.getvalue()
+
+
+def grounding(db: Session, project: m.Project, render_png: bytes, control_png: bytes, manifest: list[dict], seg_png: bytes | None = None,
+              legend: dict | None = None) -> dict:
+    """Product-grounding score per item: type/visibility judged by a vision model on the item's own
+    crop, colour measured from the render pixels inside the item's mask (ΔE vs the product colour)."""
     if not manifest:
         return {"score": None, "items": {}, "visual_analogs": [], "extra_objects": [], "provider": None}
-    payload = {"manifest": [{k: it[k] for k in ("code", "type", "name", "color_hex", "size_mm", "position")} for it in manifest]}
-    check, provider = get_orchestrator().run("render_grounding", payload, db=db, project_id=project.id,
-                                             images=[ImageInput(render_png, "image/png"), ImageInput(control_png, "image/png")], stub_on_quota=True)
+    ctrl_size = Image.open(io.BytesIO(control_png)).size
+    checked = manifest[:12]
+    payload = {"manifest": [{k: it[k] for k in ("code", "type", "name", "color_hex", "size_mm", "position")} for it in checked]}
+    images = [ImageInput(render_png, "image/png")] + [ImageInput(_crop(render_png, it["bbox"], ctrl_size), "image/jpeg") for it in checked if it.get("bbox")]
+    check, provider = get_orchestrator().run("render_grounding", payload, db=db, project_id=project.id, images=images, stub_on_quota=True)
     items = {}
     for g in check.items:
-        s = (0.4 * g.type_match + 0.3 * g.color_match + 0.3 * g.position_match) if g.visible else 0.0
-        items[g.code] = {"score": round(s, 2), "visible": g.visible, "type": g.type_match, "color": g.color_match, "position": g.position_match, "note": g.note[:200]}
+        it = next((x for x in checked if x["code"] == g.code), None)
+        if it is None:
+            continue
+        color = color_score(measured_color(render_png, seg_png, legend, it["object_id"]), it["color_hex"]) if seg_png and legend else g.color_match
+        s = (0.5 * g.type_match + 0.3 * color + 0.2 * g.position_match) if g.visible else 0.0
+        items[g.code] = {"score": round(s, 2), "visible": g.visible, "type": g.type_match, "color": color, "position": g.position_match, "note": g.note[:200]}
     for it in manifest:  # an item the checker skipped counts as not verified
         items.setdefault(it["code"], {"score": 0.0, "visible": False, "type": 0, "color": 0, "position": 0, "note": "not reported"})
     scores = [v["score"] for v in items.values()]
@@ -102,7 +156,7 @@ def render_room(db: Session, project: m.Project, variant: m.DesignVariant, versi
     db.commit()
     progress and progress("generate", {"model": res.model, "size": res.meta.get("image_size")})
     render_png = _png(res.image)
-    g = grounding(db, project, render_png, ctrl, manifest)
+    g = grounding(db, project, render_png, ctrl, manifest, seg, legend)
     progress and progress("grounding", {"score": g["score"], "analogs": len(g["visual_analogs"])})
     return _store(db, project, variant, version, room_id, cam.id, render_png, ctrl, seg, legend, manifest, g,
                   {"model": res.model, "provider": provider.name, "prompt_version": PROMPT_VERSION, "image_size": res.meta.get("image_size"),
@@ -129,7 +183,7 @@ def regenerate_zone(db: Session, project: m.Project, doc: m.Document, object_ids
     db.commit()
     out = control.composite(prev, _png(res.image), mask)  # outside the mask: previous pixels, guaranteed
     ctrl = st.get(meta["control_key"])
-    g = grounding(db, project, out, ctrl, meta["manifest"])
+    g = grounding(db, project, out, ctrl, meta["manifest"], seg, meta["legend"])
     return _store(db, project, variant, version, meta["room_id"], meta["camera_id"], out, ctrl, seg, meta["legend"], meta["manifest"], g,
                   {"model": res.model, "provider": provider.name, "prompt_version": PROMPT_VERSION, "parent_id": doc.id, "edited_objects": sorted(object_ids),
                    "instruction": instruction[:500], "cost_usd": provider.cost(res)}, scene=scene)

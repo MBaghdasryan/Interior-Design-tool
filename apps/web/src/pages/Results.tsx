@@ -10,6 +10,7 @@ import PlanView from "../components/PlanView";
 import EstimateView, { EstimateSummary } from "../components/EstimateView";
 import CommandDrawer from "../components/CommandDrawer";
 import AlternativesDrawer from "../components/AlternativesDrawer";
+import RenderGallery from "../components/RenderGallery";
 import TrustPanel from "../components/TrustPanel";
 import PilotPanel from "../components/PilotPanel";
 import { AccuracyBadge, Badge, Empty, Loading, Modal, PriceStatus, useToast } from "../components/ui";
@@ -140,7 +141,7 @@ export default function Results() {
               </div>
             </div>
           )}
-          {tab === "visuals" && <Visuals scene={scene} />}
+          {tab === "visuals" && <Visuals scene={scene} pid={pid!} vid={cur.id} />}
           {tab === "products" && (
             <div className="col">
               {est.lines.filter((l) => l.ref && !["finishing", "works"].includes(l.group)).map((l) => {
@@ -231,7 +232,7 @@ function VariantThumb({ pid, vid }: { pid: string; vid: string }) {
   return v?.version ? <Scene3D scene={v.version.scene} height="100%" interactive={false} cutaway /> : <div className="skeleton" style={{ height: "100%" }} />;
 }
 
-function Visuals({ scene }: { scene: Scene }) {
+function Visuals({ scene, pid, vid }: { scene: Scene; pid: string; vid: string }) {
   const { t } = useT();
   const rooms = scene.rooms.filter((r) => r.type !== "balcony");
   const [room, setRoom] = useState(rooms[0]?.id);
@@ -239,6 +240,7 @@ function Visuals({ scene }: { scene: Scene }) {
   return (
     <div className="col gap-10">
       <div className="row wrap">{rooms.map((r) => <button key={r.id} className={`chip ${room === r.id ? "on" : ""}`} onClick={() => setRoom(r.id)}>{roomType(r.type)}</button>)}</div>
+      {room && cams.length > 0 && <RenderGallery pid={pid} vid={vid} roomId={room} />}
       <div className="grid g3">{cams.map((c, i) => <div key={c.id} className="canvas-wrap" style={{ height: 300 }}><Scene3D scene={scene} mode="room" roomId={room} cameraIndex={i} height={300} quality="high" /></div>)}</div>
       <div className="alert info small">{t("res.visuals_note")}</div>
     </div>
