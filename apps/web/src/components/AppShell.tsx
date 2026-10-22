@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Building2, FolderKanban, Home, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
+import { BookOpenCheck, Building2, FolderKanban, Home, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -94,6 +94,7 @@ export default function AppShell() {
   const isPlatform = roles.has("platform_admin") || roles.has("platform_ops");
   const isSupplier = roles.has("supplier_admin") || roles.has("supplier_catalog");
   const isBureau = roles.has("bureau_admin") || roles.has("designer");
+  const isLinguist = roles.has("linguist") || roles.has("platform_admin");
   const section = loc.pathname.split("/").filter(Boolean)[1];
   return (
     <div className="shell">
@@ -110,6 +111,7 @@ export default function AppShell() {
           {isPlatform && <><div className="section">{t("nav.administration")}</div>
             <NavLink to="/app/admin"><ShieldCheck size={18} /> {t("nav.admin")}</NavLink>
             <NavLink to="/app/pim"><Settings2 size={18} /> {t("nav.pim")}</NavLink></>}
+          {isLinguist && <NavLink to="/app/glossary"><BookOpenCheck size={18} /> {t("nav.glossary")}</NavLink>}
         </nav>
         <div className="help-card">
           <div className="row between"><b>{t("nav.help_title")}</b><MessageCircle size={18} /></div>

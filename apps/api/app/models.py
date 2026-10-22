@@ -760,6 +760,22 @@ class CustomConfigVersion(TimestampMixin, Base):
     author: Mapped[str] = mapped_column(String(200), default="")
 
 
+
+class GlossaryEntry(TimestampMixin, Base):
+    """Armenian terminology review (P1-10): a linguist proposes a corrected HY term; once approved it
+    overrides the album vocabulary without a code change. `term_key` = "<TABLE>.<key>" (album/glossary.py)."""
+    __tablename__ = "glossary_entries"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    term_key: Mapped[str] = mapped_column(String(160), unique=True)
+    hy_original: Mapped[str] = mapped_column(Text, default="")
+    hy_proposed: Mapped[str] = mapped_column(Text)
+    comment: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(20), default="proposed")  # proposed | approved | rejected
+    author: Mapped[str] = mapped_column(String(200), default="")
+    reviewed_by: Mapped[str] = mapped_column(String(200), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)
 from sqlalchemy import event  # noqa: E402
 

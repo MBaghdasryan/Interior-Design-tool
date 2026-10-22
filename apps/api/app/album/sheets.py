@@ -57,7 +57,7 @@ from .draw import (
     text,
     wrap,
 )
-from .i18n import CEILING_TYPES, TX, assumption_text, elec_label, elec_note, line_name, notice, room_name, rule_text, severity, shared, t, tx, variant_title
+from .i18n import TX, assumption_text, ceiling_name, elec_label, elec_note, line_name, notice, room_name, rule_text, severity, shared, t, tx, variant_title
 from .i18n import unit as unit_label
 
 LIGHT_KEYS = {"spot": "l_spot", "pendant": "l_pendant", "wall": "l_wall", "track": "l_track", "led_strip": "l_led", "ceiling": "l_ceiling", "floor_lamp": "l_floor_lamp", "mirror": "l_mirror"}
@@ -594,7 +594,7 @@ class AlbumBuilder:
                 pv.poly([(x0, y0), (x1, y0), (x1, y0 + 160), (x0, y0 + 160)], fill=HexColor("#d9cfc2"), stroke=INK, lw=0.3)
             cx, cy = label_point(r.polygon)
             pv.text(cx, cy + 350, f"+{cs.height:.0f}", 6.5, bold=True, color=TERRA)
-            pv.text(cx, cy + 700, CEILING_TYPES.get(cs.type, {}).get(self.lang, cs.type), 5, color=GREY)
+            pv.text(cx, cy + 700, ceiling_name(cs.type, self.lang), 5, color=GREY)
         self.draw_walls(pv, self.scene)
         for li in self.scene.lights:
             if li.type in ("spot", "pendant", "ceiling", "track"):
@@ -603,7 +603,7 @@ class AlbumBuilder:
             if li.type == "led_strip" and li.end:
                 pv.line(li.position, li.end, HexColor("#e0a800"), 0.8, (3, 1.5))
         self.room_labels(pv, self.scene, area=False)
-        legend = [LegendItem("fill", hexc(fills[k]), CEILING_TYPES[k][self.lang]) for k in fills if any(cs.type == k for cs in self.scene.ceilings)]
+        legend = [LegendItem("fill", hexc(fills[k]), ceiling_name(k, self.lang)) for k in fills if any(cs.type == k for cs in self.scene.ceilings)]
         self.page(c, spec, code, pv.scale, legend)
 
     def s_ceiling_nodes(self, c, spec, code):

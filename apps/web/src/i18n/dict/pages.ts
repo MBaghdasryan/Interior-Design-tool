@@ -359,4 +359,9 @@ export const pages: Dict = {
   "srch.c.price": e("գին", "цена", "price"),
   "srch.c.availability": e("առկայություն", "наличие", "availability"),
   "srch.c.lead": e("ժամկետ", "срок", "lead time"),
+  "adm.roles.title": e("Պլատֆորմի դերեր", "Роли платформы", "Platform roles"),
+  "adm.roles.role": e("Դեր", "Роль", "Role"),
+  "adm.roles.grant": e("Տրամադրել", "Выдать", "Grant"),
+  "adm.roles.granted": e("Դերը տրամադրված է", "Роль выдана", "Role granted"),
+  "adm.roles.hint": e("Մարդը նախ գրանցվում է իր էլ. փոստով", "Сначала человек регистрируется со своей почтой", "The person registers with their e-mail first"),
 };

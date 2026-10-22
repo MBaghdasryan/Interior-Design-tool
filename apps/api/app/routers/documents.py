@@ -17,6 +17,7 @@ from ..jobs.runner import enqueue, job_dict
 from ..ratelimit import check as rate_check
 from ..security import Principal, audit, current_principal, project_access, require
 from ..storage import INLINE_EXT, LocalStorage, get_storage, media_type
+from .glossary import glossary_stamp
 
 router = APIRouter(tags=["documents"])
 MEDIA = {"album_pdf": "application/pdf", "dxf": "application/dxf", "dwg": "image/vnd.dwg", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -43,7 +44,7 @@ def make_album(pid: str, body: AlbumIn, p: Principal = Depends(current_principal
     if not v or v.project_id != pid:
         raise ApiError(404, "not_found")
     job = enqueue(db, "album", project_id=pid, params={"variant_id": v.id, "version_id": v.current_version_id, "lang": body.lang, "sections": body.sections},
-                  idempotency_key=f"album:{RENDERER_VERSION}:{v.current_version_id}:{body.lang}:{','.join(map(str, sorted(body.sections)))}")
+                  idempotency_key=f"album:{RENDERER_VERSION}:{glossary_stamp(db)}:{v.current_version_id}:{body.lang}:{','.join(map(str, sorted(body.sections)))}")
     audit(db, p, "document.album", "job", job.id, project_id=pid)
     db.commit()
     return job_dict(job)

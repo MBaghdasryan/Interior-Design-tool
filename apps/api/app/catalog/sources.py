@@ -37,6 +37,10 @@ SOURCES: list[dict] = [
             "jsonld_product": True,
             "terms_reviewed": False,
             "audit": AUDIT_DATE,
+            # 2026-10-23 (owner): index the whole catalogue in the background — ~72 k product pages from the sitemap
+            # index (72 × 1000), 3 s between requests ≈ 60 h for a full pass; projects then search the index
+            "background_index": True, "child_sitemap_regex": r"sitemap-products/page-\d+\.xml", "product_url_regex": r"/product/[^/]+$",
+            "index_batch": 300, "index_interval_min": 1, "max_bytes": 12_000_000,
         },
         "notes": "Карточки содержат schema.org Product: sku, mpn, brand, offers.price (AMD), availability, deliveryTime. "
                  "Обнаружены шаблонные поля: image = логотип сайта, review/aggregateRating — шаблон. Изображения и отзывы НЕ использовать; "

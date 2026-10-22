@@ -12,7 +12,7 @@ import time
 from .config import get_settings
 from .db import SessionLocal
 from .jobs import catalog, documents, pipeline, recognize, render  # noqa: F401  (register job handlers)
-from .jobs.runner import get_queue, recover_orphans
+from .jobs.runner import QUEUE_NAME, get_queue, recover_orphans
 from .observability import setup_logging, setup_sentry
 
 log = logging.getLogger("forma.worker")
@@ -42,12 +42,19 @@ def main() -> None:
     setup_sentry(s.sentry_dsn, s.env)
     if not s.redis_url:
         raise SystemExit("REDIS_URL is not set — the API runs jobs in-process; no worker needed")
-    q = get_queue()
-    with SessionLocal() as db:
-        n = recover_orphans(db, queue=q, running_older_than_s=30)
-    log.info("worker starting on queue %s (recovered %d orphaned jobs)", q.name, len(n))
-    threading.Thread(target=maintenance_loop, args=(q,), daemon=True, name="forma-maintenance").start()
-    Worker([q], connection=q.connection).work(with_scheduler=True)
+    import os
+
+    names = [n.strip() for n in os.environ.get("WORKER_QUEUES", QUEUE_NAME).split(",") if n.strip()]
+    queues = [get_queue(name=n) for n in names]
+    # only the main worker recovers orphans and runs periodic tasks (one scheduler for the whole system)
+    if QUEUE_NAME in names:
+        with SessionLocal() as db:
+            n = recover_orphans(db, running_older_than_s=30)
+        log.info("worker starting on queues %s (recovered %d orphaned jobs)", names, len(n))
+        threading.Thread(target=maintenance_loop, args=(None,), daemon=True, name="forma-maintenance").start()
+    else:
+        log.info("worker starting on queues %s", names)
+    Worker(queues, connection=queues[0].connection).work(with_scheduler=True)
 
 
 if __name__ == "__main__":

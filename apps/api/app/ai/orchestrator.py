@@ -32,6 +32,12 @@ TASKS: dict[str, tuple[type[BaseModel], str]] = {
     "photo_elements": (PhotoElements, "v1"),
     "view_groups": (ViewGroups, "v1"),
 }
+# Output budget per task. Gemini 3 / reasoning models spend part of it on thinking, so vision
+# tasks with large structured answers (plans, photo surveys) need far more than text tasks.
+MAX_TOKENS: dict[str, int] = {"floorplan_vision": 32000, "photo_rooms": 12000, "photo_elements": 12000, "view_groups": 8000, "render_grounding": 8000}
+
+REASONING: dict[str, str] = {"floorplan_vision": "low"}  # task → low/high; eval 2026-10-23: plans low = 100 % valid, 10× faster, 5× cheaper than high
+
 # Preferred provider order per task when ai_default_provider=auto
 ROUTING: dict[str, list[str]] = {
     "design_brief": ["openai", "anthropic", "gemini"],
@@ -88,7 +94,8 @@ class Orchestrator:
         if key in self._cache and not images:
             data, prov = self._cache[key]
             return schema_model.model_validate(data), prov
-        req = LLMRequest(task=task, system=system, user=user, schema_name=schema_model.__name__, json_schema=schema_model.model_json_schema(), images=images or [])
+        req = LLMRequest(task=task, system=system, user=user, schema_name=schema_model.__name__, json_schema=schema_model.model_json_schema(), images=images or [],
+                         max_tokens=MAX_TOKENS.get(task, 4000), reasoning=REASONING.get(task))
         errors: list[str] = []
         trace_id = uuid.uuid4().hex[:12]
         org_id = budget.org_of_project(db, project_id) if db is not None else None

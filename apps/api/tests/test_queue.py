@@ -79,7 +79,7 @@ def test_recover_orphans_after_worker_restart(queue):
 
 
 def test_enqueue_is_idempotent(queue, monkeypatch):
-    monkeypatch.setattr(runner, "submit", lambda jid, queue=None: None)
+    monkeypatch.setattr(runner, "submit", lambda jid, queue=None, kind=None: None)
     with SessionLocal() as db:
         a = runner.enqueue(db, "test_flaky", project_id=None, params={}, idempotency_key="same-key")
         b = runner.enqueue(db, "test_flaky", project_id=None, params={}, idempotency_key="same-key")
@@ -102,3 +102,17 @@ def test_sse_resumes_with_last_event_id(client, designer):
     eid = next(line.split(":", 1)[1].strip() for line in first.splitlines() if line.startswith("id:"))
     resumed = read({**designer, "Last-Event-ID": eid})
     assert "event: progress" not in resumed and "event: end" in resumed  # unchanged state is not re-sent
+
+
+def test_catalogue_jobs_use_their_own_queue(monkeypatch):
+    """Long rate-limited crawls run on the catalogue worker and never queue behind / ahead of user jobs."""
+    import fakeredis
+
+    conn = fakeredis.FakeStrictRedis()
+    monkeypatch.setattr(runner, "get_queue", lambda connection=None, name=runner.QUEUE_NAME: __import__("rq").Queue(name, connection=conn))
+    monkeypatch.setattr(runner, "_uses_rq", lambda q: True)
+    monkeypatch.delenv("FORMA_JOBS_SYNC", raising=False)
+    runner.submit("a" * 32, kind="source_index")
+    runner.submit("b" * 32, kind="album")
+    assert len(runner.get_queue(name=runner.CATALOG_QUEUE).get_job_ids()) == 1
+    assert len(runner.get_queue(name=runner.QUEUE_NAME).get_job_ids()) == 1

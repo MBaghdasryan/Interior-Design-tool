@@ -55,6 +55,13 @@ services:
     environment: *prodenv
     restart: unless-stopped
 
+  worker-catalog:
+    env_file: !override [.env.prod]
+    environment:
+      <<: *prodenv
+      WORKER_QUEUES: forma-catalog
+    restart: unless-stopped
+
   db:
     restart: unless-stopped
 

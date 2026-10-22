@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,10 +28,11 @@ PROVIDERS = {"gemini": GeminiProvider, "openai": OpenAIProvider, "anthropic": An
 
 
 def call(provider, task: str, schema, payload: dict, images=None, retries: int = 2):
-    from app.ai.orchestrator import TASKS
+    from app.ai.orchestrator import MAX_TOKENS, REASONING, TASKS
 
     req = LLMRequest(task=task, system=load_prompt(task, TASKS[task][1]), user=json.dumps(payload, ensure_ascii=False), schema_name=schema.__name__,
-                     json_schema=schema.model_json_schema(), images=images or [])
+                     json_schema=schema.model_json_schema(), images=images or [], max_tokens=MAX_TOKENS.get(task, 4000),
+                     reasoning=os.environ.get("EVAL_REASONING") or REASONING.get(task))
     err = None
     for attempt in range(retries + 1):
         try:

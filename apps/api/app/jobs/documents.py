@@ -42,6 +42,10 @@ def album(ctx: JobContext) -> dict:
     scene = Scene.model_validate(version.scene)
     ctx.done("scene", f"{variant.title}, версия {version.number}: {len(scene.objects)} предметов, {len(scene.rooms)} помещений", version=version.number, items=len(scene.objects), rooms=len(scene.rooms))
     ctx.start("sheets")
+    from ..album.i18n import set_overrides
+    from ..routers.glossary import approved_overrides
+
+    set_overrides(approved_overrides(db))  # approved Armenian terminology corrections
     pdf, sheets = build_album(db, project, variant, version, lang=lang, sections=sections)
     ctx.done("sheets", f"{len(sheets) + 2} листов A3", n=len(sheets) + 2)
     ctx.start("exports")

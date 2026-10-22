@@ -19,7 +19,7 @@ from ..ai.orchestrator import get_orchestrator
 from ..ai.providers import ImageInput
 from ..scene.model import Assumption, Room, Scene
 
-MAX_PHOTOS = 12
+MAX_PHOTOS = 24  # photos + video keyframes per survey call (one multi-image request per step)
 
 
 class DepthProvider:
@@ -62,7 +62,7 @@ def survey(db: Session, project_id: str, photos: list[tuple[str, bytes, str]], d
     steps["view_matching"] = {"provider": p3}
     by_index = {e.index: e for e in elements.photos}
     out_photos = []
-    for i, (asset_id, _, _) in enumerate(photos):
+    for i, (asset_id, _, _) in enumerate(photos):  # video keyframes share their asset id
         cls = next((r for r in rooms.photos if r.index == i), None)
         el = by_index.get(i)
         out_photos.append({"asset_id": asset_id, "index": i, "room_type": cls.room_type if cls else "unknown", "confidence": cls.confidence if cls else 0,

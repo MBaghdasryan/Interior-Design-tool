@@ -26,6 +26,8 @@ from ..db import SessionLocal
 log = logging.getLogger("forma.jobs")
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="forma-job")
 QUEUE_NAME = "forma"
+CATALOG_QUEUE = "forma-catalog"  # long, rate-limited crawls run on their own worker and never delay user jobs
+CATALOG_KINDS = {"source_index", "source_refresh", "supplier_feed", "search_index"}
 MAX_ATTEMPTS = 3  # first run + 2 retries
 RETRY_INTERVALS_S = [15, 60]
 HANDLERS: dict[str, Callable[["JobContext"], dict]] = {}
@@ -92,31 +94,35 @@ def enqueue(db: Session, kind: str, *, project_id: str | None, params: dict, ide
     job = m.GenerationJob(project_id=project_id, kind=kind, params=params, idempotency_key=idempotency_key)
     db.add(job)
     db.commit()
-    submit(job.id)
+    submit(job.id, kind=kind)
     db.refresh(job)  # inline (sync) runs update the row from another session
     return job
 
 
-def get_queue(connection=None):
+def queue_name(kind: str | None) -> str:
+    return CATALOG_QUEUE if kind in CATALOG_KINDS else QUEUE_NAME
+
+
+def get_queue(connection=None, name: str = QUEUE_NAME):
     from redis import Redis
     from rq import Queue
 
     conn = connection or Redis.from_url(get_settings().redis_url)
-    return Queue(QUEUE_NAME, connection=conn, default_timeout=3600)
+    return Queue(name, connection=conn, default_timeout=3600)
 
 
 def _uses_rq(queue) -> bool:
     return queue is not None or bool(get_settings().redis_url)
 
 
-def submit(job_id: str, queue=None) -> None:
+def submit(job_id: str, queue=None, kind: str | None = None) -> None:
     if os.environ.get("FORMA_JOBS_SYNC") == "1" and queue is None:  # tests / CLI: run inline, deterministically
         _run(job_id)
         return
     if _uses_rq(queue):
         from rq import Retry
 
-        (queue or get_queue()).enqueue("app.jobs.runner.run_job", job_id, job_id=f"forma-{job_id}-{os.urandom(3).hex()}",
+        (queue or get_queue(name=queue_name(kind))).enqueue("app.jobs.runner.run_job", job_id, job_id=f"forma-{job_id}-{os.urandom(3).hex()}",
                                        retry=Retry(max=MAX_ATTEMPTS - 1, interval=RETRY_INTERVALS_S), failure_ttl=7 * 24 * 3600)
         return
     _pool.submit(_run, job_id)
@@ -154,7 +160,12 @@ def recover_orphans(db: Session, *, running_older_than_s: int = 120, queue=None)
     appear in a worker heartbeat before it is judged."""
     rq = _uses_rq(queue)
     q = (queue or get_queue()) if rq else None
-    active = _active_rq_job_ids(q) if rq else set()
+    active: set[str] = set()
+    if rq:
+        active = _active_rq_job_ids(q)
+        if queue is None:  # the catalogue queue has its own worker
+            active |= _active_rq_job_ids(get_queue(q.connection, CATALOG_QUEUE))
+    kinds = {}
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=running_older_than_s)
     out = []
     for job in db.query(m.GenerationJob).filter(m.GenerationJob.status.in_(("queued", "running"))):
@@ -165,10 +176,14 @@ def recover_orphans(db: Session, *, running_older_than_s: int = 120, queue=None)
             continue
         job.status = "queued"
         out.append(job.id)
+        kinds[job.id] = job.kind
     db.commit()
     for jid in out:
         log.warning("recovering orphaned job %s", jid)
-        submit(jid, queue=q)
+        if queue is not None or not rq:
+            submit(jid, queue=q)
+        else:
+            submit(jid, queue=get_queue(q.connection, queue_name(kinds[jid])))
     return out
 
 

@@ -23,6 +23,11 @@ from .normalize import is_accessory
 SITEMAP_CACHE_TTL_H = 24
 
 
+def is_indexed(source: m.ExternalSource) -> bool:
+    """Background-indexed sources: script-rendered stores (VLV) and full-catalogue indexing of sitemap stores (Domus)."""
+    return source.connector_type == "jsonld_index" or bool((source.policy or {}).get("background_index"))
+
+
 def _sitemap_cache(source_key: str) -> Path:
     return get_settings().storage_dir / "cache" / "sitemaps" / f"{source_key}.xml"
 
@@ -35,8 +40,17 @@ def product_urls(src: dict, fetcher: SafeFetcher) -> list[str]:
     if cache.exists() and time.time() - cache.stat().st_mtime < SITEMAP_CACHE_TTL_H * 3600:
         xml = cache.read_text(encoding="utf-8")
     else:
-        parts = [fetcher.fetch(sm, src["allowed_hosts"], rate_limit_s=src.get("rate_limit_s", 3.0), max_bytes=pol.get("max_bytes")).text
-                 for sm in pol.get("sitemaps", [])]
+        parts = []
+        for sm in pol.get("sitemaps", []):
+            text = fetcher.fetch(sm, src["allowed_hosts"], rate_limit_s=src.get("rate_limit_s", 3.0), max_bytes=pol.get("max_bytes")).text
+            # a sitemap of sitemaps — standard <sitemapindex>, or (Domus) a <urlset> whose entries are sitemap pages
+            child_re = re.compile(pol["child_sitemap_regex"], re.I) if pol.get("child_sitemap_regex") else re.compile(r"product", re.I) if "<sitemapindex" in text else None
+            children = [c for c in LOC_RE.findall(text) if child_re and child_re.search(c)] if child_re else []
+            if children:
+                for child in children:
+                    parts.append(fetcher.fetch(child, src["allowed_hosts"], rate_limit_s=src.get("rate_limit_s", 3.0), max_bytes=pol.get("max_bytes")).text)
+            else:
+                parts.append(text)
         xml = "\n".join(parts)
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(xml, encoding="utf-8")
@@ -47,7 +61,7 @@ def crawl_batch(db: Session, source: m.ExternalSource, *, batch: int = 60, fetch
                 deadline_s: float | None = None) -> dict:
     """Index up to `batch` product pages from the cursor. Never exceeds the fetcher budget or `deadline_s`."""
     src = source_dict(source)
-    if not (get_settings().external_fetch_live and source.live_enabled and source.enabled):
+    if not (get_settings().external_fetch_live and source.live_enabled and source.enabled and is_indexed(source)):
         return {"status": "live_disabled", "fetched": 0, "indexed": 0}
     fetcher = fetcher or SafeFetcher()
     t0 = time.time()

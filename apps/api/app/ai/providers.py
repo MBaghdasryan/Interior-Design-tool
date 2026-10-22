@@ -30,6 +30,7 @@ class LLMRequest:
     json_schema: dict
     images: list[ImageInput] = field(default_factory=list)
     max_tokens: int = 4000
+    reasoning: str | None = None  # low | high — thinking depth for reasoning models (Gemini 3 thinkingLevel)
 
 
 @dataclass
@@ -200,7 +201,8 @@ class GeminiProvider(LLMProvider):
         body = {
             "systemInstruction": {"parts": [{"text": req.system}]},
             "contents": [{"role": "user", "parts": parts}],
-            "generationConfig": {"responseMimeType": "application/json", "responseJsonSchema": req.json_schema, "maxOutputTokens": req.max_tokens},
+            "generationConfig": {"responseMimeType": "application/json", "responseJsonSchema": req.json_schema, "maxOutputTokens": req.max_tokens,
+                                 **({"thinkingConfig": {"thinkingLevel": req.reasoning}} if req.reasoning else {})},
         }
         t = time.time()
         r = self.client.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -221,7 +223,9 @@ class GeminiProvider(LLMProvider):
             data = json.loads(text)
         except json.JSONDecodeError as e:
             raise ProviderError(f"gemini: invalid JSON ({e.msg} at {e.pos}; finishReason={cand.get('finishReason')})") from e
-        return LLMResponse(data, self.name, model, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0), int((time.time() - t) * 1000))
+        # thinking tokens are billed as output: count them so cost estimates and budgets are not understated
+        out_tokens = u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)
+        return LLMResponse(data, self.name, model, u.get("promptTokenCount", 0), out_tokens, int((time.time() - t) * 1000))
 
 
 class StubProvider(LLMProvider):

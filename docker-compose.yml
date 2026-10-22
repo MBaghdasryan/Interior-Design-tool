@@ -75,6 +75,26 @@ services:
     deploy:
       replicas: 1
 
+  worker-catalog:
+    build: ./apps/api
+    command: ["python", "-m", "app.worker"]  # catalogue crawls / feeds / search index only
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://forma:${POSTGRES_PASSWORD:-forma}@db:5432/forma
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_DIR: /data/storage
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
+      API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
+      MAIL_DIR: /data/mail
+      WORKER_QUEUES: forma-catalog
+    volumes: [storage:/data]
+    depends_on:
+      api: { condition: service_healthy }  # api runs the migrations first
+      redis: { condition: service_healthy }
+    stop_grace_period: 2m  # SIGTERM → RQ warm shutdown: the running job finishes
+    deploy:
+      replicas: 1
+
   web:
     build: ./apps/web
     depends_on: [api]

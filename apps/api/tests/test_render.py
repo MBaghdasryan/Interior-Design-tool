@@ -156,3 +156,33 @@ def test_album_and_client_use_the_photoreal_render(client, designer):
     assert "product match not verified" in pages[0].get_text()  # stub grounding: no claim
     cv = client.get(f"/api/v1/client/{share}").json()
     assert any(r["room_id"] == room.id and r["url"] for vv in cv["variants"] for r in vv.get("renders", []))
+
+
+def test_video_keyframes_skip_duplicates_and_spread():
+    """Walkthrough video → distinct, sharp keyframes (PyAV); a static stretch yields one frame."""
+    import io
+
+    import av
+    import numpy as np
+
+    from app.perception.video import keyframes
+
+    buf = io.BytesIO()
+    with av.open(buf, "w", format="mp4") as out:
+        st = out.add_stream("mpeg4", rate=5)
+        st.width, st.height, st.pix_fmt = 160, 120, "yuv420p"
+        for i in range(60):  # 12 s: 4 s grey, then a moving checkerboard «walk»
+            arr = np.full((120, 160, 3), 128, dtype=np.uint8)
+            if i >= 20:
+                arr[:] = 30
+                off = (i * 7) % 40
+                for y in range(0, 120, 20):
+                    for x in range(-40, 160, 40):
+                        arr[y:y + 10, max(0, x + off):max(0, x + off + 20)] = 230
+            for pkt in st.encode(av.VideoFrame.from_ndarray(arr, format="rgb24")):
+                out.mux(pkt)
+        for pkt in st.encode():
+            out.mux(pkt)
+    frames = keyframes(buf.getvalue(), max_frames=4, step_s=1.0)
+    assert 1 <= len(frames) <= 4 and all(jpg[:2] == b"\xff\xd8" for _, jpg in frames)
+    assert sum(1 for t, _ in frames if t < 4) <= 1  # the static grey part is not repeated

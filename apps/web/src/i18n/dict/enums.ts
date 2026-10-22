@@ -56,7 +56,7 @@ const roles: Record<string, Entry> = {
   designer: e("Բյուրոյի դիզայներ", "Дизайнер бюро", "Bureau designer"), bureau_admin: e("Բյուրոյի ղեկավար", "Руководитель бюро", "Bureau owner"),
   client: e("Պատվիրատու", "Заказчик", "Client"), collaborator: e("Համահեղինակ", "Участник", "Collaborator"), supplier_admin: e("Մատակարար", "Поставщик", "Supplier"),
   supplier_catalog: e("Կատալոգի մենեջեր", "Менеджер каталога", "Catalogue manager"), manufacturer: e("Արտադրող", "Производитель", "Manufacturer"),
-  installer: e("Մոնտաժող", "Монтажник", "Installer"), verifier: e("Չափագրող մասնագետ", "Обмерщик", "Surveyor"), user: e("Օգտատեր", "Пользователь", "User"),
+  linguist: e("Լեզվաբան-խմբագիր", "Лингвист-редактор", "Linguist"), installer: e("Մոնտաժող", "Монтажник", "Installer"), verifier: e("Չափագրող մասնագետ", "Обмерщик", "Surveyor"), user: e("Օգտատեր", "Пользователь", "User"),
 };
 
 const out: Dict = {  "enum.order.in_production": e("Արտադրության մեջ", "В производстве", "In production"),

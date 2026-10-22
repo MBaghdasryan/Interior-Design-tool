@@ -150,3 +150,38 @@ def test_album_glossary_export_and_review_diff(tmp_path):
     keys[("ROOM_NAMES", "bathroom")][6].value = "test"
     wb.save(p)
     assert glossary.diff(p) == [{"table": "ROOM_NAMES", "key": "bathroom", "hy": "Սանհանգույց", "hy_corrected": "Լոգասենյակ", "comment": "test"}]
+
+
+def test_glossary_review_overrides_album_terms(client):
+    """Linguist proposes and approves an Armenian correction → the album vocabulary uses it; others cannot."""
+    from app.album import i18n
+    from app.db import SessionLocal
+    from app.routers.glossary import approved_overrides, glossary_stamp
+    from tests.conftest import login
+    from tests.test_auth import STRONG, register
+
+    register(client, "linguist@example.com")
+    client.cookies.clear()
+    admin = login(client, "admin@forma.local")
+    assert client.post("/api/v1/admin/roles", headers=admin, json={"email": "linguist@example.com", "role": "linguist"}).json()["ok"]
+    lh = {"Authorization": f"Bearer {client.post('/api/v1/auth/login', json={'email': 'linguist@example.com', 'password': STRONG}).json()['token']}"}
+    client.cookies.clear()
+    assert client.get("/api/v1/glossary", headers=login(client)).status_code == 403  # designer is not a reviewer
+    r = client.get("/api/v1/glossary", headers=lh, params={"q": "bathroom"}).json()
+    assert r["total"] > 300 and any(x["term_key"] == "ROOM_NAMES.bathroom" for x in r["items"])
+    with SessionLocal() as db:
+        before = glossary_stamp(db)
+    e = client.put("/api/v1/glossary/ROOM_NAMES.bathroom", headers=lh, json={"hy": "Լոգասենյակ", "comment": "ճարտարապետական տերմին"}).json()
+    assert e["status"] == "proposed"
+    with SessionLocal() as db:
+        assert "ROOM_NAMES.bathroom" not in approved_overrides(db)  # proposals are not applied
+    assert client.post("/api/v1/glossary/ROOM_NAMES.bathroom/decision", headers=lh, json={"decision": "approved"}).json()["status"] == "approved"
+    with SessionLocal() as db:
+        i18n.set_overrides(approved_overrides(db))
+        assert glossary_stamp(db) != before
+    room = type("R", (), {"type": "bathroom", "name": "Санузел"})()
+    assert i18n.room_name(room, "hy") == "Լոգասենյակ" and i18n.room_name(room, "en") == "Bathroom"
+    assert client.get("/api/v1/glossary/export.xlsx", headers=lh).content[:2] == b"PK"
+    # revert to the original wording removes the entry
+    assert client.put("/api/v1/glossary/ROOM_NAMES.bathroom", headers=lh, json={"hy": "Սանհանգույց"}).json()["status"] == "original"
+    i18n.set_overrides({})

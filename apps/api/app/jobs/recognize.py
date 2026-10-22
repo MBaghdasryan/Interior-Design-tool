@@ -22,7 +22,7 @@ def recognize(ctx: JobContext) -> dict:
     project = db.get(m.Project, ctx.job.project_id)
     assets = db.scalars(select(m.SourceAsset).where(m.SourceAsset.project_id == project.id)).all()
     ctx.start("pick")
-    order = {"dxf": 0, "ifc": 1, "rvt": 1, "dwg": 1, "plan_image": 2, "plan_pdf": 3, "photo": 4}
+    order = {"dxf": 0, "ifc": 1, "rvt": 1, "dwg": 1, "plan_image": 2, "plan_pdf": 3, "photo": 4, "video": 5}
     ranked = sorted(assets, key=lambda a: order.get(a.kind, 9))
     src = ranked[0] if ranked else None
     ctx.done("pick", f"Файлов: {len(assets)}; основной источник: {src.filename if src else 'нет'}", status="done" if src else "warning")
@@ -35,20 +35,42 @@ def recognize(ctx: JobContext) -> dict:
     if src and src.kind == "dxf":
         scene = from_dxf(get_storage().get(src.storage_key))
         provider = "dxf"
-    elif src and src.kind in ("ifc", "rvt", "dwg"):
+    elif src and src.kind == "ifc":
+        from ..bim.ifc_io import from_ifc
+
+        scene, stats = from_ifc(get_storage().get(src.storage_key))
+        provider = f"ifc:{stats['schema']}"
+    elif src and src.kind in ("rvt", "dwg"):
         rooms = (src.aps or {}).get("rooms") or []
         scene = Scene(name="Импорт BIM/CAD (APS)", assumptions=[Assumption(key="aps", severity="critical",
                       text=f"Из модели получено помещений: {len(rooms)}. Геометрия стен строится вручную по подложке APS Viewer или из DXF-экспорта")])
         provider = "aps"
-    elif src and src.kind == "photo":
-        # photos only: room survey, never metric geometry (see app.perception.photos)
-        from ..perception.photos import scene_from_survey, survey
+    elif src and src.kind in ("photo", "video"):
+        # photos / walkthrough videos only: room survey, never metric geometry (see app.perception.photos)
+        from ..perception.photos import MAX_PHOTOS, scene_from_survey, survey
+        from ..perception.video import keyframes
 
-        photos = [(a.id, get_storage().get(a.storage_key), a.mime) for a in assets if a.kind == "photo"]
+        stills = [a for a in assets if a.kind == "photo"]
+        videos = [a for a in assets if a.kind == "video"]
+        room_for = MAX_PHOTOS - (8 * len(videos) if videos else 0)
+        if len(stills) > room_for > 0:  # evenly spaced subset, so every part of the apartment is represented
+            stills = [stills[round(i * (len(stills) - 1) / (room_for - 1))] for i in range(room_for)]
+        photos = [(a.id, get_storage().get(a.storage_key), a.mime) for a in stills]
+        for a in videos:
+            try:
+                frames = keyframes(get_storage().get(a.storage_key))
+            except Exception:  # noqa: BLE001 - an undecodable video is reported, the photos still count
+                frames = []
+            a.quality = {**(a.quality or {}), "keyframes": [t for t, _ in frames]}
+            photos += [(a.id, jpg, "image/jpeg") for _, jpg in frames]
         s = survey(db, project.id, photos)
         for p in s["photos"]:
             a = db.get(m.SourceAsset, p["asset_id"])
-            a.quality = {**(a.quality or {}), "survey": {k: v for k, v in p.items() if k != "asset_id"}}
+            res = {k: v for k, v in p.items() if k != "asset_id"}
+            if a.kind == "video":  # several keyframes per video
+                a.quality = {**(a.quality or {}), "survey_frames": [*(a.quality or {}).get("survey_frames", []), res]}
+            else:
+                a.quality = {**(a.quality or {}), "survey": res}
         project.preferences = {**(project.preferences or {}), "photo_survey": {k: v for k, v in s.items() if k != "photos"}}
         scene = scene_from_survey(s)
         provider = "photos:" + s["steps"]["classification"]["provider"]

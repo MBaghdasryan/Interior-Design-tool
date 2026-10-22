@@ -35,6 +35,7 @@ import { ForgotPassword, Register, ResetPassword, VerifyEmail } from "./pages/Au
 import Onboarding from "./pages/Onboarding";
 import Account from "./pages/Account";
 import CustomFurniture from "./pages/CustomFurniture";
+import Glossary from "./pages/Glossary";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -60,6 +61,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="p/:pid/documents" element={<Documents />} />
             <Route path="p/:pid/procurement" element={<Procurement />} />
             <Route path="p/:pid/custom" element={<CustomFurniture />} />
+            <Route path="glossary" element={<Glossary />} />
             <Route path="p/:pid/versions/:vid" element={<Versions />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="suppliers" element={<Suppliers />} />

@@ -137,7 +137,26 @@ ELEC = {
 }
 
 
+# Approved Armenian corrections from the terminology review (GlossaryEntry), loaded per album build.
+OVERRIDES: dict[str, str] = {}
+
+
+def set_overrides(mapping: dict[str, str]) -> None:
+    OVERRIDES.clear()
+    OVERRIDES.update(mapping)
+
+
+def _ovr(table: str, key: str, lang: str) -> str | None:
+    return OVERRIDES.get(f"{table}.{key}") if lang == "hy" else None
+
+
+def ceiling_name(kind: str, lang: str) -> str:
+    return _ovr("CEILING_TYPES", kind, lang) or CEILING_TYPES.get(kind, {}).get(lang, kind)
+
+
 def elec_label(kind: str, lang: str) -> str:
+    if o := _ovr("ELEC", kind, lang):
+        return o
     v = ELEC.get(kind)
     return v[{"hy": 0, "ru": 1, "en": 2}.get(lang, 1)] if v else kind
 
@@ -282,7 +301,7 @@ def shared(key: str, lang: str, default: str | None = None, **kw) -> str:
     v = _shared().get(key)
     if not v:
         return key if default is None else default
-    s = v.get(lang) or v.get("ru") or key
+    s = _ovr("shared", key, lang) or v.get(lang) or v.get("ru") or key
     try:
         return s.format(**kw) if kw else s
     except (KeyError, IndexError):
@@ -291,7 +310,7 @@ def shared(key: str, lang: str, default: str | None = None, **kw) -> str:
 
 def tx(key: str, lang: str, **kw) -> str:
     v = TX.get(key) or T.get(key)
-    s = (v.get(lang) or v.get("ru")) if v else key
+    s = _ovr("TX" if key in TX else "T", key, lang) or ((v.get(lang) or v.get("ru")) if v else key)
     return s.format(**kw) if kw else s
 
 
@@ -364,10 +383,10 @@ def t(key: str, lang: str) -> str:
     v = T.get(key)
     if not v:
         return key
-    return v.get(lang) or v.get("ru") or key
+    return _ovr("T", key, lang) or v.get(lang) or v.get("ru") or key
 
 
 def room_name(room, lang: str) -> str:
     if lang == "ru":
         return room.name
-    return ROOM_NAMES.get(room.type, {}).get(lang, room.name)
+    return _ovr("ROOM_NAMES", room.type, lang) or ROOM_NAMES.get(room.type, {}).get(lang, room.name)

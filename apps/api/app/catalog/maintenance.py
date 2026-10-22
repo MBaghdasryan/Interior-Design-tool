@@ -92,8 +92,11 @@ def _active_job(db: Session, kind: str, key: str, value: str) -> bool:
 def due_index_sources(db: Session, now: datetime | None = None) -> list[m.ExternalSource]:
     now = now or datetime.now(timezone.utc)
     out = []
-    for s in db.scalars(select(m.ExternalSource).where(m.ExternalSource.connector_type == "jsonld_index", m.ExternalSource.enabled.is_(True),
-                                                        m.ExternalSource.live_enabled.is_(True))):
+    from .indexer import is_indexed
+
+    for s in db.scalars(select(m.ExternalSource).where(m.ExternalSource.enabled.is_(True), m.ExternalSource.live_enabled.is_(True))):
+        if not is_indexed(s):
+            continue
         last = (s.stats or {}).get("index", {}).get("last_run_at")
         interval = int((s.policy or {}).get("index_interval_min", 30))
         if (not last or now - datetime.fromisoformat(last) >= timedelta(minutes=interval)) and not _active_job(db, "source_index", "source_id", s.id):
@@ -103,7 +106,7 @@ def due_index_sources(db: Session, now: datetime | None = None) -> list[m.Extern
 
 @periodic("catalog_index")
 def scheduled_index(db: Session) -> bool:
-    if not get_settings().external_fetch_live or not _every("catalog_index", 300):
+    if not get_settings().external_fetch_live or not _every("catalog_index", 60):
         return False
     from ..jobs.runner import enqueue
 

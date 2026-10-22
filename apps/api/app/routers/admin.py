@@ -32,7 +32,7 @@ def src_dict(db: Session, s: m.ExternalSource) -> dict:
             "connector_status": s.connector_status, "policy": s.policy, "rate_limit_s": s.rate_limit_s, "ttl_h": s.ttl_h, "notes": s.notes,
             "last_check_at": s.last_check_at.isoformat() if s.last_check_at else None, "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
             "runs": len(runs), "success_rate": round(ok / len(runs), 2) if runs else None, "avg_latency_ms": round(sum(r.latency_ms for r in runs) / len(runs)) if runs else None,
-            "found": sum(r.found for r in runs), "validated": sum(r.validated for r in runs), "rejected": sum(r.rejected for r in runs), "records": recs, "pending_review": pend,
+            "found": sum(r.found for r in runs), "validated": sum(r.validated for r in runs), "rejected": sum(r.rejected for r in runs), "records": recs, "pending_review": pend, "indexed": bool(s.connector_type == "jsonld_index" or (s.policy or {}).get("background_index")),
             "last_errors": [e for r in runs[:5] for e in r.errors][:5]}
 
 
@@ -83,6 +83,8 @@ def test_source(sid: str, p: Principal = Depends(require("sources:manage")), db:
 @router.get("/sources/{sid}/history")
 def source_history(sid: str, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
     """Connector health history: the last 50 runs and the alert log."""
+    from ..catalog.indexer import is_indexed
+
     s = db.get(m.ExternalSource, sid)
     if not s:
         raise ApiError(404, "not_found")
@@ -90,7 +92,7 @@ def source_history(sid: str, p: Principal = Depends(require("sources:manage")), 
     return {"runs": [{"at": r.created_at.isoformat(), "kind": r.kind, "status": r.status, "found": r.found, "validated": r.validated, "latency_ms": r.latency_ms,
                       "errors": (r.errors or [])[:2]} for r in runs],
             "alerts": (s.stats or {}).get("alert_log", []), "index": (s.stats or {}).get("index", {}),
-            "schedule": {"index_interval_min": (s.policy or {}).get("index_interval_min", 30) if s.connector_type == "jsonld_index" else None,
+            "schedule": {"index_interval_min": (s.policy or {}).get("index_interval_min", 30) if is_indexed(s) else None,
                          "price_ttl_h": (s.ttl_h or {}).get("price")}}
 
 
@@ -112,7 +114,9 @@ def index_source(sid: str, body: IndexIn, p: Principal = Depends(require("source
     s = db.get(m.ExternalSource, sid)
     if not s:
         raise ApiError(404, "not_found")
-    if s.connector_type != "jsonld_index":
+    from ..catalog.indexer import is_indexed
+
+    if not is_indexed(s):
         raise ApiError(422, "validation", fields=["connector_type"])
 
     job = enqueue(db, "source_index", project_id=None, params={"source_id": s.id, "batch": body.batch})

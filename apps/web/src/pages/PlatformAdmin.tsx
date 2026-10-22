@@ -6,7 +6,7 @@ import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import FinanceTab from "../components/FinanceTab";
 
-interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; last_errors: string[] }
+interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; indexed?: boolean; last_errors: string[] }
 interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
 type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
@@ -79,7 +79,7 @@ export default function PlatformAdmin() {
                   <td className="small">{s.success_rate === null ? "—" : `${Math.round(s.success_rate * 100)}%`}{s.avg_latency_ms ? <div className="tiny muted">{s.avg_latency_ms} ms</div> : null}</td>
                   <td className="tiny muted">{dt(s.last_check_at)}{s.last_errors[0] && <div style={{ color: "var(--danger)" }}>{s.last_errors[0]}</div>}</td>
                   <td className="row gap-4"><button className="btn sm" onClick={() => test(s)}>{t("adm.test")}</button>
-                    {s.connector_type === "jsonld_index" && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}
+                    {s.indexed && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}
                     <button className="btn sm ghost" aria-expanded={hist?.sid === s.id} onClick={() => history(s)}>{t("adm.history")}</button></td>
                 </tr>
                 {hist?.sid === s.id && <tr><td colSpan={11}><SourceHistory h={hist.data} /></td></tr>}
@@ -144,10 +144,19 @@ function PartnerReview() {
   const toast = useToast();
   const [rows, setRows] = useState<PartnerRow[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [grant, setGrant] = useState({ email: "", role: "linguist" });
   const load = () => api<PartnerRow[]>("/admin/suppliers").then(setRows).catch(() => {});
   useEffect(() => { load(); }, []);
   const decide = async (id: string, decision: string) => { try { await api(`/admin/suppliers/${id}/verification`, { method: "POST", json: { decision, note: notes[id] || "" } }); toast(t(`sob.v.${decision}`)); load(); } catch (x) { toast((x as Error).message, true); } };
   return (
+    <div className="col gap-10">
+    <div className="card pad row gap-6 wrap" role="group" aria-label={t("adm.roles.title")}>
+      <b className="small">{t("adm.roles.title")}</b>
+      <input className="input" style={{ width: 260 }} type="email" aria-label={t("login.email")} placeholder={t("login.email")} value={grant.email} onChange={(e) => setGrant({ ...grant, email: e.target.value })} />
+      <select className="select input" aria-label={t("adm.roles.role")} value={grant.role} onChange={(e) => setGrant({ ...grant, role: e.target.value })}>{["linguist", "verifier"].map((r) => <option key={r} value={r}>{t(`enum.role.${r}`)}</option>)}</select>
+      <button className="btn sm" disabled={!grant.email.includes("@")} onClick={async () => { try { await api("/admin/roles", { method: "POST", json: grant }); toast(t("adm.roles.granted")); setGrant({ ...grant, email: "" }); } catch (x) { toast((x as Error).message, true); } }}>{t("adm.roles.grant")}</button>
+      <span className="tiny muted">{t("adm.roles.hint")}</span>
+    </div>
     <div className="card" style={{ overflow: "auto" }}>
       <table className="table compact"><thead><tr><th>{t("adm.col.source")}</th><th>{t("common.status")}</th><th>{t("adm.partners.steps")}</th><th className="right">{t("adm.partners.products")}</th><th /></tr></thead>
         <tbody>{rows.filter((r) => r.supplier).map((r) => <tr key={r.supplier!.id}>
@@ -159,6 +168,7 @@ function PartnerReview() {
             <button className="btn sm" onClick={() => decide(r.supplier!.id, "verified")}>{t("adm.partners.verify")}</button>
             <button className="btn sm ghost" onClick={() => decide(r.supplier!.id, "rejected")}>{t("adm.partners.reject")}</button></td></tr>)}</tbody></table>
       {!rows.length && <div className="empty small">{t("adm.partners.empty")}</div>}
+    </div>
     </div>
   );
 }

@@ -33,6 +33,8 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "manufacturer": {"catalog:read", "catalog:write", "rfq:respond"},
     "installer": {"project:read"},
     "verifier": {"project:read", "project:verify"},
+    # Armenian terminology reviewer (native-speaking architect): proposes and approves album terms
+    "linguist": {"glossary:review"},
 }
 
 

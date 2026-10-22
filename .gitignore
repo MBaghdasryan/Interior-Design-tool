@@ -19,3 +19,7 @@ backups/
 
 # real client material used for evaluation — never commit
 apps/api/evals/datasets/real/
+
+# real test apartment materials and partner documents — never commit
+Test-HOME/
+vPOS_*.docx

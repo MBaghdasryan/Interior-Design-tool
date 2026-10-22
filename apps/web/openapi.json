@@ -636,6 +636,20 @@
     "title": "CreditPack",
     "type": "object"
    },
+   "DecisionIn": {
+    "properties": {
+     "decision": {
+      "pattern": "^(approved|rejected)$",
+      "title": "Decision",
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "title": "DecisionIn",
+    "type": "object"
+   },
    "DeleteIn": {
     "properties": {
      "code": {
@@ -813,6 +827,27 @@
      "scene"
     ],
     "title": "GeometryIn",
+    "type": "object"
+   },
+   "GrantIn": {
+    "properties": {
+     "email": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Email",
+      "type": "string"
+     },
+     "role": {
+      "pattern": "^(linguist|verifier)$",
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "email",
+     "role"
+    ],
+    "title": "GrantIn",
     "type": "object"
    },
    "HTTPValidationError": {
@@ -1479,6 +1514,27 @@
      }
     },
     "title": "ProjectPatch",
+    "type": "object"
+   },
+   "ProposeIn": {
+    "properties": {
+     "comment": {
+      "default": "",
+      "maxLength": 1000,
+      "title": "Comment",
+      "type": "string"
+     },
+     "hy": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Hy",
+      "type": "string"
+     }
+    },
+    "required": [
+     "hy"
+    ],
+    "title": "ProposeIn",
     "type": "object"
    },
    "QuoteIn": {
@@ -2927,6 +2983,64 @@
     "summary": "Record Manual Revenue",
     "tags": [
      "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/roles": {
+   "post": {
+    "description": "Platform admin grants a platform-level role (linguist / verifier) to an existing account.",
+    "operationId": "grant_role_api_v1_admin_roles_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GrantIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Grant Role",
+    "tags": [
+     "glossary"
     ]
    }
   },
@@ -6348,6 +6462,262 @@
     "summary": "Download",
     "tags": [
      "documents"
+    ]
+   }
+  },
+  "/api/v1/glossary": {
+   "get": {
+    "operationId": "list_terms_api_v1_glossary_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "table",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Table",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Terms",
+    "tags": [
+     "glossary"
+    ]
+   }
+  },
+  "/api/v1/glossary/export.xlsx": {
+   "get": {
+    "operationId": "export_api_v1_glossary_export_xlsx_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Export",
+    "tags": [
+     "glossary"
+    ]
+   }
+  },
+  "/api/v1/glossary/{term_key}": {
+   "put": {
+    "operationId": "propose_api_v1_glossary__term_key__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "term_key",
+      "required": true,
+      "schema": {
+       "title": "Term Key",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProposeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Propose",
+    "tags": [
+     "glossary"
+    ]
+   }
+  },
+  "/api/v1/glossary/{term_key}/decision": {
+   "post": {
+    "operationId": "decide_api_v1_glossary__term_key__decision_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "term_key",
+      "required": true,
+      "schema": {
+       "title": "Term Key",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DecisionIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Decide",
+    "tags": [
+     "glossary"
     ]
    }
   },

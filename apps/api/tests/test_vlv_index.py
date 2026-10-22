@@ -121,3 +121,28 @@ def test_two_sources_shortlist_variant_estimate_with_links(client, designer):
     assert any("domus.am/" in u for u in urls), "Domus product with link in the estimate"
     vlv_line = next(ln for ln in lines if "vlv.am/" in (ln.get("url") or ""))
     assert vlv_line["sku"] == "36469" and vlv_line["unit_price"] == 48500 and vlv_line["price_status"] == "confirmed"
+
+
+def test_sitemap_index_is_expanded_for_full_catalogue_sources(monkeypatch):
+    """Domus publishes a sitemap index (72 pages); the indexer follows product sitemap pages only."""
+    from app.catalog.indexer import _sitemap_cache, product_urls
+
+    pages = {"https://domus.am/sitemap-products.xml": "<urlset><url><loc>https://domus.am/sitemap-products/page-1.xml</loc></url>"
+                                                      "<url><loc>https://domus.am/sitemap-blog.xml</loc></url></urlset>",
+             "https://domus.am/sitemap-products/page-1.xml": "<urlset><url><loc>https://domus.am/product/teka</loc></url><url><loc>https://domus.am/product/x-y</loc></url>"
+                                                             "<url><loc>https://domus.am/category/a</loc></url></urlset>"}
+
+    class F:
+        calls = []
+
+        def fetch(self, url, hosts, rate_limit_s=None, max_bytes=None, **_):
+            self.calls.append(url)
+            return type("R", (), {"text": pages[url]})()
+
+    src = {"key": "domus_t", "allowed_hosts": ["domus.am"], "rate_limit_s": 3.0,
+           "policy": {"sitemaps": ["https://domus.am/sitemap-products.xml"], "child_sitemap_regex": r"sitemap-products/page-\d+\.xml", "product_url_regex": r"/product/[^/]+$"}}
+    _sitemap_cache("domus_t").unlink(missing_ok=True)
+    f = F()
+    assert product_urls(src, f) == ["https://domus.am/product/teka", "https://domus.am/product/x-y"]
+    assert "https://domus.am/sitemap-blog.xml" not in f.calls
+    _sitemap_cache("domus_t").unlink(missing_ok=True)
