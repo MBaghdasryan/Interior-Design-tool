@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { api, auth } from "../lib/api";
 import { roleName } from "../lib/format";
@@ -15,14 +15,16 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [demo, setDemo] = useState<Demo[]>([]);
   const nav = useNavigate();
+  const [q] = useSearchParams();
   useEffect(() => { api<Demo[]>("/auth/demo-accounts").then(setDemo).catch(() => {}); }, []);
   const submit = async (e?: React.FormEvent, em = email, pw = password) => {
     e?.preventDefault();
     setErr("");
     try {
-      const r = await api<{ token: string }>("/auth/login", { method: "POST", json: { email: em, password: pw } });
-      auth.set(r.token);
-      nav("/app");
+      await api("/auth/login", { method: "POST", json: { email: em, password: pw } });
+      auth.signedIn = true;
+      const next = q.get("next");
+      nav(next && next.startsWith("/app") ? next : "/app");
     } catch (x) { setErr((x as Error).message); }
   };
   return (
@@ -35,6 +37,7 @@ export default function Login() {
           <div className="field"><label htmlFor="pw">{t("login.password")}</label><input id="pw" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" /></div>
           {err && <div className="alert danger" role="alert">{err}</div>}
           <button className="btn primary lg">{t("login.submit")} <ArrowRight size={18} /></button>
+          <div className="row between small wrap"><span className="muted">{t("login.no_account")} <Link to="/register">{t("login.register")}</Link></span><Link to="/forgot-password">{t("login.forgot")}</Link></div>
         </form>
         <div style={{ background: "var(--bg-2)", padding: 28 }} className="col">
           <h3>{t("login.demo")}</h3>

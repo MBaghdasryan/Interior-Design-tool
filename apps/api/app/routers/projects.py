@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import json
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -24,6 +24,7 @@ from ..design.engine import candidate_pools, rank
 from ..errors import ApiError
 from ..jobs.pipeline import latest_base
 from ..jobs.runner import enqueue, job_dict
+from ..ratelimit import check as rate_check
 from ..scene.geometry import footprint, room_area_m2, scale_scene, wall_length
 from ..scene.model import ControlDimension, Scene, SceneObject
 from ..scene.recognize import confidence_mask, overall_confidence
@@ -195,6 +196,7 @@ def delete_asset(pid: str, aid: str, p: Principal = Depends(current_principal), 
 # ------------------------------------------------------------------ geometry
 @router.post("/{pid}/recognize")
 def start_recognition(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    rate_check(f"recognize:{p.user.id}", 20, 3600)
     project_access(pid, "project:write", p, db)
     job = enqueue(db, "recognize", project_id=pid, params={})
     return job_dict(job)
@@ -326,6 +328,7 @@ class GenerateIn(BaseModel):
 
 @router.post("/{pid}/generate")
 def generate(pid: str, body: GenerateIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    rate_check(f"generate:{p.user.id}", 20, 3600)
     proj = project_access(pid, "project:write", p, db)
     base = latest_base(db, pid)
     if not base:
@@ -357,20 +360,15 @@ def get_job(pid: str, jid: str, p: Principal = Depends(current_principal), db: S
 
 
 @router.get("/{pid}/jobs/{jid}/events")
-async def job_events(pid: str, jid: str, request: Request, token: str = Query(...)):
-    """SSE progress stream. EventSource cannot send headers, so the bearer token is a query param."""
-    from ..security import read_token
+async def job_events(pid: str, jid: str, request: Request, authorization: str | None = Header(default=None)):
+    """SSE progress stream. The browser's EventSource sends the HttpOnly session cookie;
+    API clients may use `Authorization: Bearer`. Tokens are never put in the URL."""
+    from ..security import SESSION_COOKIE, principal_from_token
 
-    uid = read_token(token)
+    bearer = authorization.split(" ", 1)[1] if authorization and authorization.lower().startswith("bearer ") else None
     db = SessionLocal()
     try:
-        user = db.get(m.User, uid) if uid else None
-        if not user:
-            raise HTTPException(401)
-        roles: dict[str, set[str]] = {}
-        for ms in user.memberships:
-            roles.setdefault(ms.org_id, set()).add(ms.role)
-        project_access(pid, "project:read", Principal(user=user, roles=roles), db)
+        project_access(pid, "project:read", principal_from_token(bearer or request.cookies.get(SESSION_COOKIE), db), db)
     finally:
         db.close()
 
@@ -495,6 +493,7 @@ class CommandIn(BaseModel):
 
 @router.post("/{pid}/variants/{vid}/command")
 def change_command(pid: str, vid: str, body: CommandIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    rate_check(f"command:{p.user.id}", 60, 3600)
     proj = project_access(pid, "project:write", p, db)
     v = _variant(db, pid, vid)
     ver = db.get(m.DesignVersion, v.current_version_id)

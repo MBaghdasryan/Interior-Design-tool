@@ -22,6 +22,9 @@ import SupplierCabinet from "./pages/SupplierCabinet";
 import BureauCabinet from "./pages/BureauCabinet";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import Pim from "./pages/Pim";
+import { ForgotPassword, Register, ResetPassword, VerifyEmail } from "./pages/AuthPages";
+import Onboarding from "./pages/Onboarding";
+import Account from "./pages/Account";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -30,6 +33,10 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/client/:token" element={<ClientViewer />} />
           <Route path="/app" element={<Protected><AppShell /></Protected>}>
             <Route index element={<Dashboard />} />
@@ -49,6 +56,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="bureau" element={<BureauCabinet />} />
             <Route path="admin" element={<PlatformAdmin />} />
             <Route path="pim" element={<Pim />} />
+            <Route path="onboarding" element={<Onboarding />} />
+            <Route path="account" element={<Account />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

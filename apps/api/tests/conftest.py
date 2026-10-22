@@ -9,6 +9,8 @@ os.environ.setdefault("ENV", "test")
 os.environ.setdefault("AI_DEFAULT_PROVIDER", "stub")
 os.environ.setdefault("EXTERNAL_FETCH_LIVE", "false")
 os.environ.setdefault("FORMA_JOBS_SYNC", "1")
+os.environ.setdefault("COOKIE_SECURE", "false")  # TestClient talks plain http
+os.environ.setdefault("MAIL_DIR", f"{_tmp}/mail")
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -25,6 +27,7 @@ def client():
 def login(client, email="designer@forma.local"):
     r = client.post("/api/v1/auth/login", json={"email": email, "password": "demo1234"})
     assert r.status_code == 200, r.text
+    client.cookies.clear()  # fixtures authenticate with the bearer header; cookie flows are tested separately
     return {"Authorization": f"Bearer {r.json()['token']}"}
 
 

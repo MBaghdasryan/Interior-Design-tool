@@ -33,8 +33,27 @@ async def value_error(_: Request, exc: ValueError):
     return JSONResponse(status_code=422, content={"code": "validation", "params": {"info": str(exc)[:300]}, "detail": str(exc)})
 
 
+WEAK_SECRETS = {"dev-only-change-me", "change-me-to-a-long-random-string", "test-secret", ""}
+
+
+def production_guard(s=settings) -> None:
+    """Refuse to start a production instance with unsafe settings (template secret, demo data, insecure cookies)."""
+    if not s.is_production:
+        return
+    problems = []
+    if s.secret_key in WEAK_SECRETS or len(s.secret_key) < 32:
+        problems.append("SECRET_KEY is a template or shorter than 32 characters")
+    if s.seed_demo:
+        problems.append("SEED_DEMO must be false")
+    if not s.cookie_secure:
+        problems.append("COOKIE_SECURE must be true")
+    if problems:
+        raise RuntimeError("Unsafe production configuration: " + "; ".join(problems))
+
+
 @app.on_event("startup")
 def startup() -> None:
+    production_guard()
     # Development convenience: create tables if migrations were not run. Production
     # runs `alembic upgrade head` in the container entrypoint (see Dockerfile/compose).
     # Schema is managed by Alembic (`python -m app.migrate`, also run by the container

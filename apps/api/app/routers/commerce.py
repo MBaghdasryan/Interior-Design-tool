@@ -15,6 +15,7 @@ from ..catalog.discovery import source_dict, upsert_record
 from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
+from ..ratelimit import check as rate_check
 from ..scene.model import Scene
 from ..security import Principal, audit, current_principal, project_access
 from ..services import new_version
@@ -33,6 +34,7 @@ def _current(db, pid, vid):
 def recheck_prices(pid: str, vid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     """«Перепроверить цены и наличие»: refreshes external records (live when enabled), marks stale data,
     recomputes the estimate as a new version. Mandatory before RFQ/approval."""
+    rate_check(f"recheck:{p.user.id}", 20, 3600)
     proj = project_access(pid, "project:write", p, db)
     v, ver = _current(db, pid, vid)
     s = get_settings()

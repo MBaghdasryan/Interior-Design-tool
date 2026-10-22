@@ -14,6 +14,7 @@ from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
 from ..jobs.runner import enqueue, job_dict
+from ..ratelimit import check as rate_check
 from ..security import Principal, audit, current_principal, project_access, require
 from ..storage import LocalStorage, get_storage
 
@@ -36,6 +37,7 @@ class AlbumIn(BaseModel):
 
 @router.post("/api/v1/projects/{pid}/documents/album")
 def make_album(pid: str, body: AlbumIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    rate_check(f"album:{p.user.id}", 30, 3600)
     project_access(pid, "project:read", p, db)
     v = db.get(m.DesignVariant, body.variant_id)
     if not v or v.project_id != pid:

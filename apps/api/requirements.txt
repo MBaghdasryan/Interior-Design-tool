@@ -14,3 +14,6 @@ shapely==2.0.6
 qrcode==8.0
 pillow==11.1.0
 sse-starlette==2.2.1
+redis==5.2.1
+rq==2.1.0
+pyotp==2.9.0

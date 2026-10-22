@@ -42,7 +42,35 @@ class User(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200))
     password_hash: Mapped[str] = mapped_column(String(300))
     locale: Mapped[str] = mapped_column(String(5), default="ru")
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active | deletion_pending | deleted
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # {"terms": {"version": "2026-10", "at": iso}, "marketing": {...}} — consent records (privacy)
+    consents: Mapped[dict] = mapped_column(JSON, default=dict)
     memberships: Mapped[list[Membership]] = relationship(back_populates="user", lazy="selectin")
+
+
+class AuthSession(TimestampMixin, Base):
+    """Server-side session: the signed cookie/bearer token carries `sid`; revoking the row kills the token."""
+    __tablename__ = "auth_sessions"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AuthToken(TimestampMixin, Base):
+    """One-time token (email verification, password reset). Only the SHA-256 of the token is stored."""
+    __tablename__ = "auth_tokens"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(30))  # verify_email | password_reset
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Membership(TimestampMixin, Base):

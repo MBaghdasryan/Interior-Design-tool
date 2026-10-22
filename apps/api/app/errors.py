@@ -47,6 +47,15 @@ MESSAGES: dict[str, str] = {
     "trust.requirements_missing": "Не выполнены требования для перехода на уровень",
     "validation": "Ошибка проверки данных",
     "payments.integration_pending": "Платёжная интеграция не подключена",
+    "auth.email_taken": "Этот e-mail уже зарегистрирован",
+    "auth.weak_password": "Пароль слишком простой",
+    "auth.token_invalid": "Ссылка недействительна или уже использована",
+    "auth.token_expired": "Срок действия ссылки истёк",
+    "auth.terms_required": "Нужно принять условия использования",
+    "auth.csrf": "Запрос отклонён защитой CSRF — обновите страницу",
+    "auth.demo_disabled": "Демо-доступ отключён",
+    "auth.account_disabled": "Учётная запись отключена",
+    "rate_limited": "Слишком много запросов — повторите позже",
 }
 
 _BY_TEXT = {v: k for k, v in MESSAGES.items()}
@@ -56,7 +65,8 @@ class ApiError(HTTPException):
     def __init__(self, status_code: int, code: str, **params):
         self.code = code
         self.params = params
-        super().__init__(status_code=status_code, detail=MESSAGES.get(code, code))
+        headers = {"Retry-After": str(params["retry_after"])} if "retry_after" in params else None
+        super().__init__(status_code=status_code, detail=MESSAGES.get(code, code), headers=headers)
 
 
 def _code_for(exc: HTTPException) -> tuple[str, dict]:

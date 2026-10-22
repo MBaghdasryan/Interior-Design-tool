@@ -66,6 +66,29 @@ class Settings(BaseSettings):
     external_specs_ttl_h: int = 24 * 7
     external_media_ttl_h: int = 24 * 30
 
+    # Sessions & auth (P0-2): HttpOnly session cookie + double-submit CSRF cookie
+    session_ttl_h: int = 24 * 14
+    cookie_secure: bool = True  # browsers accept Secure cookies on http://localhost; set false only for plain-http test clients
+    cookie_domain: str | None = None
+    password_min_len: int = 10
+    verify_token_ttl_h: int = 48
+    reset_token_ttl_min: int = 60
+    terms_version: str = "2026-10"
+
+    # Rate limiting (in-memory per process; Redis when REDIS_URL is set)
+    rate_limit_enabled: bool = True
+    redis_url: str | None = None
+
+    # E-mail: console (writes .eml files to MAIL_DIR, dev) | smtp
+    mail_backend: str = "console"
+    mail_dir: Path = Path("./data/mail")
+    mail_from: str = "Renovara <no-reply@renovara.local>"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_starttls: bool = True
+
     # Album
     album_font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     album_font_bold_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -79,6 +102,10 @@ class Settings(BaseSettings):
         if self.aps_bucket_key:
             return self.aps_bucket_key
         return f"{(self.aps_client_id or 'forma').lower()[:24]}-forma-projects"
+
+    @property
+    def is_production(self) -> bool:
+        return self.env == "production"
 
     @property
     def cors_list(self) -> list[str]:

@@ -18,9 +18,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://forma:${POSTGRES_PASSWORD:-forma}@db:5432/forma
       STORAGE_DIR: /data/storage
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
-      API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
-      CORS_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
+      API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
+      CORS_ORIGINS: ${PUBLIC_BASE_URL:-http://localhost:8085}
+      MAIL_DIR: /data/mail
     volumes: [storage:/data]
     depends_on:
       db: { condition: service_healthy }

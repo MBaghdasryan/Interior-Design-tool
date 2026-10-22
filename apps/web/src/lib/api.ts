@@ -1,5 +1,5 @@
-// Thin typed client for the Renovara API. The token lives in localStorage (dev MVP);
-// production switches to httpOnly cookies (docs/SECURITY.md).
+// Thin typed client for the Renovara API. The session lives in an HttpOnly cookie set by
+// the server (JS never sees it); unsafe requests echo the readable CSRF cookie in X-CSRF-Token.
 
 export type Pt = [number, number];
 export interface Wall { id: string; a: Pt; b: Pt; thickness: number; kind: string; status: "existing" | "demolish" | "new"; material: string; load_bearing: boolean; confidence: number; source: string }
@@ -27,13 +27,17 @@ export interface Job { id: string; kind: string; status: string; progress: numbe
 export interface Project { id: string; title: string; address: string; city: string; area_m2: number | null; accuracy_level: string; confidence: number; status: string; preferences: Record<string, any>; brief: Record<string, any>; product_source: string; external_settings: Record<string, any>; client_name: string; designer_name: string; doc_lang: string; share_token: string; created_at: string; updated_at: string; variants?: any; total?: number | null; assets?: Asset[]; base_scene?: { version: number; confirmed: boolean } | null; last_pipeline_job?: Job | null }
 export interface Asset { id: string; kind: string; filename: string; size: number; url: string; quality: { warnings?: string[] }; aps: { status?: string; urn?: string; rooms?: unknown[] } }
 export interface Doc { id: string; kind: string; filename: string; size: number; lang: string; status: string; url: string; created_at: string; meta: { sheets?: { code: string; title: string; section: number }[]; aps?: { urn?: string } } }
-export interface Me { id: string; email: string; name: string; locale?: string; roles: string[]; memberships: { org_id: string; org_name: string; org_kind: string; role: string }[] }
+export interface Me { id: string; email: string; name: string; locale?: string; email_verified: boolean; onboarded: boolean; roles: string[]; memberships: { org_id: string; org_name: string; org_kind: string; role: string }[] }
 
-const TOKEN_KEY = "forma.token";
-export const auth = {
-  get token(): string | null { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } },
-  set(t: string | null) { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch { /* storage unavailable */ } },
-};
+/** Session state known to the UI. The token itself is HttpOnly and never readable from JS. */
+export const auth = { signedIn: false };
+
+function cookie(name: string): string {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password", "/client"];
 
 import { onLangChange, translate, tOr } from "../i18n";
 
@@ -46,13 +50,18 @@ export class ApiError extends Error {
 
 export async function api<T = any>(path: string, opts: RequestInit & { json?: unknown } = {}): Promise<T> {
   const headers: Record<string, string> = { ...(opts.headers as Record<string, string>) };
-  if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
+  const method = (opts.method || "GET").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) { const c = cookie("forma_csrf"); if (c) headers["X-CSRF-Token"] = c; }
   let body = opts.body;
   if (opts.json !== undefined) { headers["Content-Type"] = "application/json"; body = JSON.stringify(opts.json); }
   let r: Response;
-  try { r = await fetch(path.startsWith("/api") ? path : `/api/v1${path}`, { ...opts, headers, body }); }
+  try { r = await fetch(path.startsWith("/api") ? path : `/api/v1${path}`, { credentials: "same-origin", ...opts, headers, body }); }
   catch { throw new ApiError(0, "network"); }
-  if (r.status === 401 && !path.includes("/auth/login")) { auth.set(null); if (!location.pathname.startsWith("/login") && !location.pathname.startsWith("/client")) location.href = "/login"; }
+  if (r.status === 401 && !path.startsWith("/auth/")) {
+    auth.signedIn = false;
+    const here = location.pathname;
+    if (here !== "/" && !PUBLIC_PATHS.some((p) => here.startsWith(p))) location.href = `/login?next=${encodeURIComponent(here)}`;
+  }
   if (!r.ok) {
     let code = `http.${r.status}`, params: Record<string, unknown> = {}, fallback = r.statusText;
     try { const j = await r.json(); code = j.code || code; params = j.params || {}; fallback = typeof j.detail === "string" ? j.detail : fallback; } catch { /* not json */ }
@@ -70,7 +79,7 @@ export function fileUrl(u?: string | null): string {
 }
 
 export function streamJob(pid: string, jid: string, onJob: (j: Job) => void): () => void {
-  const es = new EventSource(`/api/v1/projects/${pid}/jobs/${jid}/events?token=${encodeURIComponent(auth.token || "")}`);
+  const es = new EventSource(`/api/v1/projects/${pid}/jobs/${jid}/events`, { withCredentials: true });
   es.addEventListener("progress", (e) => { try { onJob(JSON.parse((e as MessageEvent).data)); } catch { /* ignore */ } });
   es.addEventListener("end", () => es.close());
   es.onerror = () => {
@@ -84,4 +93,4 @@ export function streamJob(pid: string, jid: string, onJob: (j: Job) => void): ()
 }
 
 // Persist the interface language in the user profile whenever it changes.
-onLangChange((l) => { if (auth.token) api("/auth/me", { method: "PATCH", json: { locale: l } }).catch(() => {}); });
+onLangChange((l) => { if (auth.signedIn) api("/auth/me", { method: "PATCH", json: { locale: l } }).catch(() => {}); });

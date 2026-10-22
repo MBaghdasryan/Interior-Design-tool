@@ -43,8 +43,7 @@ with sync_playwright() as p:
     pg = ctx.new_page()
     errors: list[str] = []
     pg.on("pageerror", lambda e: errors.append(str(e)))
-    pg.goto(BASE + "/login")
-    pg.evaluate(f"localStorage.setItem('forma.token', '{token}')")
+    ctx.request.post(BASE + "/api/v1/auth/login", data={"email": "designer@forma.local", "password": "demo1234"})  # HttpOnly cookie into the context
     for lang, label in (("hy", "Հայ"), ("ru", "Рус"), ("en", "Eng")):
         pg.goto(BASE + "/app")
         pg.get_by_role("button", name=label).first.click()
@@ -69,13 +68,13 @@ with sync_playwright() as p:
     # new device (fresh storage): profile language wins at login
     ctx2 = b.new_context()
     pg2 = ctx2.new_page()
-    pg2.goto(BASE + "/login")
-    pg2.evaluate(f"localStorage.setItem('forma.token', '{token}')")
+    ctx2.request.post(BASE + "/api/v1/auth/login", data={"email": "designer@forma.local", "password": "demo1234"})
     pg2.goto(BASE + "/app")
     pg2.wait_for_timeout(2500)
     check(pg2.evaluate("document.documentElement.lang") == "en", "new session picks the profile language")
     # API error is shown translated (wrong password, Armenian UI)
-    pg2.evaluate("localStorage.removeItem('forma.token'); localStorage.setItem('forma.lang','hy')")
+    ctx2.clear_cookies()
+    pg2.evaluate("localStorage.setItem('forma.lang','hy')")
     pg2.goto(BASE + "/login")
     pg2.fill("#pw", "wrong")
     pg2.click("button[type=submit], form button.primary")

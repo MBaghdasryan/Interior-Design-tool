@@ -30,11 +30,11 @@ Owner — роль ответственного; срок — целевая д�
 
 | # | Разрыв | Риск | Owner | Срок | Приоритет |
 |---|---|---|---|---|---|
-| S1 | Токен авторизации в `localStorage` (XSS → кража сессии) | высокий | backend + frontend dev | 2026-11-15 | P0 до прод |
-| S2 | Нет `HttpOnly; Secure; SameSite=Lax` cookie и CSRF-токена (зависит от S1) | высокий | backend dev | 2026-11-15 | P0 до прод |
-| S3 | Нет rate limiting API и блокировки перебора паролей | высокий | backend/devops | 2026-11-15 | P0 до прод |
+| S1 | ~~Токен авторизации в `localStorage`~~ — **закрыто 2026-10-22**: HttpOnly-cookie `forma_session`, токена в JS нет (E2E `auth_e2e.py`: «no auth token in localStorage») | — | backend + frontend dev | закрыто | ✔ VERIFIED |
+| S2 | ~~Нет HttpOnly/Secure/SameSite cookie и CSRF~~ — **закрыто**: `HttpOnly; Secure; SameSite=Lax` + double-submit CSRF (`X-CSRF-Token`), SSE по cookie без токена в URL (тесты `test_auth.py`) | — | backend dev | закрыто | ✔ VERIFIED |
+| S3 | ~~Нет rate limiting~~ — **закрыто**: лимиты на вход (по IP и по неудачным попыткам на аккаунт), регистрацию, сброс пароля, генерацию, распознавание, AI-команды, альбом; 429 + `Retry-After`; Redis-бэкенд при `REDIS_URL` | — | backend/devops | закрыто | ✔ VERIFIED |
 | S4 | Нет MFA (TOTP) для бюро и админов | средний | backend dev | 2026-12-15 | P1 |
-| S5 | Нет email-верификации, сброса пароля, управления сессиями/устройствами и revoke | средний | backend dev | 2026-12-15 | P1 |
+| S5 | Email-верификация, сброс пароля, сессии и revoke — **сделано** (P0-1/P0-2); MFA — см. S4 | — | backend dev | закрыто частично | PARTIAL |
 | S6 | ClamAV / карантин загрузок не подключён (есть только хук) | средний | devops | 2026-11-30 | P1 |
 | S7 | CSP только Report-Only; нужна проверка APS Viewer под enforce | средний | frontend dev | 2026-11-30 | P1 |
 | S8 | Нет полного автотеста tenant isolation по всем эндпоинтам и jobs | средний | QA | 2026-11-30 | P1 |
@@ -42,7 +42,7 @@ Owner — роль ответственного; срок — целевая д�
 | S10 | Нет скана зависимостей и контейнеров (pip-audit, npm audit, trivy) — CI отсутствует | средний | devops | 2026-11-30 | P1 |
 | S11 | Локальное хранилище файлов без шифрования на диске; S3 с SSE не подключён | средний | devops | 2026-12-15 | P1 |
 | S12 | Нет политики retention для журнала аудита, нет чек-листа pentest | низкий | security owner | 2027-01-31 | P2 |
-| S13 | Демо-аккаунты с паролем `demo1234` (выключаются `ENV=production`, `SEED_DEMO=false`) | высокий, если забыть | devops | при деплое | P0 до прод |
+| S13 | Демо-аккаунты: при `ENV=production` вход `@forma.local` и `/auth/demo-accounts` запрещены; старт с шаблонным `SECRET_KEY`, `SEED_DEMO=true` или `COOKIE_SECURE=false` блокируется (`production_guard`) | — | devops | закрыто | ✔ VERIFIED |
 | S14 | Ключи в `.env` переданы через чат и рабочую папку — **рекомендуется ротация** OpenAI, Gemini и APS после пилота | средний | владелец аккаунтов | 2026-11-01 | P1 |
 
 ## Проверить перед любым публичным деплоем

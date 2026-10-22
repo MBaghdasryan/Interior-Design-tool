@@ -15,7 +15,7 @@ def run(email, routes):
         errs, bad = [], []
         pg.on("pageerror", lambda e: errs.append(str(e)[:120]))
         pg.on("response", lambda r: bad.append(f"{r.status} {r.url.split('/api/v1')[-1][:60]}") if "/api/" in r.url and r.status >= 500 else None)
-        pg.goto(B + "/login"); pg.evaluate(f"localStorage.setItem('forma.token', '{tok}')")
+        pg.context.request.post(B + "/api/v1/auth/login", data={"email": email, "password": "demo1234"})
         for r in routes:
             errs.clear(); bad.clear()
             pg.goto(B + r); pg.wait_for_timeout(1800)
@@ -39,7 +39,7 @@ run("admin@forma.local", ["/app/admin"])
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(); errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)[:120]))
-    for r in ["/login", f"/client/{share}"]:
+    for r in ["/login", "/register", "/forgot-password", f"/client/{share}"]:
         errs.clear(); pg.goto(B + r); pg.wait_for_timeout(1800); res.append(("PASS" if not errs else "FAIL", "anon", r, errs[:2], []))
     b.close()
 for r in res: print(*r[:3], *(r[3] + r[4]))
