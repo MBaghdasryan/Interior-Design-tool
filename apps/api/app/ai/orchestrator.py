@@ -17,7 +17,7 @@ from .. import models as m
 from ..config import get_settings
 from . import budget, stub
 from .providers import AnthropicProvider, GeminiProvider, ImageInput, LLMProvider, LLMRequest, OpenAIProvider, ProviderError, StubProvider
-from .schemas import ChangePlan, DesignBrief, FloorplanRecognition, VariantCopy
+from .schemas import ChangePlan, DesignBrief, FloorplanRecognition, GroundingCheck, VariantCopy
 
 log = logging.getLogger("forma.ai")
 PROMPTS_DIR = Path(__file__).parent / "prompts"
@@ -27,6 +27,7 @@ TASKS: dict[str, tuple[type[BaseModel], str]] = {
     "change_command": (ChangePlan, "v1"),
     "floorplan_vision": (FloorplanRecognition, "v1"),
     "variant_copy": (VariantCopy, "v1"),
+    "render_grounding": (GroundingCheck, "v1"),
 }
 # Preferred provider order per task when ai_default_provider=auto
 ROUTING: dict[str, list[str]] = {
@@ -34,6 +35,7 @@ ROUTING: dict[str, list[str]] = {
     "change_command": ["openai", "anthropic", "gemini"],
     "floorplan_vision": ["openai", "gemini", "anthropic"],
     "variant_copy": ["anthropic", "openai", "gemini"],
+    "render_grounding": ["gemini", "openai", "anthropic"],
 }
 
 

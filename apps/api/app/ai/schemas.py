@@ -116,3 +116,18 @@ class VariantCopy(BaseModel):
     title: str
     subtitle: str
     description: str
+
+
+class GroundedItem(BaseModel):
+    code: str
+    visible: bool
+    type_match: float = Field(ge=0, le=1, description="the object is of the listed type")
+    color_match: float = Field(ge=0, le=1, description="dominant colour matches the listed colour")
+    position_match: float = Field(ge=0, le=1, description="it is where the manifest says (left/center/right)")
+    note: str = ""
+
+
+class GroundingCheck(BaseModel):
+    """Vision check of a photoreal render against its SKU manifest."""
+    items: list[GroundedItem]
+    extra_objects: list[str] = Field(default_factory=list, description="prominent furniture/fixtures not in the manifest")

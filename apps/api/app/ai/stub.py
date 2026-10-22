@@ -131,4 +131,13 @@ def floorplan_vision(req: LLMRequest) -> dict:
             "uncertainties": ["Распознавание растрового плана требует подключённого AI-провайдера (OPENAI/ANTHROPIC/GEMINI). Постройте план вручную или загрузите DXF/DWG/IFC."]}
 
 
-HANDLERS = {"change_command": change_command, "design_brief": design_brief, "variant_copy": variant_copy, "floorplan_vision": floorplan_vision}
+def render_grounding(req: LLMRequest) -> dict:
+    """No vision without a provider: every item is reported as not verified (score 0), never as a match."""
+    import json
+
+    manifest = json.loads(req.user).get("manifest", [])
+    return {"items": [{"code": it["code"], "visible": False, "type_match": 0, "color_match": 0, "position_match": 0, "note": "not verified (no vision provider)"}
+                      for it in manifest], "extra_objects": []}
+
+
+HANDLERS = {"change_command": change_command, "design_brief": design_brief, "variant_copy": variant_copy, "floorplan_vision": floorplan_vision, "render_grounding": render_grounding}

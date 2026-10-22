@@ -11,7 +11,7 @@ import time
 
 from .config import get_settings
 from .db import SessionLocal
-from .jobs import catalog, documents, pipeline, recognize  # noqa: F401  (register job handlers)
+from .jobs import catalog, documents, pipeline, recognize, render  # noqa: F401  (register job handlers)
 from .jobs.runner import get_queue, recover_orphans
 from .observability import setup_logging, setup_sentry
 

@@ -142,3 +142,79 @@ def aps_translate_asset(pid: str, aid: str, p: Principal = Depends(current_princ
         raise ApiError(404, "not_found")
     job = enqueue(db, "aps_translate", project_id=pid, params={"asset_id": aid}, idempotency_key=f"aps_translate:{aid}")
     return job_dict(job)
+
+
+# ------------------------------------------------------------------ photoreal renders
+class RenderIn(BaseModel):
+    room_id: str
+    camera_id: str | None = None
+
+
+def render_dict(d: m.Document) -> dict:
+    g = d.meta.get("grounding", {})
+    return {"id": d.id, "room_id": d.meta.get("room_id"), "camera_id": d.meta.get("camera_id"), "url": get_storage().signed_url(d.storage_key),
+            "width": d.meta.get("width"), "height": d.meta.get("height"), "model": d.meta.get("model"), "created_at": d.created_at.isoformat(),
+            "parent_id": d.meta.get("parent_id"), "grounding": {"score": g.get("score"), "verified": g.get("verified"), "visual_analogs": g.get("visual_analogs", []),
+                                                                "items": g.get("items", {}), "extra_objects": g.get("extra_objects", [])},
+            "manifest": [{k: it.get(k) for k in ("code", "object_id", "type", "name", "sku", "supplier", "url", "color_hex", "mode")} for it in d.meta.get("manifest", [])]}
+
+
+@router.post("/api/v1/projects/{pid}/variants/{vid}/renders")
+def start_render(pid: str, vid: str, body: RenderIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..ai.budget import QuotaExceeded, check
+    from ..render.providers import get_render_provider
+
+    proj = project_access(pid, "project:write", p, db)
+    rate_check(f"render:{p.user.id}", 30, 3600)
+    v = db.get(m.DesignVariant, vid)
+    if not v or v.project_id != pid:
+        raise ApiError(404, "variant.not_found")
+    if get_render_provider() is None:
+        raise ApiError(409, "ai.unavailable", info="image provider")
+    try:
+        check(db, proj.org_id)
+    except QuotaExceeded as e:
+        raise ApiError(429, "ai.quota_exceeded", period=e.period, spent=round(e.spent, 2), limit=e.limit) from e
+    job = enqueue(db, "render", project_id=pid, params={"variant_id": vid, "version_id": v.current_version_id, "room_id": body.room_id, "camera_id": body.camera_id})
+    audit(db, p, "render.start", "variant", vid, project_id=pid, data={"room_id": body.room_id})
+    db.commit()
+    return job_dict(job)
+
+
+@router.get("/api/v1/projects/{pid}/variants/{vid}/renders")
+def list_renders(pid: str, vid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    project_access(pid, "project:read", p, db)
+    v = db.get(m.DesignVariant, vid)
+    if not v or v.project_id != pid:
+        raise ApiError(404, "variant.not_found")
+    rows = db.scalars(select(m.Document).where(m.Document.variant_id == vid, m.Document.version_id == v.current_version_id, m.Document.kind == "render")
+                      .order_by(m.Document.created_at.desc()))
+    return [render_dict(d) for d in rows]
+
+
+class RegenIn(BaseModel):
+    object_ids: list[str] = Field(min_length=1, max_length=20)
+    instruction: str = Field(default="", max_length=500)
+
+
+@router.post("/api/v1/projects/{pid}/renders/{did}/regenerate")
+def regenerate_render(pid: str, did: str, body: RegenIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..ai.budget import QuotaExceeded, check
+
+    proj = project_access(pid, "project:write", p, db)
+    rate_check(f"render:{p.user.id}", 30, 3600)
+    d = db.get(m.Document, did)
+    if not d or d.project_id != pid or d.kind != "render":
+        raise ApiError(404, "not_found")
+    known = {it["object_id"] for it in d.meta.get("manifest", [])}
+    if not set(body.object_ids) <= known:
+        raise ApiError(422, "validation", fields=["object_ids"])
+    try:
+        check(db, proj.org_id)
+    except QuotaExceeded as e:
+        raise ApiError(429, "ai.quota_exceeded", period=e.period, spent=round(e.spent, 2), limit=e.limit) from e
+    job = enqueue(db, "render_edit", project_id=pid, params={"document_id": did, "object_ids": body.object_ids, "instruction": body.instruction})
+    audit(db, p, "render.regenerate", "document", did, project_id=pid, data={"objects": body.object_ids})
+    db.commit()
+    return job_dict(job)
+
