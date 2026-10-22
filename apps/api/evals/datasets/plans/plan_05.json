@@ -1,0 +1,44 @@
+{
+ "id": "plan_05",
+ "lang": "hy",
+ "quality": "clean",
+ "width_mm": 10400,
+ "height_mm": 6100,
+ "rooms": [
+  {
+   "type": "kitchen_living",
+   "rect": [
+    0,
+    0,
+    7280,
+    6100
+   ],
+   "area_m2": 44.4
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    7280,
+    0,
+    10400,
+    2440
+   ],
+   "area_m2": 7.6
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    7280,
+    2440,
+    10400,
+    6100
+   ],
+   "area_m2": 11.4
+  }
+ ],
+ "doors": 2,
+ "windows": 1,
+ "dimension_text": "10400",
+ "total_area_m2": 63.4,
+ "mime": "image/png"
+}

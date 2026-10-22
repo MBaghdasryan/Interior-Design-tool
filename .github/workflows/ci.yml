@@ -25,7 +25,7 @@ jobs:
       - run: sudo apt-get update -q && sudo apt-get install -yq fonts-dejavu-core
       - run: pip install -r requirements-dev.txt
       - name: Lint (ruff)
-        run: ruff check app tests
+        run: ruff check app tests evals
       - name: Tests (unit + integration, SQLite, fakeredis, moto)
         run: python -m pytest -q -p no:cacheprovider
       - name: Artifact validation (A3 PDF, DXF, GLB, XLSX, CSV, JSON)

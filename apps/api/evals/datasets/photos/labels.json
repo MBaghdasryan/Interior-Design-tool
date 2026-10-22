@@ -1,0 +1,46 @@
+{
+ "synthetic": true,
+ "model": "gemini-3.1-flash-image",
+ "photos": [
+  {
+   "id": "p01",
+   "room_type": "living",
+   "group": "g_living"
+  },
+  {
+   "id": "p02",
+   "room_type": "living",
+   "group": "g_living"
+  },
+  {
+   "id": "p03",
+   "room_type": "bedroom",
+   "group": "g_bed1"
+  },
+  {
+   "id": "p04",
+   "room_type": "bedroom",
+   "group": "g_bed1"
+  },
+  {
+   "id": "p05",
+   "room_type": "kitchen",
+   "group": "g_kitchen"
+  },
+  {
+   "id": "p06",
+   "room_type": "bathroom",
+   "group": "g_bath"
+  },
+  {
+   "id": "p07",
+   "room_type": "hallway",
+   "group": "g_hall"
+  },
+  {
+   "id": "p08",
+   "room_type": "kids",
+   "group": "g_kids"
+  }
+ ]
+}

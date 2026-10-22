@@ -72,9 +72,60 @@ def from_recognition(rec: dict, control: dict | None = None) -> Scene:
             calc = polygon_area(r.polygon) / 1e6
             if abs(calc - lab) / lab > 0.08:
                 sc.assumptions.append(Assumption(key=f"area_{r.id}", text=f"{r.name}: площадь по геометрии {calc:.2f} м² ≠ подписи {lab:.2f} м²", severity="warning", element_id=r.id))
-    if rec.get("scale_source") == "assumed":
+    scaled = apply_control_dimension(sc, control)
+    check_dimension_texts(sc, rec.get("dimension_texts") or [])
+    if rec.get("scale_source") == "assumed" and not scaled:
         sc.assumptions.append(Assumption(key="scale", text="Масштаб не подтверждён — задайте контрольный размер хотя бы одной стены", severity="critical"))
     return sc
+
+
+def apply_control_dimension(sc: Scene, control: dict | None) -> bool:
+    """Rescales the whole recognised drawing so the control wall has its measured length.
+    Returns True when a control dimension was applied (the scale is then measured, not assumed)."""
+    from .geometry import wall_length
+    from .model import ControlDimension
+
+    if not control or not control.get("measured_mm"):
+        return False
+    w = next((x for x in sc.walls if x.id == control.get("wall_id")), None)
+    if w is None:
+        sc.assumptions.append(Assumption(key="control_wall", text=f"Контрольная стена {control.get('wall_id')} не найдена в распознанном плане — масштаб не проверен",
+                                         severity="warning"))
+        return False
+    k = control["measured_mm"] / (wall_length(w) or 1)
+    if abs(k - 1) > 0.005:
+        for x in sc.walls:
+            x.a, x.b = (x.a[0] * k, x.a[1] * k), (x.b[0] * k, x.b[1] * k)
+        for o in sc.openings:
+            o.offset, o.width = o.offset * k, o.width * k
+        for r in sc.rooms:
+            r.polygon = [(px * k, py * k) for px, py in r.polygon]
+        sc.assumptions.append(Assumption(key="scale_corrected", text=f"Масштаб скорректирован по контрольному размеру {w.id}: ×{k:.3f}",
+                                         severity="warning" if abs(k - 1) > 0.05 else "info", element_id=w.id))
+    sc.control_dimensions = [ControlDimension(wall_id=w.id, measured_mm=control["measured_mm"])]
+    return True
+
+
+def check_dimension_texts(sc: Scene, texts: list[str]) -> None:
+    """Cross-checks printed overall dimensions against the recognised extents (OCR sanity check)."""
+    import re
+
+    nums = []
+    for t in texts:
+        for m in re.findall(r"\d[\d\s,.]{2,}\d|\d{3,}", t):
+            v = float(re.sub(r"[\s,]", "", m).replace(".", "")) if re.search(r"[\s,]\d{3}\b", m) else float(m.replace(",", ".").replace(" ", ""))
+            if 500 <= v <= 40000:
+                nums.append(v)
+    if not nums or not sc.walls:
+        return
+    xs = [p for w in sc.walls for p in (w.a[0], w.b[0])]
+    ys = [p for w in sc.walls for p in (w.a[1], w.b[1])]
+    extents = [max(xs) - min(xs), max(ys) - min(ys)]
+    biggest = max(nums)
+    if not any(abs(biggest - e) / e <= 0.06 for e in extents if e):
+        sc.assumptions.append(Assumption(key="dimension_mismatch", severity="warning",
+                                         text=f"Наибольший размер на чертеже {biggest:.0f} мм не совпадает с габаритами распознанной геометрии "
+                                              f"({extents[0]:.0f} × {extents[1]:.0f} мм) — проверьте масштаб"))
 
 
 def confidence_mask(scene: Scene) -> dict:

@@ -1,0 +1,433 @@
+[
+ {
+  "id": "cmd01",
+  "lang": "ru",
+  "command": "Замени диван на более компактный",
+  "expect": [
+   {
+    "op": "make_compact",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd02",
+  "lang": "ru",
+  "command": "Сделай кухню светлее",
+  "expect": [
+   {
+    "op": "lighter",
+    "category": null,
+    "room_type": "kitchen"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd03",
+  "lang": "ru",
+  "command": "Убери журнальный столик из гостиной",
+  "expect": [
+   {
+    "op": "remove_object",
+    "category": "coffee_table",
+    "room_type": "living"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd04",
+  "lang": "ru",
+  "command": "Сократи бюджет на 700 000 драм",
+  "expect": [
+   {
+    "op": "budget_delta",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": -700000
+ },
+ {
+  "id": "cmd05",
+  "lang": "ru",
+  "command": "Поменяй кровать в спальне на другую модель",
+  "expect": [
+   {
+    "op": "replace_product",
+    "category": "bed",
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd06",
+  "lang": "ru",
+  "command": "Добавь закрытый шкаф в прихожей",
+  "expect": [
+   {
+    "op": "add_object",
+    "category": "hallway_wardrobe",
+    "room_type": "hallway"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd07",
+  "lang": "ru",
+  "command": "Сделай спальню темнее",
+  "expect": [
+   {
+    "op": "darker",
+    "category": null,
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd08",
+  "lang": "ru",
+  "command": "Хочу более дешёвый холодильник",
+  "expect": [
+   {
+    "op": "cheaper",
+    "category": "fridge",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd09",
+  "lang": "ru",
+  "command": "Поставь премиальный диван",
+  "expect": [
+   {
+    "op": "premium",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd10",
+  "lang": "ru",
+  "command": "Переделай всё в скандинавском стиле",
+  "expect": [
+   {
+    "op": "change_style",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd11",
+  "lang": "ru",
+  "command": "Покрась стены детской в зелёный",
+  "expect": [
+   {
+    "op": "change_color",
+    "category": null,
+    "room_type": "kids"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd12",
+  "lang": "hy",
+  "command": "Դարձրու խոհանոցը ավելի բաց գույնի",
+  "expect": [
+   {
+    "op": "lighter",
+    "category": null,
+    "room_type": "kitchen"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd13",
+  "lang": "hy",
+  "command": "Փոխիր բազմոցը ավելի կոմպակտով",
+  "expect": [
+   {
+    "op": "make_compact",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd14",
+  "lang": "hy",
+  "command": "Կրճատիր բյուջեն 500 000 դրամով",
+  "expect": [
+   {
+    "op": "budget_delta",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": -500000
+ },
+ {
+  "id": "cmd15",
+  "lang": "hy",
+  "command": "Հեռացրու սուրճի սեղանը հյուրասենյակից",
+  "expect": [
+   {
+    "op": "remove_object",
+    "category": "coffee_table",
+    "room_type": "living"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd16",
+  "lang": "hy",
+  "command": "Ննջասենյակի մահճակալը փոխիր այլ մոդելով",
+  "expect": [
+   {
+    "op": "replace_product",
+    "category": "bed",
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd17",
+  "lang": "hy",
+  "command": "Նախասենյակում ավելացրու փակ պահարան",
+  "expect": [
+   {
+    "op": "add_object",
+    "category": "hallway_wardrobe",
+    "room_type": "hallway"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd18",
+  "lang": "hy",
+  "command": "Սառնարանը դարձրու ավելի էժան",
+  "expect": [
+   {
+    "op": "cheaper",
+    "category": "fridge",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd19",
+  "lang": "hy",
+  "command": "Ամբողջը դարձրու սկանդինավյան ոճով",
+  "expect": [
+   {
+    "op": "change_style",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd20",
+  "lang": "hy",
+  "command": "Ննջասենյակը դարձրու ավելի մուգ",
+  "expect": [
+   {
+    "op": "darker",
+    "category": null,
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd21",
+  "lang": "en",
+  "command": "Make the sofa more compact",
+  "expect": [
+   {
+    "op": "make_compact",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd22",
+  "lang": "en",
+  "command": "Make the kitchen lighter",
+  "expect": [
+   {
+    "op": "lighter",
+    "category": null,
+    "room_type": "kitchen"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd23",
+  "lang": "en",
+  "command": "Cut the budget by 300,000 AMD",
+  "expect": [
+   {
+    "op": "budget_delta",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": -300000
+ },
+ {
+  "id": "cmd24",
+  "lang": "en",
+  "command": "Remove the coffee table from the living room",
+  "expect": [
+   {
+    "op": "remove_object",
+    "category": "coffee_table",
+    "room_type": "living"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd25",
+  "lang": "en",
+  "command": "Swap the bed in the bedroom for another model",
+  "expect": [
+   {
+    "op": "replace_product",
+    "category": "bed",
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd26",
+  "lang": "en",
+  "command": "Add a closed wardrobe in the hallway",
+  "expect": [
+   {
+    "op": "add_object",
+    "category": "hallway_wardrobe",
+    "room_type": "hallway"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd27",
+  "lang": "en",
+  "command": "I want a cheaper fridge",
+  "expect": [
+   {
+    "op": "cheaper",
+    "category": "fridge",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd28",
+  "lang": "en",
+  "command": "Use a premium sofa",
+  "expect": [
+   {
+    "op": "premium",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd29",
+  "lang": "en",
+  "command": "Redo everything in soft Scandinavian style",
+  "expect": [
+   {
+    "op": "change_style",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd30",
+  "lang": "en",
+  "command": "Make the bedroom darker",
+  "expect": [
+   {
+    "op": "darker",
+    "category": null,
+    "room_type": "bedroom"
+   }
+  ],
+  "budget_delta": null
+ },
+ {
+  "id": "cmd31",
+  "lang": "ru",
+  "command": "Сделай кухню светлее, замени диван на более компактный и сократи бюджет на 700 000 AMD",
+  "expect": [
+   {
+    "op": "lighter",
+    "category": null,
+    "room_type": "kitchen"
+   },
+   {
+    "op": "make_compact",
+    "category": "sofa",
+    "room_type": null
+   },
+   {
+    "op": "budget_delta",
+    "category": null,
+    "room_type": null
+   }
+  ],
+  "budget_delta": -700000
+ },
+ {
+  "id": "cmd32",
+  "lang": "en",
+  "command": "Make the kitchen lighter and the sofa more compact",
+  "expect": [
+   {
+    "op": "lighter",
+    "category": null,
+    "room_type": "kitchen"
+   },
+   {
+    "op": "make_compact",
+    "category": "sofa",
+    "room_type": null
+   }
+  ],
+  "budget_delta": null
+ }
+]

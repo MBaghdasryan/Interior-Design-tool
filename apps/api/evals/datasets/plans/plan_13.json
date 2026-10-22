@@ -1,0 +1,64 @@
+{
+ "id": "plan_13",
+ "lang": "ru",
+ "quality": "noisy_blur",
+ "width_mm": 9900,
+ "height_mm": 6300,
+ "rooms": [
+  {
+   "type": "kitchen_living",
+   "rect": [
+    0,
+    0,
+    6138,
+    3780
+   ],
+   "area_m2": 23.2
+  },
+  {
+   "type": "bedroom",
+   "rect": [
+    6138,
+    0,
+    9900,
+    3780
+   ],
+   "area_m2": 14.2
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    0,
+    3780,
+    4455,
+    6300
+   ],
+   "area_m2": 11.2
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    4455,
+    3780,
+    6930,
+    6300
+   ],
+   "area_m2": 6.2
+  },
+  {
+   "type": "kids",
+   "rect": [
+    6930,
+    3780,
+    9900,
+    6300
+   ],
+   "area_m2": 7.5
+  }
+ ],
+ "doors": 4,
+ "windows": 3,
+ "dimension_text": "9900",
+ "total_area_m2": 62.3,
+ "mime": "image/png"
+}

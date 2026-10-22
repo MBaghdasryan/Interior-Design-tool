@@ -1,0 +1,44 @@
+{
+ "id": "plan_29",
+ "lang": "hy",
+ "quality": "photo_skew",
+ "width_mm": 10700,
+ "height_mm": 7700,
+ "rooms": [
+  {
+   "type": "kitchen_living",
+   "rect": [
+    0,
+    0,
+    7490,
+    7700
+   ],
+   "area_m2": 57.7
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    7490,
+    0,
+    10700,
+    3080
+   ],
+   "area_m2": 9.9
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    7490,
+    3080,
+    10700,
+    7700
+   ],
+   "area_m2": 14.8
+  }
+ ],
+ "doors": 2,
+ "windows": 1,
+ "dimension_text": "10700",
+ "total_area_m2": 82.4,
+ "mime": "image/jpeg"
+}

@@ -16,3 +16,6 @@ __pycache__/
 # third-party reference album (real client project) — kept locally, not published
 Պարույր_Սևակ_5_*.pdf
 backups/
+
+# real client material used for evaluation — never commit
+apps/api/evals/datasets/real/

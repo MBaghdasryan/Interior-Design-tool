@@ -131,3 +131,49 @@ class GroundingCheck(BaseModel):
     """Vision check of a photoreal render against its SKU manifest."""
     items: list[GroundedItem]
     extra_objects: list[str] = Field(default_factory=list, description="prominent furniture/fixtures not in the manifest")
+
+
+RoomTypeName = Literal["living", "kitchen", "kitchen_living", "bedroom", "kids", "bathroom", "wc", "hallway", "wardrobe", "balcony", "office", "storage", "laundry", "unknown"]
+
+
+class PhotoRoom(BaseModel):
+    index: int
+    room_type: RoomTypeName
+    confidence: float = Field(ge=0, le=1)
+
+
+class PhotoRooms(BaseModel):
+    """Step 1 — room classification per photo."""
+    photos: list[PhotoRoom]
+
+
+class PhotoElementsItem(BaseModel):
+    index: int
+    windows: int = 0
+    doors: int = 0
+    radiators: int = 0
+    sockets: int = 0
+    floor: str = ""
+    walls: str = ""
+    ceiling: str = ""
+    condition: Literal["shell", "white_box", "lived_in", "unknown"] = "unknown"
+    door_visible_for_scale: bool = False
+    ceiling_height_mm_estimate: int | None = Field(default=None, description="only from a visible standard door (≈2000–2100 mm) as reference")
+    notes: str = ""
+
+
+class PhotoElements(BaseModel):
+    """Step 2 — walls / windows / doors / engineering elements and finishes per photo."""
+    photos: list[PhotoElementsItem]
+
+
+class ViewGroup(BaseModel):
+    room_type: RoomTypeName
+    photo_indexes: list[int]
+    confidence: float = Field(ge=0, le=1)
+
+
+class ViewGroups(BaseModel):
+    """Step 3 — multi-view matching: which photos show the same room."""
+    rooms: list[ViewGroup]
+    uncertainties: list[str] = Field(default_factory=list)

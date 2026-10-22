@@ -40,7 +40,19 @@ def recognize(ctx: JobContext) -> dict:
         scene = Scene(name="Импорт BIM/CAD (APS)", assumptions=[Assumption(key="aps", severity="critical",
                       text=f"Из модели получено помещений: {len(rooms)}. Геометрия стен строится вручную по подложке APS Viewer или из DXF-экспорта")])
         provider = "aps"
-    elif src and src.kind in ("plan_image", "photo", "plan_pdf"):
+    elif src and src.kind == "photo":
+        # photos only: room survey, never metric geometry (see app.perception.photos)
+        from ..perception.photos import scene_from_survey, survey
+
+        photos = [(a.id, get_storage().get(a.storage_key), a.mime) for a in assets if a.kind == "photo"]
+        s = survey(db, project.id, photos)
+        for p in s["photos"]:
+            a = db.get(m.SourceAsset, p["asset_id"])
+            a.quality = {**(a.quality or {}), "survey": {k: v for k, v in p.items() if k != "asset_id"}}
+        project.preferences = {**(project.preferences or {}), "photo_survey": {k: v for k, v in s.items() if k != "photos"}}
+        scene = scene_from_survey(s)
+        provider = "photos:" + s["steps"]["classification"]["provider"]
+    elif src and src.kind in ("plan_image", "plan_pdf"):
         data = get_storage().get(src.storage_key)
         img = None
         if src.kind == "plan_pdf":

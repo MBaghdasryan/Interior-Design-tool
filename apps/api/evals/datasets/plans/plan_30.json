@@ -1,0 +1,74 @@
+{
+ "id": "plan_30",
+ "lang": "en",
+ "quality": "photo_skew",
+ "width_mm": 9700,
+ "height_mm": 8000,
+ "rooms": [
+  {
+   "type": "living",
+   "rect": [
+    0,
+    0,
+    3880,
+    4800
+   ],
+   "area_m2": 18.6
+  },
+  {
+   "type": "kitchen",
+   "rect": [
+    3880,
+    0,
+    6790,
+    3600
+   ],
+   "area_m2": 10.5
+  },
+  {
+   "type": "bedroom",
+   "rect": [
+    6790,
+    0,
+    9700,
+    4800
+   ],
+   "area_m2": 14.0
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    3880,
+    3600,
+    6790,
+    8000
+   ],
+   "area_m2": 12.8
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    0,
+    4800,
+    3880,
+    8000
+   ],
+   "area_m2": 12.4
+  },
+  {
+   "type": "kids",
+   "rect": [
+    6790,
+    4800,
+    9700,
+    8000
+   ],
+   "area_m2": 9.3
+  }
+ ],
+ "doors": 5,
+ "windows": 4,
+ "dimension_text": "9700",
+ "total_area_m2": 77.6,
+ "mime": "image/jpeg"
+}

@@ -169,3 +169,56 @@ def test_footprint_rotation():
     o = SceneObject(id="a", room_id="r", category="sofa", x=1000, y=1000, w=2000, d=1000, rotation=90)
     fp = footprint(o)
     assert (fp.w, fp.h) == (1000, 2000)
+
+
+def test_openai_strict_schema_has_no_tuple_items():
+    """OpenAI strict mode rejects prefixItems (found by the eval harness on FloorplanRecognition)."""
+    import json
+
+    from app.ai.providers import _strictify
+    from app.ai.schemas import FloorplanRecognition
+
+    s = json.dumps(_strictify(FloorplanRecognition.model_json_schema()))
+    assert "prefixItems" not in s and '"additionalProperties": false' in s
+
+
+def test_control_dimension_rescales_recognised_plan_and_dimension_check():
+    from app.scene.recognize import from_recognition
+
+    rec = {"scale_source": "assumed", "walls": [{"id": "W1", "a": [0, 0], "b": [4000, 0], "thickness": 200, "kind": "exterior", "confidence": 0.8},
+                                                {"id": "W2", "a": [4000, 0], "b": [4000, 3000], "thickness": 200, "kind": "exterior", "confidence": 0.8}],
+           "openings": [{"id": "O1", "wall_id": "W1", "type": "window", "offset": 1000, "width": 1000, "confidence": 0.7}],
+           "rooms": [{"id": "R1", "type": "living", "name": "L", "polygon": [[0, 0], [4000, 0], [4000, 3000], [0, 3000]], "area_label_m2": None, "confidence": 0.7}],
+           "dimension_texts": ["9 000"], "uncertainties": []}
+    sc = from_recognition(rec, {"wall_id": "W1", "measured_mm": 5000})
+    assert sc.walls[0].b == (5000, 0) and sc.openings[0].width == 1250 and sc.rooms[0].polygon[2] == (5000, 3750)
+    keys = {a.key for a in sc.assumptions}
+    assert "scale_corrected" in keys and "scale" not in keys  # measured, not assumed any more
+    assert "dimension_mismatch" in keys  # the printed 9 000 fits neither 5 000 nor 3 750
+    assert sc.control_dimensions[0].measured_mm == 5000
+    sc2 = from_recognition(rec, None)
+    assert "scale" in {a.key for a in sc2.assumptions}
+
+
+def test_photos_only_project_gets_survey_not_fake_geometry(client, designer):
+    """Without a vision provider the photo survey recognises nothing (unknown, 0), records each step and
+    produces no metric geometry — only a critical assumption telling the designer to draw the plan."""
+    import io
+
+    from PIL import Image
+
+    pid = client.post("/api/v1/projects", headers=designer, json={"title": "Photos only"}).json()["id"]
+    for i, colour in enumerate(("#d9c9b7", "#8f9f7e")):
+        buf = io.BytesIO()
+        Image.new("RGB", (640, 480), colour).save(buf, "JPEG")
+        r = client.post(f"/api/v1/projects/{pid}/assets", headers=designer, files={"file": (f"room{i}.jpg", io.BytesIO(buf.getvalue()), "image/jpeg")})
+        assert r.status_code == 200, r.text
+    job = client.post(f"/api/v1/projects/{pid}/recognize", headers=designer).json()
+    assert client.get(f"/api/v1/projects/{pid}/jobs/{job['id']}", headers=designer).json()["status"] == "succeeded"
+    geo = client.get(f"/api/v1/projects/{pid}/geometry", headers=designer).json()
+    keys = {a["key"] for a in geo["scene"]["assumptions"]}
+    assert "photos_only" in keys and not geo["scene"]["walls"]
+    proj = client.get(f"/api/v1/projects/{pid}", headers=designer).json()
+    steps = proj["preferences"]["photo_survey"]["steps"]
+    assert steps["classification"]["provider"] == "stub" and steps["depth"]["available"] is False
+    assert all(a["quality"]["survey"]["room_type"] == "unknown" for a in proj["assets"])

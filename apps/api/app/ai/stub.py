@@ -140,4 +140,22 @@ def render_grounding(req: LLMRequest) -> dict:
                       for it in manifest], "extra_objects": []}
 
 
-HANDLERS = {"change_command": change_command, "design_brief": design_brief, "variant_copy": variant_copy, "floorplan_vision": floorplan_vision, "render_grounding": render_grounding}
+def _count(req: LLMRequest) -> int:
+    return len(req.images)
+
+
+def photo_rooms(req: LLMRequest) -> dict:
+    """No vision: nothing is recognised (unknown, confidence 0) — never a fake room type."""
+    return {"photos": [{"index": i, "room_type": "unknown", "confidence": 0.0} for i in range(_count(req))]}
+
+
+def photo_elements(req: LLMRequest) -> dict:
+    return {"photos": [{"index": i, "notes": "не распознано: нет vision-провайдера"} for i in range(_count(req))]}
+
+
+def view_groups(req: LLMRequest) -> dict:
+    return {"rooms": [{"room_type": "unknown", "photo_indexes": list(range(_count(req))), "confidence": 0.0}],
+            "uncertainties": ["Фото не проанализированы: vision-провайдер недоступен"]}
+
+
+HANDLERS = {"change_command": change_command, "design_brief": design_brief, "variant_copy": variant_copy, "floorplan_vision": floorplan_vision, "render_grounding": render_grounding, "photo_rooms": photo_rooms, "photo_elements": photo_elements, "view_groups": view_groups}

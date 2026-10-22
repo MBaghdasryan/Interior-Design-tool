@@ -1,0 +1,44 @@
+{
+ "id": "plan_17",
+ "lang": "hy",
+ "quality": "rotated",
+ "width_mm": 10100,
+ "height_mm": 8100,
+ "rooms": [
+  {
+   "type": "kitchen_living",
+   "rect": [
+    0,
+    0,
+    7070,
+    8100
+   ],
+   "area_m2": 57.3
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    7070,
+    0,
+    10100,
+    3240
+   ],
+   "area_m2": 9.8
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    7070,
+    3240,
+    10100,
+    8100
+   ],
+   "area_m2": 14.7
+  }
+ ],
+ "doors": 2,
+ "windows": 1,
+ "dimension_text": "10100",
+ "total_area_m2": 81.8,
+ "mime": "image/png"
+}

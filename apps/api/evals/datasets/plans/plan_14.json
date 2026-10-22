@@ -1,0 +1,64 @@
+{
+ "id": "plan_14",
+ "lang": "hy",
+ "quality": "noisy_blur",
+ "width_mm": 10900,
+ "height_mm": 8200,
+ "rooms": [
+  {
+   "type": "living",
+   "rect": [
+    0,
+    0,
+    5995,
+    4510
+   ],
+   "area_m2": 27.0
+  },
+  {
+   "type": "kitchen",
+   "rect": [
+    5995,
+    0,
+    10900,
+    3280
+   ],
+   "area_m2": 16.1
+  },
+  {
+   "type": "bedroom",
+   "rect": [
+    5995,
+    3280,
+    10900,
+    8200
+   ],
+   "area_m2": 24.1
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    0,
+    4510,
+    3815,
+    8200
+   ],
+   "area_m2": 14.1
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    3815,
+    4510,
+    5995,
+    8200
+   ],
+   "area_m2": 8.0
+  }
+ ],
+ "doors": 4,
+ "windows": 3,
+ "dimension_text": "10900",
+ "total_area_m2": 89.3,
+ "mime": "image/png"
+}

@@ -1,0 +1,74 @@
+{
+ "id": "plan_22",
+ "lang": "ru",
+ "quality": "no_area_labels",
+ "width_mm": 11100,
+ "height_mm": 7400,
+ "rooms": [
+  {
+   "type": "living",
+   "rect": [
+    0,
+    0,
+    5550,
+    3700
+   ],
+   "area_m2": 20.5
+  },
+  {
+   "type": "bedroom",
+   "rect": [
+    5550,
+    0,
+    11100,
+    3700
+   ],
+   "area_m2": 20.5
+  },
+  {
+   "type": "kitchen",
+   "rect": [
+    0,
+    3700,
+    3885,
+    7400
+   ],
+   "area_m2": 14.4
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    3885,
+    3700,
+    7215,
+    7400
+   ],
+   "area_m2": 12.3
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    7215,
+    3700,
+    11100,
+    5550
+   ],
+   "area_m2": 7.2
+  },
+  {
+   "type": "wc",
+   "rect": [
+    7215,
+    5550,
+    11100,
+    7400
+   ],
+   "area_m2": 7.2
+  }
+ ],
+ "doors": 5,
+ "windows": 3,
+ "dimension_text": "11100",
+ "total_area_m2": 82.1,
+ "mime": "image/png"
+}

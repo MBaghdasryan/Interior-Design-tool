@@ -72,6 +72,10 @@ def _strictify(schema: dict) -> dict:
 
     def walk(node):
         if isinstance(node, dict):
+            if "prefixItems" in node:  # tuples (e.g. polygon points) → plain arrays: strict mode rejects prefixItems
+                node["items"] = node.pop("prefixItems")[0]
+                node.pop("minItems", None)
+                node.pop("maxItems", None)
             if node.get("type") == "object" and "properties" in node:
                 node["required"] = list(node["properties"].keys())
                 node["additionalProperties"] = False

@@ -1,0 +1,74 @@
+{
+ "id": "plan_28",
+ "lang": "ru",
+ "quality": "photo_skew",
+ "width_mm": 7900,
+ "height_mm": 6100,
+ "rooms": [
+  {
+   "type": "living",
+   "rect": [
+    0,
+    0,
+    3950,
+    3050
+   ],
+   "area_m2": 12.0
+  },
+  {
+   "type": "bedroom",
+   "rect": [
+    3950,
+    0,
+    7900,
+    3050
+   ],
+   "area_m2": 12.0
+  },
+  {
+   "type": "kitchen",
+   "rect": [
+    0,
+    3050,
+    2765,
+    6100
+   ],
+   "area_m2": 8.4
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    2765,
+    3050,
+    5135,
+    6100
+   ],
+   "area_m2": 7.2
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    5135,
+    3050,
+    7900,
+    4575
+   ],
+   "area_m2": 4.2
+  },
+  {
+   "type": "wc",
+   "rect": [
+    5135,
+    4575,
+    7900,
+    6100
+   ],
+   "area_m2": 4.2
+  }
+ ],
+ "doors": 5,
+ "windows": 3,
+ "dimension_text": "7900",
+ "total_area_m2": 48.0,
+ "mime": "image/jpeg"
+}

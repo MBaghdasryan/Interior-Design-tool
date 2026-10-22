@@ -1,0 +1,44 @@
+{
+ "id": "plan_23",
+ "lang": "hy",
+ "quality": "no_area_labels",
+ "width_mm": 8600,
+ "height_mm": 7100,
+ "rooms": [
+  {
+   "type": "kitchen_living",
+   "rect": [
+    0,
+    0,
+    6020,
+    7100
+   ],
+   "area_m2": 42.7
+  },
+  {
+   "type": "bathroom",
+   "rect": [
+    6020,
+    0,
+    8600,
+    2840
+   ],
+   "area_m2": 7.3
+  },
+  {
+   "type": "hallway",
+   "rect": [
+    6020,
+    2840,
+    8600,
+    7100
+   ],
+   "area_m2": 11.0
+  }
+ ],
+ "doors": 2,
+ "windows": 1,
+ "dimension_text": "8600",
+ "total_area_m2": 61.0,
+ "mime": "image/png"
+}
