@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import mfa
 from .. import models as m
 from ..config import get_settings
 from ..db import get_db
@@ -41,8 +42,12 @@ COMMON_PASSWORDS = {"password", "password123", "qwerty123", "1234567890", "12345
 
 def me_dict(p: Principal) -> dict:
     u = p.user
+    mfa_required = mfa.required_for(p.all_roles())
     return {"id": u.id, "email": u.email, "name": u.name, "locale": u.locale,
             "email_verified": u.email_verified_at is not None, "onboarded": u.onboarded_at is not None,
+            "mfa_enabled": u.mfa_enabled_at is not None, "mfa_required": mfa_required,
+            "mfa_enrollment_required": mfa_required and u.mfa_enabled_at is None,
+            "deletion_due_at": u.deletion_due_at.isoformat() if u.deletion_due_at else None,
             "memberships": [{"org_id": ms.org_id, "org_name": ms.org.name, "org_kind": ms.org.kind, "role": ms.role} for ms in u.memberships],
             "roles": sorted(p.all_roles())}
 
@@ -99,9 +104,85 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
         db.commit()
         record_failure(f"login-fail:{email}", 900)
         raise ApiError(401, "auth.bad_credentials")
-    if u.status != "active":
+    if u.status not in ("active", "deletion_pending"):
         raise ApiError(403, "auth.account_disabled")
+    if u.mfa_enabled_at:
+        # second step: no session yet — the client posts the TOTP / backup code with this short-lived token
+        return {"mfa_required": True, "mfa_token": mfa.issue_mfa_token(u.id)}
     return _login_response(db, u, request, response)
+
+
+class MfaVerifyIn(BaseModel):
+    mfa_token: str = Field(max_length=400)
+    code: str | None = Field(default=None, max_length=12)
+    backup_code: str | None = Field(default=None, max_length=20)
+
+
+@router.post("/mfa/verify")
+def mfa_verify(body: MfaVerifyIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    uid = mfa.read_mfa_token(body.mfa_token)
+    if not uid:
+        raise ApiError(401, "auth.invalid_session")
+    failures_exceeded(f"mfa-fail:{uid}", 5, 900)
+    u = db.get(m.User, uid)
+    if not u or not u.mfa_enabled_at or not mfa.check_second_factor(u, body.code, body.backup_code):
+        record_failure(f"mfa-fail:{uid}", 900)
+        _audit(db, uid, "auth.mfa_failed", request)
+        db.commit()
+        raise ApiError(401, "auth.mfa_invalid")
+    _audit(db, u.id, "auth.mfa_passed", request, method="backup_code" if body.backup_code and not body.code else "totp")
+    return _login_response(db, u, request, response)
+
+
+# ------------------------------------------------------------------ MFA management
+class CodeIn(BaseModel):
+    code: str | None = Field(default=None, max_length=12)
+    backup_code: str | None = Field(default=None, max_length=20)
+
+
+@router.post("/mfa/setup")
+def mfa_setup(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Starts enrolment: a new secret (pending until confirmed), otpauth URI and QR code."""
+    out = mfa.start_setup(p.user)
+    db.commit()
+    return out
+
+
+@router.post("/mfa/enable")
+def mfa_enable(body: CodeIn, request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    secret = mfa.decrypt(p.user.mfa_pending_enc)
+    if not secret:
+        raise ApiError(409, "auth.mfa_not_started")
+    if not mfa.verify_totp(secret, body.code or ""):
+        raise ApiError(422, "auth.mfa_invalid")
+    plain, hashed = mfa.new_backup_codes()
+    p.user.mfa_secret_enc, p.user.mfa_pending_enc = mfa.encrypt(secret), None
+    p.user.mfa_enabled_at, p.user.mfa_backup_codes = datetime.now(timezone.utc), hashed
+    _audit(db, p.user.id, "auth.mfa_enabled", request)
+    db.commit()
+    return {"ok": True, "backup_codes": plain}  # shown once
+
+
+@router.post("/mfa/backup-codes")
+def mfa_regenerate_codes(body: CodeIn, request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    if not p.user.mfa_enabled_at or not mfa.check_second_factor(p.user, body.code, body.backup_code):
+        raise ApiError(422, "auth.mfa_invalid")
+    plain, hashed = mfa.new_backup_codes()
+    p.user.mfa_backup_codes = hashed
+    _audit(db, p.user.id, "auth.mfa_codes_regenerated", request)
+    db.commit()
+    return {"ok": True, "backup_codes": plain}
+
+
+@router.post("/mfa/disable")
+def mfa_disable(body: CodeIn, request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    if not p.user.mfa_enabled_at or not mfa.check_second_factor(p.user, body.code, body.backup_code):
+        raise ApiError(422, "auth.mfa_invalid")
+    p.user.mfa_secret_enc = p.user.mfa_pending_enc = None
+    p.user.mfa_enabled_at, p.user.mfa_backup_codes = None, []
+    _audit(db, p.user.id, "auth.mfa_disabled", request)
+    db.commit()
+    return me_dict(p)
 
 
 @router.post("/logout")
@@ -305,6 +386,72 @@ def revoke_other_sessions(p: Principal = Depends(current_principal), db: Session
     _audit(db, p.user.id, "auth.sessions_revoked", count=n)
     db.commit()
     return {"ok": True, "revoked": n}
+
+
+# ------------------------------------------------------------------ personal data (privacy)
+@router.get("/me/export")
+def export_my_data(request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """All personal data of the signed-in user (profile, consents, sessions, activity, own projects with files) as ZIP."""
+    from fastapi.responses import Response as RawResponse
+
+    from ..privacy import export_zip
+
+    check(f"export:{p.user.id}", 5, 3600)
+    data = export_zip(db, p.user)
+    _audit(db, p.user.id, "privacy.export", request, size=len(data))
+    db.commit()
+    return RawResponse(data, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="renovara-my-data.zip"'})
+
+
+class DeleteIn(BaseModel):
+    password: str = Field(max_length=200)
+    code: str | None = Field(default=None, max_length=12)
+
+
+@router.post("/me/delete")
+def delete_my_account(body: DeleteIn, request: Request, response: Response, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Schedules deletion after a grace period (PRIVACY_DELETION_GRACE_DAYS); signing in and cancelling stops it."""
+    from ..privacy import request_deletion
+
+    if not verify_password(body.password, p.user.password_hash):
+        raise ApiError(401, "auth.bad_credentials")
+    if p.user.mfa_enabled_at and not mfa.check_second_factor(p.user, body.code, None):
+        raise ApiError(401, "auth.mfa_required")
+    due = request_deletion(p.user)
+    n = revoke_sessions(db, p.user.id, except_sid=p.session_id)
+    _audit(db, p.user.id, "privacy.deletion_requested", request, due=due.isoformat(), sessions_revoked=n)
+    db.commit()
+    return me_dict(p)
+
+
+@router.post("/me/delete/cancel")
+def cancel_my_deletion(request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..privacy import cancel_deletion
+
+    cancel_deletion(p.user)
+    _audit(db, p.user.id, "privacy.deletion_cancelled", request)
+    db.commit()
+    return me_dict(p)
+
+
+@router.get("/me/consents")
+def my_consents(p: Principal = Depends(current_principal)):
+    return p.user.consents or {}
+
+
+class ConsentsIn(BaseModel):
+    marketing_emails: bool | None = None
+    product_analytics: bool | None = None
+
+
+@router.put("/me/consents")
+def update_consents(body: ConsentsIn, request: Request, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..privacy import set_consents
+
+    c = set_consents(p.user, body.model_dump(exclude_none=True), client_ip(request))
+    _audit(db, p.user.id, "privacy.consents", request, **body.model_dump(exclude_none=True))
+    db.commit()
+    return c
 
 
 @router.get("/demo-accounts")

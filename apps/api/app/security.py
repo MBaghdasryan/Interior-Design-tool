@@ -211,13 +211,19 @@ def current_principal(request: Request, authorization: str | None = Header(defau
     """Bearer header (API clients, scripts) or the HttpOnly session cookie (browser).
     Cookie-authenticated unsafe requests must carry `X-CSRF-Token` equal to the CSRF cookie."""
     if authorization and authorization.lower().startswith("bearer "):
-        return principal_from_token(authorization.split(" ", 1)[1], db)
-    token = request.cookies.get(SESSION_COOKIE)
-    if token and request.method not in SAFE_METHODS:
-        sent, cookie = request.headers.get(CSRF_HEADER, ""), request.cookies.get(CSRF_COOKIE, "")
-        if not sent or not cookie or not hmac.compare_digest(sent, cookie):
-            raise ApiError(403, "auth.csrf")
-    return principal_from_token(token, db)
+        p = principal_from_token(authorization.split(" ", 1)[1], db)
+    else:
+        token = request.cookies.get(SESSION_COOKIE)
+        if token and request.method not in SAFE_METHODS:
+            sent, cookie = request.headers.get(CSRF_HEADER, ""), request.cookies.get(CSRF_COOKIE, "")
+            if not sent or not cookie or not hmac.compare_digest(sent, cookie):
+                raise ApiError(403, "auth.csrf")
+        p = principal_from_token(token, db)
+    from .mfa import ENROLMENT_ALLOWED_PATHS, required_for
+
+    if p.user.mfa_enabled_at is None and required_for(p.all_roles()) and not request.url.path.startswith(ENROLMENT_ALLOWED_PATHS):
+        raise ApiError(403, "auth.mfa_enrollment_required")
+    return p
 
 
 def require(perm: str):

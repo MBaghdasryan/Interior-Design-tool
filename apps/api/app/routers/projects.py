@@ -33,7 +33,7 @@ from ..scene.rules import run_rules, summarize
 from ..scene.svg import render_svg
 from ..security import Principal, audit, current_principal, project_access
 from ..services import new_version, project_dict, variant_dict, version_dict
-from ..storage import MAX_UPLOAD_BYTES, detect_kind, get_storage, scan_for_malware
+from ..storage import MAX_UPLOAD_BYTES, ScanUnavailable, detect_kind, get_storage, scan_upload
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -120,7 +120,8 @@ def patch_project(pid: str, body: ProjectPatch, p: Principal = Depends(current_p
 # ------------------------------------------------------------------ intake
 def asset_dict(a: m.SourceAsset) -> dict:
     return {"id": a.id, "kind": a.kind, "filename": a.filename, "mime": a.mime, "size": a.size, "room_hint": a.room_hint, "quality": a.quality,
-            "aps": {k: v for k, v in (a.aps or {}).items() if k in ("status", "progress", "urn", "rooms")}, "url": get_storage().signed_url(a.storage_key),
+            "aps": {k: v for k, v in (a.aps or {}).items() if k in ("status", "progress", "urn", "rooms")},
+            "url": get_storage().signed_url(a.storage_key) if a.scan_status != "purged" else None, "scan_status": a.scan_status,
             "created_at": a.created_at.isoformat()}
 
 
@@ -171,8 +172,18 @@ def _ingest(db: Session, p: Principal, proj: m.Project, data: bytes, filename: s
         kind = detect_kind(filename, content_type, data[:16])
         if not kind:
             raise ApiError(415, "file.unsupported")
-        if not scan_for_malware(data):
-            raise ApiError(422, "file.malware")
+        try:
+            scan, signature = scan_upload(data)
+        except ScanUnavailable:
+            raise ApiError(503, "file.scan_unavailable") from None
+        if scan == "infected":
+            # quarantine: kept out of the project, never served, removed by retention; reviewed by platform admins
+            qkey = f"quarantine/{proj.id}/{hashlib.sha256(data).hexdigest()[:16]}_{filename.replace('/', '_')[-80:]}"
+            st.put(qkey, data)
+            audit(db, p, "asset.quarantined", "asset", None, project_id=proj.id,
+                  data={"filename": filename, "sha256": hashlib.sha256(data).hexdigest(), "signature": signature, "key": qkey})
+            db.commit()
+            raise ApiError(422, "file.malware", signature=signature)
     except ApiError:
         if incoming_key:
             st.delete(incoming_key)  # rejected presigned uploads never leave quarantine
@@ -191,7 +202,7 @@ def _ingest(db: Session, p: Principal, proj: m.Project, data: bytes, filename: s
     else:
         st.put(key, data, content_type or "application/octet-stream")
     a = m.SourceAsset(project_id=proj.id, kind=kind, filename=filename, mime=content_type or "application/octet-stream", size=len(data), sha256=sha,
-                      storage_key=key, room_hint=room_hint, quality=assess_quality(kind, data))
+                      storage_key=key, room_hint=room_hint, quality=assess_quality(kind, data), scan_status=scan)
     db.add(a)
     db.flush()
     _attach_to_pilot(proj, manifest_item, a.id)

@@ -16,6 +16,12 @@ services:
 
   web:
     ports: !reset []
+    environment:
+      CSP_CONNECT_EXTRA: https://${FILES_DOMAIN}  # presigned uploads/downloads go to the object store
+    restart: unless-stopped
+
+  clamav:
+    profiles: !reset []
     restart: unless-stopped
 
   api:
@@ -37,8 +43,11 @@ services:
       S3_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY:?set OBJECTSTORE_ACCESS_KEY}
       S3_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY:?set OBJECTSTORE_SECRET_KEY}
       S3_SSE: ""  # encryption at rest is done by the object store; AWS S3: set AES256
+      CLAMAV_HOST: clamav
+      CLAMAV_REQUIRED: "true"  # uploads are refused while the scanner is down
     depends_on:
       objectstore: { condition: service_healthy }
+      clamav: { condition: service_healthy }
     restart: unless-stopped
 
   worker:

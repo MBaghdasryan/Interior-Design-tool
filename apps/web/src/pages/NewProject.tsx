@@ -133,6 +133,7 @@ function Intake({ pid }: { pid: string }) {
               <div className="small nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{a.filename}</div>
               <div className="tiny muted">{kb(a.size)}{a.aps?.status ? ` · APS: ${a.aps.status}` : ""}</div>
               {a.quality?.warnings?.length ? <div className="tiny" style={{ color: "#8a5d00" }}>⚠ {t("estimate.has_warnings", { n: a.quality.warnings.length })}</div> : null}
+              {a.scan_status && <div className="tiny muted">{a.scan_status === "clean" ? "🛡 " : ""}{t(`scan.${a.scan_status}`)}</div>}
             </div>
           ))}
         </div>

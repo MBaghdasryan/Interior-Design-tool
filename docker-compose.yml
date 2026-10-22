@@ -27,6 +27,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://forma:${POSTGRES_PASSWORD:-forma}@db:5432/forma
       REDIS_URL: redis://redis:6379/0
+      CLAMAV_HOST: ${CLAMAV_HOST:-}  # "clamav" with `--profile av`
       STORAGE_DIR: /data/storage
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
       API_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8085}
@@ -41,6 +42,19 @@ services:
       interval: 10s
       retries: 10
     ports: ["8000:8000"]
+
+  # Antivirus for uploads (clamd INSTREAM). Opt-in locally: `docker compose --profile av up -d`,
+  # then set CLAMAV_HOST=clamav in .env. Always on in the production profile. Needs ~1.5 GB RAM;
+  # the first start downloads signatures (several minutes).
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: ["av"]
+    volumes: [clamdb:/var/lib/clamav]
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 30s
+      retries: 20
+      start_period: 300s
 
   worker:
     build: ./apps/api
@@ -70,3 +84,4 @@ volumes:
   pgdata:
   storage:
   redisdata:
+  clamdb:

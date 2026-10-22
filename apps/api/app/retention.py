@@ -26,7 +26,7 @@ def apply_retention(db: Session, now: float | None = None) -> dict:
     s = get_settings()
     now = now or time.time()
     st = get_storage()
-    out = {"incoming": 0, "mail": 0, "orphans": 0}
+    out = {"incoming": 0, "mail": 0, "orphans": 0, "quarantine": 0, "photos": 0, "audit": 0, "accounts": 0}
     for key, mtime in st.list("incoming/"):
         if now - mtime > s.retention_incoming_days * 86400:
             st.delete(key)
@@ -36,6 +36,29 @@ def apply_retention(db: Session, now: float | None = None) -> dict:
             if now - f.stat().st_mtime > s.retention_mail_days * 86400:
                 f.unlink(missing_ok=True)
                 out["mail"] += 1
+    for key, mtime in st.list("quarantine/"):
+        if now - mtime > 30 * 86400:  # infected uploads: kept 30 days for review, never served
+            st.delete(key)
+            out["quarantine"] += 1
+    if s.retention_photos_days:
+        # apartment photos/videos are personal data: purged N days after the last project activity
+        from datetime import datetime, timezone
+
+        cutoff = datetime.fromtimestamp(now - s.retention_photos_days * 86400, tz=timezone.utc)
+        for a in db.scalars(select(m.SourceAsset).join(m.Project, m.Project.id == m.SourceAsset.project_id)
+                            .where(m.SourceAsset.kind.in_(("photo", "video")), m.SourceAsset.scan_status != "purged", m.Project.updated_at < cutoff)):
+            st.delete(a.storage_key)
+            a.scan_status = "purged"
+            a.quality = {**(a.quality or {}), "purged_at": datetime.now(timezone.utc).isoformat()}
+            out["photos"] += 1
+    if s.retention_audit_days:
+        from datetime import datetime, timezone
+
+        cutoff = datetime.fromtimestamp(now - s.retention_audit_days * 86400, tz=timezone.utc)
+        out["audit"] = db.query(m.AuditEvent).filter(m.AuditEvent.created_at < cutoff).delete(synchronize_session=False)
+    from .privacy import purge_due_accounts
+
+    out["accounts"] = purge_due_accounts(db)
     referenced = set(db.scalars(select(m.SourceAsset.storage_key))) | set(db.scalars(select(m.Document.storage_key)))
     for key, mtime in st.list("projects/"):
         if key not in referenced and now - mtime > s.retention_orphan_days * 86400:

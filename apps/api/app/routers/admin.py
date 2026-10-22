@@ -98,6 +98,14 @@ def index_source(sid: str, body: IndexIn, p: Principal = Depends(require("source
     return job_dict(job)
 
 
+@router.get("/quarantine")
+def quarantine(p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):
+    """Uploads rejected by the antivirus (kept 30 days for review; never served)."""
+    rows = db.scalars(select(m.AuditEvent).where(m.AuditEvent.action == "asset.quarantined").order_by(m.AuditEvent.created_at.desc()).limit(100))
+    return [{"at": e.created_at.isoformat(), "project_id": e.project_id, "user_id": e.user_id, **{k: e.data.get(k) for k in ("filename", "sha256", "signature")}}
+            for e in rows]
+
+
 @router.get("/jobs")
 def jobs(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
     return [job_dict(j) for j in db.scalars(select(m.GenerationJob).order_by(m.GenerationJob.created_at.desc()).limit(100))]

@@ -47,6 +47,13 @@ class User(TimestampMixin, Base):
     onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # {"terms": {"version": "2026-10", "at": iso}, "marketing": {...}} — consent records (privacy)
     consents: Mapped[dict] = mapped_column(JSON, default=dict)
+    # MFA (TOTP): secrets are encrypted with a key derived from SECRET_KEY; backup codes stored as SHA-256
+    mfa_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    mfa_pending_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    mfa_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    mfa_backup_codes: Mapped[list] = mapped_column(JSON, default=list)
+    # account deletion with a grace period (privacy): purged by the worker after this moment
+    deletion_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     memberships: Mapped[list[Membership]] = relationship(back_populates="user", lazy="selectin")
 
 
@@ -127,6 +134,7 @@ class SourceAsset(TimestampMixin, Base):
     room_hint: Mapped[str | None] = mapped_column(String(50), nullable=True)
     quality: Mapped[dict] = mapped_column(JSON, default=dict)
     aps: Mapped[dict] = mapped_column(JSON, default=dict)  # {objectId, urn, status, progress}
+    scan_status: Mapped[str] = mapped_column(String(20), default="not_scanned")  # clean | not_scanned | purged
 
 
 class Measurement(TimestampMixin, Base):

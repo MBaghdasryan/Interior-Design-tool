@@ -77,7 +77,8 @@ export function Protected({ children }: { children: ReactNode }) {
     api<Cfg>("/config").then(setCfg).catch(() => {});
   }, [nav, reload]);
   useEffect(() => {
-    if (me && !me.onboarded && loc.pathname !== "/app/onboarding") nav("/app/onboarding");
+    if (me && me.mfa_enrollment_required && loc.pathname !== "/app/account") nav("/app/account#mfa");  // the API refuses everything else
+    else if (me && !me.onboarded && !me.mfa_enrollment_required && loc.pathname !== "/app/onboarding") nav("/app/onboarding");
   }, [me, loc.pathname, nav]);
   if (!me) return <div className="empty"><span className="spinner" /></div>;
   return <MeCtx.Provider value={{ me, cfg, reload }}>{children}</MeCtx.Provider>;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, Workflow } from "lucide-react";
+import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Workflow } from "lucide-react";
 import { api, type Job } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
@@ -7,7 +7,8 @@ import { Badge, Loading, Switch, useToast } from "../components/ui";
 
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; last_errors: string[] }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
-type Tab = "sources" | "jobs" | "ai" | "aps" | "audit";
+type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine";
+interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
 export default function PlatformAdmin() {
   const { t } = useT();
@@ -18,6 +19,7 @@ export default function PlatformAdmin() {
   const [jobs, setJobs] = useState<(Job & { attempts?: number })[]>([]);
   const [ai, setAi] = useState<Ai | null>(null);
   const [aps, setAps] = useState<Record<string, any> | null>(null);
+  const [quar, setQuar] = useState<Quarantined[]>([]);
   const [audit, setAudit] = useState<{ action: string; entity: string; data: Record<string, unknown>; created_at: string }[]>([]);
   const load = useCallback(() => {
     api("/admin/stats").then(setStats);
@@ -26,6 +28,7 @@ export default function PlatformAdmin() {
     api<Ai>("/admin/ai").then(setAi);
     api("/aps/status").then(setAps);
     api("/admin/audit").then(setAudit);
+    api<Quarantined[]>("/admin/quarantine").then(setQuar).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
   const patch = async (s: Src, body: Partial<Src>) => { await api(`/admin/sources/${s.id}`, { method: "PATCH", json: body }); load(); };
@@ -36,7 +39,7 @@ export default function PlatformAdmin() {
   const test = async (s: Src) => { const r = await api<{ status: string; message: string }>(`/admin/sources/${s.id}/test`, { method: "POST" }); toast(`${s.name}: ${t(`enum.source_status.${r.status}`)}`); load(); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText]];
+  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -88,6 +91,9 @@ export default function PlatformAdmin() {
       </div>}
       {tab === "audit" && <div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.action")}</th><th>{t("adm.col.entity")}</th><th>{t("adm.col.data")}</th></tr></thead>
         <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table></div>}
+      {tab === "quarantine" && <div className="card" style={{ overflow: "auto" }}>{quar.length === 0 ? <p className="pad muted">{t("adm.quarantine_empty")}</p> :
+        <table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.signature")}</th><th>SHA-256</th></tr></thead>
+          <tbody>{quar.map((q) => <tr key={q.sha256 + q.at}><td className="small nowrap">{dt(q.at)}</td><td className="small">{q.filename}</td><td><b className="small">{q.signature}</b></td><td className="tiny mono">{q.sha256.slice(0, 16)}…</td></tr>)}</tbody></table>}</div>}
     </div>
   );
 }

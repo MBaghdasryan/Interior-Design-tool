@@ -26,3 +26,4 @@ opentelemetry-instrumentation-fastapi==0.65b0
 opentelemetry-instrumentation-sqlalchemy==0.65b0
 opentelemetry-instrumentation-httpx==0.65b0
 sentry-sdk==2.19.2
+cryptography==50.0.2

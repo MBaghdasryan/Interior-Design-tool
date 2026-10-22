@@ -56,6 +56,12 @@ MESSAGES: dict[str, str] = {
     "auth.demo_disabled": "Демо-доступ отключён",
     "auth.account_disabled": "Учётная запись отключена",
     "rate_limited": "Слишком много запросов — повторите позже",
+    "auth.mfa_invalid": "Неверный код подтверждения",
+    "auth.mfa_required": "Нужен код из приложения-аутентификатора",
+    "auth.mfa_enrollment_required": "Для вашей роли нужно включить двухфакторную аутентификацию",
+    "auth.mfa_not_started": "Сначала начните настройку двухфакторной аутентификации",
+    "auth.deletion_pending": "Аккаунт помечен на удаление",
+    "file.scan_unavailable": "Антивирусная проверка недоступна — повторите позже",
 }
 
 _BY_TEXT = {v: k for k, v in MESSAGES.items()}

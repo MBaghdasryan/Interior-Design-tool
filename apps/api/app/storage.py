@@ -114,10 +114,59 @@ def detect_kind(filename: str, mime: str, head: bytes) -> str | None:
     return kind
 
 
+class ScanUnavailable(Exception):
+    pass
+
+
+def clamd_instream(data: bytes, host: str, port: int = 3310, timeout: float = 30.0, chunk: int = 1 << 16) -> str | None:
+    """ClamAV daemon INSTREAM protocol. Returns the signature name when infected, None when clean."""
+    import socket
+    import struct
+
+    try:
+        with socket.create_connection((host, port), timeout=timeout) as s:
+            s.sendall(b"zINSTREAM\0")
+            for i in range(0, len(data), chunk):
+                part = data[i:i + chunk]
+                s.sendall(struct.pack("!I", len(part)) + part)
+            s.sendall(struct.pack("!I", 0))
+            reply = b""
+            while not reply.endswith(b"\0"):
+                got = s.recv(4096)
+                if not got:
+                    break
+                reply += got
+    except OSError as e:
+        raise ScanUnavailable(str(e)) from e
+    text = reply.rstrip(b"\0").decode(errors="replace")
+    if text.endswith("OK"):
+        return None
+    if text.endswith("FOUND"):
+        return text.split(":", 1)[-1].rsplit(" ", 1)[0].strip()
+    raise ScanUnavailable(text[:200])  # e.g. "INSTREAM size limit exceeded. ERROR"
+
+
+def scan_upload(data: bytes) -> tuple[str, str | None]:
+    """→ ("clean" | "infected" | "not_scanned", signature). With CLAMAV_HOST set every upload is
+    scanned by clamd; when clamd is down the upload is refused (CLAMAV_REQUIRED, default in
+    production) or accepted as "not_scanned". Without clamd only the EICAR test string is caught."""
+    s = get_settings()
+    if s.clamav_host:
+        try:
+            sig = clamd_instream(data, s.clamav_host, s.clamav_port)
+            return ("infected", sig) if sig else ("clean", None)
+        except ScanUnavailable:
+            if s.clamav_required if s.clamav_required is not None else s.is_production:
+                raise
+            return "not_scanned", None
+    if b"EICAR-STANDARD-ANTIVIRUS-TEST-FILE" in data:
+        return "infected", "Eicar-Test-Signature"
+    return "not_scanned", None
+
+
 def scan_for_malware(data: bytes) -> bool:
-    """Malware-scanning hook. Wire ClamAV (clamd INSTREAM) here in production.
-    Development: rejects the EICAR test signature only."""
-    return b"EICAR-STANDARD-ANTIVIRUS-TEST-FILE" not in data
+    """Backward-compatible boolean check (True = no malware found)."""
+    return scan_upload(data)[0] != "infected"
 
 
 class S3Storage(LocalStorage):

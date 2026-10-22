@@ -133,5 +133,5 @@ def public_config():
 
     return {"brand_name": settings.brand_name, "brand_tagline": settings.brand_tagline, "currency": settings.base_currency,
             "aps_enabled": settings.aps_enabled, "external_catalog_enabled": settings.external_catalog_enabled,
-            "external_fetch_live": settings.external_fetch_live,
+            "external_fetch_live": settings.external_fetch_live, "privacy_deletion_grace_days": settings.privacy_deletion_grace_days,
             "ai": {k: v["available"] for k, v in get_orchestrator().status().items()}}

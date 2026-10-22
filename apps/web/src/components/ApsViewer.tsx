@@ -32,9 +32,11 @@ export default function ApsViewer({ urn, height = 480 }: { urn: string; height?:
       try {
         await loadViewer();
         const A = window.Autodesk;
-        await new Promise<void>((res) => A.Viewing.Initializer({ env: "AutodeskProduction2", api: "streamingV2", getAccessToken: async (cb: (t: string, e: number) => void) => {
+        // optOutTrackingByDefault: the viewer must not send usage telemetry to third parties (privacy; also blocked by CSP)
+        await new Promise<void>((res) => A.Viewing.Initializer({ env: "AutodeskProduction2", api: "streamingV2", optOutTrackingByDefault: true, getAccessToken: async (cb: (t: string, e: number) => void) => {
           const t = await api<{ access_token: string; expires_in: number }>("/aps/viewer-token"); cb(t.access_token, t.expires_in);
         } }, () => res()));
+        try { A.Viewing.Private?.analytics?.optOut?.(); } catch { /* older viewer builds */ }
         if (cancelled || !host.current) return;
         viewer = new A.Viewing.GuiViewer3D(host.current);
         viewer.start();

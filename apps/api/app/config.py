@@ -95,6 +95,20 @@ class Settings(BaseSettings):
     otel_service_name: str = "renovara-api"
     sentry_dsn: str | None = None
 
+    # Upload antivirus: clamd INSTREAM (compose service `clamav`); CLAMAV_REQUIRED=None → required in production
+    clamav_host: str | None = None
+    clamav_port: int = 3310
+    clamav_required: bool | None = None
+
+    # Privacy
+    privacy_deletion_grace_days: int = 14
+    retention_photos_days: int = 365  # project photos/videos after the last project activity; 0 = keep
+    retention_audit_days: int = 730
+
+    # MFA: enforced in production for these roles (MFA_ENFORCE overrides; None = production only)
+    mfa_enforce: bool | None = None
+    mfa_required_roles: str = "bureau_admin,platform_admin,platform_ops"
+
     # Rate limiting (in-memory per process; Redis when REDIS_URL is set)
     rate_limit_enabled: bool = True
     redis_url: str | None = None
