@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     external_specs_ttl_h: int = 24 * 7
     external_media_ttl_h: int = 24 * 30
 
+    # Search (P2-4): local (lexical, no network) | gemini | auto (gemini when a key is set) | off
+    search_embeddings: str = "local"
+
     # Commerce (P2-1): payments only through a contracted provider; without one the UI says «Integration pending»
     payment_provider: str = ""  # "" | stripe_compat | idram | arca | ameriabank
     payment_api_base: str | None = None

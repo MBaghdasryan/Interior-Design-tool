@@ -714,6 +714,22 @@ class SupplierService(TimestampMixin, Base):
     unit: Mapped[str] = mapped_column(String(20), default="pcs")
 
 
+
+class ProductEmbedding(Base):
+    """Search vectors (P2-4): one row per catalogue item, modality and provider/model."""
+    __tablename__ = "product_embeddings"
+    __table_args__ = (UniqueConstraint("item_ref", "modality", "provider", "model"),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    item_ref: Mapped[str] = mapped_column(String(40), index=True)  # pv:<variant> | ext:<record>
+    modality: Mapped[str] = mapped_column(String(10))  # text | image
+    provider: Mapped[str] = mapped_column(String(20))
+    model: Mapped[str] = mapped_column(String(60))
+    dim: Mapped[int] = mapped_column(Integer)
+    vector: Mapped[list] = mapped_column(JSON)
+    text_hash: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)
 from sqlalchemy import event  # noqa: E402
 

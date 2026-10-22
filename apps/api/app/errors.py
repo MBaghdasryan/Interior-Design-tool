@@ -38,6 +38,7 @@ MESSAGES: dict[str, str] = {
     "cart.requires_approval": "Корзина формируется из утверждённого варианта",
     "order.made_to_measure_requires_production": "Изделия по размерам: требуется верификация обмеров (Production Ready)",
     "order.demo_supplier": "DEMO-поставщик: заказ не может быть отправлен",
+    "search.off": "Семантический поиск выключен (SEARCH_EMBEDDINGS=off)",
     "supplier.onboarding_incomplete": "Онбординг не завершён: {steps}",
     "asset.kind": "Неизвестный тип ассета",
     "asset.extension": "Формат файла не подходит для этого типа",

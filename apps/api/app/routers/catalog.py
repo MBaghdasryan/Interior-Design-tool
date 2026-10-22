@@ -151,3 +151,59 @@ def public_sources(p: Principal = Depends(current_principal), db: Session = Depe
     """External sources available for the «Внешний каталог» switch (no admin details)."""
     return [{"key": s.key, "name": s.name, "domain": s.domain, "categories": s.categories, "method": s.method, "status": s.connector_status,
              "enabled": s.enabled, "note": s.notes[:240]} for s in db.scalars(select(m.ExternalSource).order_by(m.ExternalSource.name)) if s.enabled]
+
+
+# ------------------------------------------------------------------ semantic / visual search, analogs (P2-4)
+def _resolve(db: Session, hits: list[tuple[str, float]]) -> list[dict]:
+    from ..search import index
+
+    pool = {c.ref: c for c in index.candidates(db)}
+    out = []
+    for ref, score in hits:
+        c = pool.get(ref)
+        if c:
+            out.append({**c.dict(), "source": "external" if ref.startswith("ext:") else "internal", "score": round(score, 3)})
+    return out
+
+
+@router.get("/search/status")
+def search_status(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..search import embeddings
+
+    counts = dict(db.execute(select(m.ProductEmbedding.modality, func.count(m.ProductEmbedding.id)).group_by(m.ProductEmbedding.modality)).all())
+    return {**embeddings.status(), "indexed": {"text": counts.get("text", 0), "image": counts.get("image", 0)}}
+
+
+@router.get("/search/semantic")
+def semantic_search(q: str = Query(min_length=2, max_length=200), limit: int = Query(30, ge=1, le=100), p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..search import embeddings, index
+
+    try:
+        hits, info = index.search_text(db, q, k=limit)
+    except embeddings.EmbeddingError:
+        raise ApiError(409, "search.off") from None
+    return {"items": _resolve(db, hits), **info}
+
+
+@router.post("/search/image")
+async def image_search(file: UploadFile = File(...), p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..search import index
+
+    data = await file.read()
+    if len(data) > 15 << 20:
+        raise ApiError(422, "file.too_large")
+    try:
+        hits, info = index.search_image(db, data)
+    except Exception:  # noqa: BLE001 - undecodable upload
+        raise ApiError(422, "asset.not_image") from None
+    return {"items": _resolve(db, hits), **info}
+
+
+@router.get("/analogs")
+def analogs(ref: str = Query(pattern=r"^(pv|ext):[0-9a-f]{32}$"), limit: int = Query(8, ge=1, le=30), p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..search import analogs as an
+
+    r = an.find(db, ref, limit=limit)
+    if r["base"] is None:
+        raise ApiError(404, "product.not_found")
+    return r

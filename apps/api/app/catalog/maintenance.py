@@ -292,3 +292,16 @@ def sync_feed(db: Session, sup: m.Supplier, fetcher=None) -> dict:
     db.add(m.AuditEvent(action="supplier.feed_sync", entity="supplier", entity_id=sup.id, data={k: v for k, v in result.items() if k != "errors"}))
     db.commit()
     return result
+
+
+@periodic("search_index")
+def scheduled_search_index(db: Session) -> bool:
+    """Every 6 h: incremental re-embedding (only changed product texts are embedded again)."""
+    if not _every("search_index", 6 * 3600):
+        return False
+    if db.scalar(select(m.GenerationJob.id).where(m.GenerationJob.kind == "search_index", m.GenerationJob.status.in_(("queued", "running"))).limit(1)):
+        return False
+    from ..jobs.runner import enqueue
+
+    enqueue(db, "search_index", project_id=None, params={})
+    return True

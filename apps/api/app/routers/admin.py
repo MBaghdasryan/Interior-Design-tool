@@ -94,6 +94,14 @@ def source_history(sid: str, p: Principal = Depends(require("sources:manage")), 
                          "price_ttl_h": (s.ttl_h or {}).get("price")}}
 
 
+@router.post("/search/reindex")
+def search_reindex(p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+    job = enqueue(db, "search_index", project_id=None, params={})
+    audit(db, p, "search.reindex", "search", None)
+    db.commit()
+    return job_dict(job)
+
+
 class IndexIn(BaseModel):
     batch: int = Field(default=60, ge=1, le=300)
 

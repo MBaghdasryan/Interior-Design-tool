@@ -41,3 +41,14 @@ def supplier_feed(ctx: JobContext) -> dict:
     r = sync_feed(ctx.db, sup)
     ctx.done("sync", r["status"], status="done" if r["status"] == "ok" else "warning", **{k: v for k, v in r.items() if k != "errors"})
     return {k: v for k, v in r.items() if k != "errors"}
+
+
+@handler("search_index")
+def search_index(ctx: JobContext) -> dict:
+    from ..search import index
+
+    ctx.define_steps([("embed", "Индекс семантического поиска", "catalog")])
+    ctx.start("embed")
+    r = index.build(ctx.db)
+    ctx.done("embed", f"{r.get('provider')}: {r.get('embedded', 0)} из {r.get('items', 0)}; изображений {r.get('images', 0)}", **{k: v for k, v in r.items() if isinstance(v, int | str)})
+    return r

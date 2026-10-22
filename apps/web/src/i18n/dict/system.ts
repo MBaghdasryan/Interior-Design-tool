@@ -48,6 +48,7 @@ export const errors: Dict = {
   "errors.cart.requires_approval": { hy: "Զամբյուղը ձևավորվում է հաստատված տարբերակից", ru: "Корзина формируется из утверждённого варианта", en: "The cart is built from the approved variant" },
   "errors.order.made_to_measure_requires_production": { hy: "Ըստ չափերի արտադրանքի համար անհրաժեշտ է չափագրության ստուգում (Production Ready)", ru: "Изделия по размерам: требуется верификация обмеров (Production Ready)", en: "Made-to-measure items require a verified survey (Production Ready)" },
   "errors.order.demo_supplier": { hy: "DEMO մատակարար․ պատվերը չի ուղարկվում", ru: "DEMO-поставщик: заказ не отправляется", en: "DEMO supplier: the order is not sent" },
+  "errors.search.off": { hy: "Իմաստային որոնումն անջատված է (SEARCH_EMBEDDINGS=off)", ru: "Семантический поиск выключен (SEARCH_EMBEDDINGS=off)", en: "Semantic search is off (SEARCH_EMBEDDINGS=off)" },
   "errors.supplier.onboarding_incomplete": { hy: "Գրանցման քայլերը ավարտված չեն՝ {steps}", ru: "Онбординг не завершён: {steps}", en: "Onboarding is incomplete: {steps}" },
   "errors.asset.kind": { hy: "Անհայտ ֆայլի տեսակ", ru: "Неизвестный тип ассета", en: "Unknown asset type" },
   "errors.asset.extension": { hy: "Ֆայլի ձևաչափը չի համապատասխանում այս տեսակին", ru: "Формат файла не подходит для этого типа", en: "The file format does not fit this type" },

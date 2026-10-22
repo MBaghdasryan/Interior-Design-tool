@@ -83,6 +83,20 @@
     "title": "ApproveIn",
     "type": "object"
    },
+   "Body_image_search_api_v1_catalog_search_image_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_image_search_api_v1_catalog_search_image_post",
+    "type": "object"
+   },
    "Body_import_commit_api_v1_catalog_import_commit_post": {
     "properties": {
      "file": {
@@ -2770,6 +2784,53 @@
     ]
    }
   },
+  "/api/v1/admin/search/reindex": {
+   "post": {
+    "operationId": "search_reindex_api_v1_admin_search_reindex_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Search Reindex",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
   "/api/v1/admin/sources": {
    "get": {
     "operationId": "sources_api_v1_admin_sources_get",
@@ -5020,6 +5081,75 @@
     ]
    }
   },
+  "/api/v1/catalog/analogs": {
+   "get": {
+    "operationId": "analogs_api_v1_catalog_analogs_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "ref",
+      "required": true,
+      "schema": {
+       "pattern": "^(pv|ext):[0-9a-f]{32}$",
+       "title": "Ref",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 8,
+       "maximum": 30,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Analogs",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/api/v1/catalog/external/review": {
    "get": {
     "operationId": "review_queue_api_v1_catalog_external_review_get",
@@ -5421,6 +5551,180 @@
      }
     },
     "summary": "Search",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/v1/catalog/search/image": {
+   "post": {
+    "operationId": "image_search_api_v1_catalog_search_image_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_image_search_api_v1_catalog_search_image_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Image Search",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/v1/catalog/search/semantic": {
+   "get": {
+    "operationId": "semantic_search_api_v1_catalog_search_semantic_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": true,
+      "schema": {
+       "maxLength": 200,
+       "minLength": 2,
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 30,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Semantic Search",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/api/v1/catalog/search/status": {
+   "get": {
+    "operationId": "search_status_api_v1_catalog_search_status_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Search Status",
     "tags": [
      "catalog"
     ]
