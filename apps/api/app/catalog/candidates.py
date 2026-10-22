@@ -100,7 +100,7 @@ def candidate_from_record(r: m.ExternalProductRecord, source: m.ExternalSource) 
 
 
 def load_internal(db: Session, categories: set[str] | None = None, include_demo: bool = True) -> list[Candidate]:
-    q = select(m.ProductVariant).join(m.Product)
+    q = select(m.ProductVariant).join(m.Product).join(m.Supplier, m.Supplier.id == m.Product.supplier_id).where(m.Supplier.verification == "verified")
     if categories:
         q = q.where(m.Product.category.in_(categories))
     if not include_demo:

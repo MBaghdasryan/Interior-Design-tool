@@ -121,7 +121,7 @@ jobs:
           docker run --rm --network host -e BASE=http://localhost:8085 -e OUT=/out \
             -v renovara-ci_storage:/apidata:ro -v "$PWD/apps/web/e2e:/e2e" -v "$PWD/e2e-out:/out" \
             mcr.microsoft.com/playwright/python:v1.49.0-jammy sh -c \
-            "pip install -q playwright==1.49.0 axe-playwright-python==0.1.4 pillow==11.0.0 && python /e2e/visual_a11y_e2e.py && python /e2e/auth_e2e.py && python /e2e/i18n_e2e.py && python /e2e/routes_smoke.py && python /e2e/notifications_e2e.py && python /e2e/catalog_ops_e2e.py && python /e2e/commerce_e2e.py"
+            "pip install -q playwright==1.49.0 axe-playwright-python==0.1.4 pillow==11.0.0 && python /e2e/visual_a11y_e2e.py && python /e2e/auth_e2e.py && python /e2e/i18n_e2e.py && python /e2e/routes_smoke.py && python /e2e/notifications_e2e.py && python /e2e/catalog_ops_e2e.py && python /e2e/commerce_e2e.py && python /e2e/supplier_onboarding_e2e.py"
       - name: Logs on failure
         if: failure()
         run: docker compose -p renovara-ci logs --tail 200 > e2e-out/compose.log 2>&1 || true

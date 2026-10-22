@@ -1,6 +1,24 @@
 {
  "components": {
   "schemas": {
+   "AgreementIn": {
+    "properties": {
+     "accept": {
+      "title": "Accept",
+      "type": "boolean"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     }
+    },
+    "required": [
+     "version",
+     "accept"
+    ],
+    "title": "AgreementIn",
+    "type": "object"
+   },
    "AiBudgetIn": {
     "properties": {
      "daily_usd": {
@@ -144,6 +162,36 @@
     "title": "Body_upload_asset_api_v1_projects__pid__assets_post",
     "type": "object"
    },
+   "Body_upload_asset_api_v1_supplier_assets_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "variant_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Variant Id"
+     }
+    },
+    "required": [
+     "file",
+     "kind"
+    ],
+    "title": "Body_upload_asset_api_v1_supplier_assets_post",
+    "type": "object"
+   },
    "CartIn": {
     "properties": {
      "variant_id": {
@@ -155,6 +203,22 @@
      "variant_id"
     ],
     "title": "CartIn",
+    "type": "object"
+   },
+   "CategoryMapIn": {
+    "properties": {
+     "mapping": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Mapping",
+      "type": "object"
+     }
+    },
+    "required": [
+     "mapping"
+    ],
+    "title": "CategoryMapIn",
     "type": "object"
    },
    "ClientComment": {
@@ -517,6 +581,49 @@
     "title": "DeleteIn",
     "type": "object"
    },
+   "DeliveryIn": {
+    "properties": {
+     "days_max": {
+      "default": 3,
+      "maximum": 365.0,
+      "minimum": 0.0,
+      "title": "Days Max",
+      "type": "integer"
+     },
+     "days_min": {
+      "default": 1,
+      "maximum": 365.0,
+      "minimum": 0.0,
+      "title": "Days Min",
+      "type": "integer"
+     },
+     "fee_amd": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Fee Amd",
+      "type": "integer"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "regions": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Regions",
+      "type": "array"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "DeliveryIn",
+    "type": "object"
+   },
    "Fee": {
     "properties": {
      "mode": {
@@ -651,6 +758,39 @@
      }
     },
     "title": "IndexIn",
+    "type": "object"
+   },
+   "LocationIn": {
+    "properties": {
+     "address": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Address",
+      "type": "string"
+     },
+     "city": {
+      "default": "Ереван",
+      "maxLength": 100,
+      "title": "City",
+      "type": "string"
+     },
+     "kind": {
+      "default": "warehouse",
+      "pattern": "^(warehouse|showroom|pickup)$",
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "LocationIn",
     "type": "object"
    },
    "LoginIn": {
@@ -1059,6 +1199,57 @@
     "title": "PresignIn",
     "type": "object"
    },
+   "ProfileIn": {
+    "properties": {
+     "city": {
+      "default": "Ереван",
+      "maxLength": 100,
+      "title": "City",
+      "type": "string"
+     },
+     "email": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Email",
+      "type": "string"
+     },
+     "kind": {
+      "default": "store",
+      "pattern": "^(store|manufacturer|installer)$",
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Name",
+      "type": "string"
+     },
+     "phone": {
+      "default": "",
+      "maxLength": 40,
+      "title": "Phone",
+      "type": "string"
+     },
+     "tax_id": {
+      "default": "",
+      "maxLength": 30,
+      "title": "Tax Id",
+      "type": "string"
+     },
+     "website": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Website",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ProfileIn",
+    "type": "object"
+   },
    "ProjectIn": {
     "properties": {
      "address": {
@@ -1435,6 +1626,45 @@
     "title": "RfqIn",
     "type": "object"
    },
+   "ServiceIn": {
+    "properties": {
+     "category": {
+      "default": "",
+      "maxLength": 50,
+      "title": "Category",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "price_amd": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Amd"
+     },
+     "unit": {
+      "default": "pcs",
+      "maxLength": 20,
+      "title": "Unit",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ServiceIn",
+    "type": "object"
+   },
    "SignoffIn": {
     "properties": {
      "note": {
@@ -1696,6 +1926,26 @@
      "type"
     ],
     "title": "ValidationError",
+    "type": "object"
+   },
+   "VerifyIn": {
+    "properties": {
+     "decision": {
+      "pattern": "^(verified|rejected)$",
+      "title": "Decision",
+      "type": "string"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "title": "VerifyIn",
     "type": "object"
    }
   }
@@ -2857,6 +3107,135 @@
     "summary": "Stats",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/suppliers": {
+   "get": {
+    "operationId": "admin_suppliers_api_v1_admin_suppliers_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "verification",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Verification"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Suppliers",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/admin/suppliers/{sid}/verification": {
+   "post": {
+    "operationId": "verify_supplier_api_v1_admin_suppliers__sid__verification_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VerifyIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Verify Supplier",
+    "tags": [
+     "suppliers"
     ]
    }
   },
@@ -9835,6 +10214,323 @@
     ]
    }
   },
+  "/api/v1/supplier/assets": {
+   "get": {
+    "operationId": "list_assets_api_v1_supplier_assets_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Assets",
+    "tags": [
+     "suppliers"
+    ]
+   },
+   "post": {
+    "operationId": "upload_asset_api_v1_supplier_assets_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_asset_api_v1_supplier_assets_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Upload Asset",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/assets/{aid}": {
+   "delete": {
+    "operationId": "delete_asset_api_v1_supplier_assets__aid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Asset",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/category-map": {
+   "get": {
+    "operationId": "get_category_map_api_v1_supplier_category_map_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Category Map",
+    "tags": [
+     "suppliers"
+    ]
+   },
+   "put": {
+    "operationId": "put_category_map_api_v1_supplier_category_map_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CategoryMapIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Category Map",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/delivery-options": {
+   "post": {
+    "operationId": "add_delivery_api_v1_supplier_delivery_options_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeliveryIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Delivery",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
   "/api/v1/supplier/feed": {
    "get": {
     "operationId": "get_feed_api_v1_supplier_feed_get",
@@ -9981,6 +10677,271 @@
     "summary": "Sync Feed Now",
     "tags": [
      "partners"
+    ]
+   }
+  },
+  "/api/v1/supplier/locations": {
+   "post": {
+    "operationId": "add_location_api_v1_supplier_locations_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LocationIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Location",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/onboarding": {
+   "get": {
+    "operationId": "get_onboarding_api_v1_supplier_onboarding_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Onboarding",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/onboarding/agreement": {
+   "post": {
+    "operationId": "accept_agreement_api_v1_supplier_onboarding_agreement_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AgreementIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Accept Agreement",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/onboarding/profile": {
+   "put": {
+    "operationId": "put_profile_api_v1_supplier_onboarding_profile_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProfileIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Profile",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/onboarding/submit": {
+   "post": {
+    "operationId": "submit_onboarding_api_v1_supplier_onboarding_submit_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Submit Onboarding",
+    "tags": [
+     "suppliers"
     ]
    }
   },
@@ -10210,6 +11171,53 @@
     ]
    }
   },
+  "/api/v1/supplier/partner-data": {
+   "get": {
+    "operationId": "partner_data_api_v1_supplier_partner_data_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Partner Data",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
   "/api/v1/supplier/products": {
    "get": {
     "operationId": "supplier_products_api_v1_supplier_products_get",
@@ -10320,6 +11328,128 @@
     "summary": "Respond Rfq",
     "tags": [
      "partners"
+    ]
+   }
+  },
+  "/api/v1/supplier/services": {
+   "post": {
+    "operationId": "add_service_api_v1_supplier_services_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ServiceIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Service",
+    "tags": [
+     "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/{kind}/{rid}": {
+   "delete": {
+    "operationId": "delete_partner_row_api_v1_supplier__kind___rid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "kind",
+      "required": true,
+      "schema": {
+       "title": "Kind",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Partner Row",
+    "tags": [
+     "suppliers"
     ]
    }
   }

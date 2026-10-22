@@ -29,7 +29,8 @@ def taxonomy():
 def search(q: str = "", category: str | None = None, group: str | None = None, style: str | None = None, tier: str | None = None,
            max_price: float | None = None, in_stock: bool = False, include_external: bool = True, limit: int = Query(60, le=200), offset: int = 0,
            p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    stmt = select(m.ProductVariant).join(m.Product)
+    # self-registered suppliers appear only after platform verification
+    stmt = select(m.ProductVariant).join(m.Product).join(m.Supplier, m.Supplier.id == m.Product.supplier_id).where(m.Supplier.verification == "verified")
     if q:
         like = f"%{q.lower()}%"
         stmt = stmt.where(or_(func.lower(m.Product.name_ru).like(like), func.lower(m.ProductVariant.sku).like(like), func.lower(m.Product.brand).like(like)))

@@ -265,6 +265,10 @@ class Supplier(TimestampMixin, Base):
     external_source_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # scheduled price feed: {enabled, url, interval_h, max_price_change_pct, mapping, last_sync_at, last_status, history, alerts}
     feed: Mapped[dict] = mapped_column(JSON, default=dict)
+    # onboarding (P2-3): self-registered suppliers start "pending" and are hidden from catalogue and design until verified
+    verification: Mapped[str] = mapped_column(String(20), default="verified")  # pending | verified | rejected
+    onboarding: Mapped[dict] = mapped_column(JSON, default=dict)  # {agreement: {version, at, by, ip}, verified_by, note, tax_id}
+    category_map: Mapped[dict] = mapped_column(JSON, default=dict)  # supplier category label → taxonomy key
 
 
 class Product(TimestampMixin, Base):
@@ -659,6 +663,55 @@ class Notification(TimestampMixin, Base):
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
+
+
+# ------------------------------------------------------------------ supplier partner data (P2-3)
+class SupplierAsset(TimestampMixin, Base):
+    """Files a supplier provides for its products: 3D (GLB/glTF), PBR textures, BIM/CAD, certificates."""
+    __tablename__ = "supplier_assets"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("suppliers.id", ondelete="CASCADE"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # model3d | texture | bim_cad | certificate
+    filename: Mapped[str] = mapped_column(String(300))
+    mime: Mapped[str] = mapped_column(String(100))
+    size: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    storage_key: Mapped[str] = mapped_column(String(400))
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)  # format details (glTF version, meshes, image size, PBR channel…)
+    scan_status: Mapped[str] = mapped_column(String(20), default="not_scanned")
+
+
+class SupplierLocation(TimestampMixin, Base):
+    __tablename__ = "supplier_locations"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("suppliers.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="warehouse")  # warehouse | showroom | pickup
+    name: Mapped[str] = mapped_column(String(120))
+    city: Mapped[str] = mapped_column(String(100), default="Ереван")
+    address: Mapped[str] = mapped_column(String(300), default="")
+
+
+class SupplierDeliveryOption(TimestampMixin, Base):
+    __tablename__ = "supplier_delivery_options"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("suppliers.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    regions: Mapped[list] = mapped_column(JSON, default=list)
+    fee_amd: Mapped[int] = mapped_column(Integer, default=0)
+    days_min: Mapped[int] = mapped_column(Integer, default=1)
+    days_max: Mapped[int] = mapped_column(Integer, default=3)
+
+
+class SupplierService(TimestampMixin, Base):
+    __tablename__ = "supplier_services"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("suppliers.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(50), default="")  # taxonomy category the service applies to
+    price_amd: Mapped[int | None] = mapped_column(Integer, nullable=True)  # None = quote on request
+    unit: Mapped[str] = mapped_column(String(20), default="pcs")
 
 
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)

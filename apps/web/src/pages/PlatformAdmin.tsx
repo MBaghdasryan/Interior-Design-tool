@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Wallet, Workflow } from "lucide-react";
+import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Store, Wallet, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
@@ -9,7 +9,7 @@ import FinanceTab from "../components/FinanceTab";
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; last_errors: string[] }
 interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
-type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance";
+type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
 export default function PlatformAdmin() {
@@ -50,7 +50,7 @@ export default function PlatformAdmin() {
   const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet]];
+  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -103,6 +103,7 @@ export default function PlatformAdmin() {
         <div className="row"><button className="btn" disabled={!aps.enabled} onClick={() => apsAction("/aps/test")}>{t("adm.aps_test")}</button><button className="btn" disabled={!aps.enabled} onClick={() => apsAction("/aps/setup-design-automation")}>{t("adm.aps_setup")}</button></div>
         {!aps.enabled && <div className="alert warn small">{t("adm.aps_hint")}</div>}
       </div>}
+      {tab === "partners" && <PartnerReview />}
       {tab === "finance" && <FinanceTab />}
       {tab === "audit" && <div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.action")}</th><th>{t("adm.col.entity")}</th><th>{t("adm.col.data")}</th></tr></thead>
         <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table>
@@ -131,6 +132,33 @@ function SourceHistory({ h }: { h: Hist }) {
         <tbody>{h.runs.map((r, i) => <tr key={i}><td className="tiny">{dt(r.at)}</td><td className="small">{r.kind}</td><td><Badge tone={r.status === "ok" ? "sage" : r.status === "error" || r.status === "blocked" ? "danger" : ""}>{r.status}</Badge></td>
           <td className="right">{r.found}</td><td className="right">{r.validated}</td><td className="right tiny">{r.latency_ms}</td><td className="tiny" style={{ color: "var(--danger)" }}>{r.errors[0]}</td></tr>)}</tbody>
       </table>
+    </div>
+  );
+}
+
+interface PartnerRow { supplier: { id: string; name: string; website: string; city: string; tax_id: string } | null; verification: string; note: string; steps: Record<string, boolean>; products: number; assets: number }
+
+/** Platform verification of self-registered suppliers (pending suppliers are hidden from catalogue and design). */
+function PartnerReview() {
+  const { t } = useT();
+  const toast = useToast();
+  const [rows, setRows] = useState<PartnerRow[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const load = () => api<PartnerRow[]>("/admin/suppliers").then(setRows).catch(() => {});
+  useEffect(() => { load(); }, []);
+  const decide = async (id: string, decision: string) => { try { await api(`/admin/suppliers/${id}/verification`, { method: "POST", json: { decision, note: notes[id] || "" } }); toast(t(`sob.v.${decision}`)); load(); } catch (x) { toast((x as Error).message, true); } };
+  return (
+    <div className="card" style={{ overflow: "auto" }}>
+      <table className="table compact"><thead><tr><th>{t("adm.col.source")}</th><th>{t("common.status")}</th><th>{t("adm.partners.steps")}</th><th className="right">{t("adm.partners.products")}</th><th /></tr></thead>
+        <tbody>{rows.filter((r) => r.supplier).map((r) => <tr key={r.supplier!.id}>
+          <td><b>{r.supplier!.name}</b><div className="tiny muted">{r.supplier!.website} · {r.supplier!.city}{r.supplier!.tax_id ? ` · ${r.supplier!.tax_id}` : ""}</div></td>
+          <td><Badge tone={r.verification === "verified" ? "sage" : r.verification === "rejected" ? "danger" : "warn"}>{t(`sob.v.${r.verification}`)}</Badge></td>
+          <td className="tiny">{Object.entries(r.steps).filter(([, v]) => v).map(([k]) => t(`sob.step.${k}`)).join(", ")}</td>
+          <td className="right">{r.products} / {r.assets}</td>
+          <td className="row gap-4"><input className="input" style={{ width: 160, height: 30 }} aria-label={t("adm.partners.note")} placeholder={t("adm.partners.note")} value={notes[r.supplier!.id] || ""} onChange={(e) => setNotes({ ...notes, [r.supplier!.id]: e.target.value })} />
+            <button className="btn sm" onClick={() => decide(r.supplier!.id, "verified")}>{t("adm.partners.verify")}</button>
+            <button className="btn sm ghost" onClick={() => decide(r.supplier!.id, "rejected")}>{t("adm.partners.reject")}</button></td></tr>)}</tbody></table>
+      {!rows.length && <div className="empty small">{t("adm.partners.empty")}</div>}
     </div>
   );
 }

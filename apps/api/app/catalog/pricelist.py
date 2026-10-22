@@ -44,7 +44,7 @@ def guess_mapping(headers: list[str]) -> dict[str, str | None]:
     return out
 
 
-def validate_row(r: dict, mapping: dict) -> tuple[dict, list[str]]:
+def validate_row(r: dict, mapping: dict, category_map: dict | None = None) -> tuple[dict, list[str]]:
     g = {f: (r.get(mapping[f]) if mapping.get(f) else None) for f in FIELDS}
     errs = []
     if not g["sku"]:
@@ -54,7 +54,8 @@ def validate_row(r: dict, mapping: dict) -> tuple[dict, list[str]]:
     price, cur = parse_price(g["price"]) if g["price"] else (None, None)
     g["price"] = price
     g["currency"] = (g["currency"] or cur or "AMD").upper()
-    cat = g["category"] if g["category"] in CATEGORIES else classify(g["name"], g["category"])
+    mapped = (category_map or {}).get(str(g["category"] or "").strip().lower())
+    cat = g["category"] if g["category"] in CATEGORIES else mapped or classify(g["name"], g["category"])
     if not cat:
         errs.append("категория не распознана")
     g["category"] = cat
@@ -85,7 +86,7 @@ def apply_price_list(db: Session, sup: m.Supplier, rows: list[dict], mapping: di
     rejected = big_changes = 0
     errors, pending = [], []
     for i, r in enumerate(rows, start=2):
-        g, errs = validate_row(r, mapping)
+        g, errs = validate_row(r, mapping, sup.category_map)
         if errs:
             rejected += 1
             errors.append({"row": i, "errors": errs})

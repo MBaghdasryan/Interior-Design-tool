@@ -41,6 +41,9 @@ ALERT_REASON = {
     "blocked": {"hy": "հարցումն արգելափակված է", "ru": "запрос заблокирован", "en": "request blocked"},
     "feed_guard": {"hy": "ֆիդը պահված է՝ գների զանգվածային փոփոխություն", "ru": "фид задержан: массовое изменение цен", "en": "feed held: mass price change"},
     "feed_error": {"hy": "ֆիդը չհաջողվեց կարդալ", "ru": "фид не прочитан", "en": "feed could not be read"},
+    "supplier_review": {"hy": "մատակարարը սպասում է ստուգման", "ru": "поставщик ждёт проверки", "en": "supplier awaits verification"},
+    "supplier_verified": {"hy": "մատակարարը հաստատված է", "ru": "поставщик подтверждён", "en": "supplier verified"},
+    "supplier_rejected": {"hy": "մատակարարը մերժված է", "ru": "поставщик отклонён", "en": "supplier rejected"},
 }
 
 

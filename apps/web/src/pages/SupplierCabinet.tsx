@@ -3,7 +3,8 @@ import { BarChart3, Box, Boxes, Image, RefreshCw, Rss, Ruler, Tag } from "lucide
 import { api, ApiError, type Schemas } from "../lib/api";
 import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
-import { Badge, Empty, Loading, PriceStatus, Switch, useToast } from "../components/ui";
+import { Badge, Loading, PriceStatus, Switch, useToast } from "../components/ui";
+import { AssetsCard, OnboardingCard, PartnerDataCard } from "../components/SupplierPartner";
 
 interface Ov { supplier: { name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
 interface P { id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
@@ -14,13 +15,14 @@ export default function SupplierCabinet() {
   const [ov, setOv] = useState<Ov | null>(null);
   const [items, setItems] = useState<P[]>([]);
   const [err, setErr] = useState("");
-  const load = () => api<Ov>("/supplier/overview").then(setOv).catch((e: ApiError) => setErr(e.message));
+  const load = () => api<Ov>("/supplier/overview").then((o) => { setOv(o); setErr(""); }).catch((e: ApiError) => setErr(e.code));
   useEffect(() => { load(); api<P[]>("/supplier/products").then(setItems).catch(() => {}); }, []);
   const respond = async (id: string, status: "quoted" | "declined") => {
     const total = status === "quoted" ? Number(prompt(t("supc.quote_prompt")) || 0) : null;
     try { await api(`/supplier/rfqs/${id}/respond`, { method: "POST", json: { status, total_amd: total, valid_days: 7 } }); toast(t("supc.sent")); load(); } catch (x) { toast((x as Error).message, true); }
   };
-  if (err) return <Empty>{err}</Empty>;
+  // a self-registered supplier starts with onboarding: there is no catalogue to show yet
+  if (err) return <div className="col gap-16"><h1>{t("supc.title")}</h1><OnboardingCard onChange={() => { load(); api<P[]>("/supplier/products").then(setItems).catch(() => {}); }} /></div>;
   if (!ov) return <Loading />;
   const q = (n: number) => (ov.products ? Math.round((n / ov.products) * 100) : 0);
   const quality: [string, number, typeof Tag][] = [["supc.q.price", ov.with_price, Tag], ["supc.q.dims", ov.with_dims, Ruler], ["supc.q.model", ov.with_3d, Box], ["supc.q.stock", ov.in_stock, Image]];
@@ -51,7 +53,10 @@ export default function SupplierCabinet() {
             {r.status === "sent" && <div className="row mt-8"><button className="btn sm primary" onClick={() => respond(r.id, "quoted")}>{t("supc.send_quote")}</button><button className="btn sm" onClick={() => respond(r.id, "declined")}>{t("supc.decline")}</button></div>}</div>)}
         </div>
       </div>
+      <OnboardingCard onChange={load} />
       <SupplierOrders />
+      <AssetsCard products={items} />
+      <PartnerDataCard />
       <FeedCard />
       <div className="card" style={{ overflow: "auto", maxHeight: 520 }}>
         <table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("supc.col.name")}</th><th>{t("common.category")}</th><th className="right">{t("common.price")}</th><th>{t("common.status")}</th><th>{t("common.in_stock")}</th><th>{t("common.dims")}</th><th>{t("supc.col.3d")}</th></tr></thead>

@@ -18,6 +18,7 @@ DUMMY = "0" * 32
 def _victim_ids(db) -> dict[str, str]:
     proj = db.query(m.Project).filter(m.Project.title.like("Демо%")).first()
     v = db.query(m.DesignVariant).filter_by(project_id=proj.id).first()
+    created = []
     if not v or not v.current_version_id:
         v = m.DesignVariant(project_id=proj.id, key="iso", title="ISO", style="modern", tier="comfort")
         db.add(v)
@@ -26,6 +27,7 @@ def _victim_ids(db) -> dict[str, str]:
         db.add(ver)
         db.flush()
         v.current_version_id = ver.id
+        created.append(v)
     job = m.GenerationJob(project_id=proj.id, kind="pipeline", status="succeeded")
     com = m.Comment(project_id=proj.id, author_name="victim", body="secret")
     doc = m.Document(project_id=proj.id, kind="album", filename="a.pdf", storage_key=f"projects/{proj.id}/a.pdf", size=1)
@@ -36,7 +38,8 @@ def _victim_ids(db) -> dict[str, str]:
     sess = db.query(m.AuthSession).filter_by(user_id=owner.id).first()
     db.add_all([job, com, doc, asset, rfq, note])
     db.commit()
-    return {"pid": proj.id, "vid": v.id, "ver_id": v.current_version_id, "jid": job.id, "cid": com.id, "did": doc.id, "aid": asset.id,
+    created += [job, com, doc, asset, rfq, note]
+    return created, {"pid": proj.id, "vid": v.id, "ver_id": v.current_version_id, "jid": job.id, "cid": com.id, "did": doc.id, "aid": asset.id,
             "rid": rfq.id, "oid": DUMMY, "nid": note.id, "sid": sess.id if sess else DUMMY, "key": doc.storage_key, "token": "not-a-token"}
 
 
@@ -91,7 +94,7 @@ def _attacker(client):
 def test_no_route_leaks_across_tenants(client):
     h, own_pid = _attacker(client)
     with SessionLocal() as db:
-        ids = _victim_ids(db)
+        created, ids = _victim_ids(db)
     spec = app.openapi()
     comps = spec.get("components", {}).get("schemas", {})
     leaks, errors, checked = [], [], 0
@@ -125,3 +128,9 @@ def test_no_route_leaks_across_tenants(client):
     sup = login(client, "supplier@forma.local")
     assert client.post(f"/api/v1/catalog/external/review/{DUMMY}", headers=sup, json={"decision": "approved"}).status_code == 403
     assert client.get("/api/v1/client/not-a-token").status_code == 404
+    with SessionLocal() as db:  # leave the shared demo project as it was
+        for obj in created:
+            row = db.get(type(obj), obj.id)
+            if row:
+                db.delete(row)
+        db.commit()

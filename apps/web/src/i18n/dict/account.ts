@@ -187,4 +187,7 @@ export const account: Dict = {
   "notif.reason.feed_error": e("ֆիդը չհաջողվեց կարդալ", "фид не удалось прочитать", "feed could not be read"),
   "notif.kind.order_update": e("Պատվեր՝ {supplier} — {status}", "Заказ: {supplier} — {status}", "Order: {supplier} — {status}"),
   "notif.pref.order_update": e("Պատվերների կարգավիճակներ", "Статусы заказов", "Order status changes"),
+  "notif.reason.supplier_review": e("մատակարարը սպասում է ստուգման", "поставщик ждёт проверки", "supplier awaits verification"),
+  "notif.reason.supplier_verified": e("մատակարարը հաստատված է", "поставщик подтверждён", "supplier verified"),
+  "notif.reason.supplier_rejected": e("մատակարարը մերժված է", "поставщик отклонён", "supplier rejected"),
 };
