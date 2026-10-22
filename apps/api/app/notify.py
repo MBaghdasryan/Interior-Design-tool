@@ -20,7 +20,7 @@ from . import models as m
 from .scheduler import periodic
 
 log = logging.getLogger("forma.notify")
-KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert"]
+KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert", "order_update"]
 DIGEST_SUBJECT = {"hy": "Ձեր ծանուցումները — {brand}", "ru": "Ваши уведомления — {brand}", "en": "Your notifications — {brand}"}
 DIGEST_LINE = {
     "job_done": {"hy": "Առաջադրանքը ավարտված է՝ {job}", "ru": "Задача завершена: {job}", "en": "Job finished: {job}"},
@@ -30,6 +30,7 @@ DIGEST_LINE = {
     "client_changes": {"hy": "Հաճախորդը խնդրում է փոփոխություններ", "ru": "Клиент просит правки", "en": "The client asked for changes"},
     "rfq_reply": {"hy": "Մատակարարի պատասխան՝ {supplier}", "ru": "Ответ поставщика: {supplier}", "en": "Supplier reply: {supplier}"},
     "price_stale": {"hy": "Գները հնացել են՝ {n} ապրանք", "ru": "Цены устарели: {n} товаров", "en": "Prices are out of date: {n} products"},
+    "order_update": {"hy": "Պատվեր՝ {supplier} — {status}", "ru": "Заказ: {supplier} — {status}", "en": "Order: {supplier} — {status}"},
     "catalog_alert": {"hy": "Կատալոգի ահազանգ՝ {source} ({reason})", "ru": "Сигнал каталога: {source} ({reason})", "en": "Catalogue alert: {source} ({reason})"},
 }
 

@@ -59,7 +59,12 @@ const roles: Record<string, Entry> = {
   installer: e("Մոնտաժող", "Монтажник", "Installer"), verifier: e("Չափագրող մասնագետ", "Обмерщик", "Surveyor"), user: e("Օգտատեր", "Пользователь", "User"),
 };
 
-const out: Dict = {};
+const out: Dict = {  "enum.order.in_production": e("Արտադրության մեջ", "В производстве", "In production"),
+  "enum.order.installing": e("Մոնտաժ", "Монтаж", "Installing"),
+  "enum.order.closed": e("Փակված", "Закрыт", "Closed"),
+  "enum.order.disputed": e("Վեճ", "Спор", "Disputed"),
+  "enum.order.refunded": e("Վերադարձված", "Возврат", "Refunded"),
+};
 for (const [k, v] of Object.entries(cats)) out[`enum.cat.${k}`] = v;
 for (const [k, v] of Object.entries(groups)) out[`enum.group.${k}`] = v;
 for (const [k, v] of Object.entries(styles)) out[`enum.style.${k}`] = v;

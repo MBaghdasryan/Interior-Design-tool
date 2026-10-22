@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     external_specs_ttl_h: int = 24 * 7
     external_media_ttl_h: int = 24 * 30
 
+    # Commerce (P2-1): payments only through a contracted provider; without one the UI says «Integration pending»
+    payment_provider: str = ""  # "" | stripe_compat | idram | arca | ameriabank
+    payment_api_base: str | None = None
+    payment_api_key: str | None = None
+    payment_webhook_secret: str | None = None
+    order_recheck_max_age_h: int = 24  # prices must have been re-checked this recently before an order is requested
+
     # Sessions & auth (P0-2): HttpOnly session cookie + double-submit CSRF cookie
     session_ttl_h: int = 24 * 14
     cookie_secure: bool = True  # browsers accept Secure cookies on http://localhost; set false only for plain-http test clients

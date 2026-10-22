@@ -48,6 +48,65 @@ def supplier_overview(p: Principal = Depends(require("catalog:read")), db: Sessi
             "rfqs": [{"id": r.id, "status": r.status, "items": len(r.items), "created_at": r.created_at.isoformat(), "message": r.message} for r in rfqs]}
 
 
+# ------------------------------------------------------------------ supplier orders (P2-1)
+@router.get("/api/v1/supplier/orders")
+def supplier_orders(p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+    from .commerce import order_dict
+
+    sup = _supplier_for(p, db)
+    rows = db.scalars(select(m.Order).where(m.Order.supplier_id == sup.id, m.Order.status != "cart").order_by(m.Order.created_at.desc()).limit(100)).all()
+    return [order_dict(db, o) | {"project_id": o.project_id} for o in rows]
+
+
+def _supplier_order(p: Principal, db: Session, oid: str) -> m.Order:
+    sup = _supplier_for(p, db)
+    o = db.get(m.Order, oid)
+    if not o or o.supplier_id != sup.id or o.status == "cart":
+        raise ApiError(404, "not_found")
+    return o
+
+
+class ConfirmIn(BaseModel):
+    total_amd: int = Field(gt=0)
+    valid_days: int = Field(default=7, ge=1, le=60)
+    note: str = Field(default="", max_length=500)
+
+
+@router.post("/api/v1/supplier/orders/{oid}/confirm")
+def supplier_confirm(oid: str, body: ConfirmIn, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+    from ..commerce import orders as orders_svc
+    from ..notify import notify, project_people
+    from .commerce import order_dict
+
+    o = _supplier_order(p, db, oid)
+    orders_svc.confirm(db, o, total_amd=body.total_amd, valid_days=body.valid_days, actor=p.user.email, note=body.note)
+    audit(db, p, "order.confirmed", "order", oid, project_id=o.project_id, data={"total_amd": body.total_amd})
+    proj = db.get(m.Project, o.project_id)
+    notify(db, project_people(db, proj), "order_update", params={"supplier": o.supplier_name, "status": o.status}, link=f"/app/p/{proj.id}/procurement", project_id=proj.id)
+    db.commit()
+    return order_dict(db, o)
+
+
+class SupplierStatusIn(BaseModel):
+    to: str = Field(pattern="^(in_production|delivering|installing|cancelled)$")
+    note: str = Field(default="", max_length=300)
+
+
+@router.post("/api/v1/supplier/orders/{oid}/status")
+def supplier_status(oid: str, body: SupplierStatusIn, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+    from ..commerce import orders as orders_svc
+    from ..notify import notify, project_people
+    from .commerce import order_dict
+
+    o = _supplier_order(p, db, oid)
+    orders_svc.transition(db, o, body.to, side="supplier", actor=p.user.email, note=body.note)
+    audit(db, p, f"order.{body.to}", "order", oid, project_id=o.project_id)
+    proj = db.get(m.Project, o.project_id)
+    notify(db, project_people(db, proj), "order_update", params={"supplier": o.supplier_name, "status": o.status}, link=f"/app/p/{proj.id}/procurement", project_id=proj.id)
+    db.commit()
+    return order_dict(db, o)
+
+
 class FeedIn(BaseModel):
     enabled: bool = False
     url: str = Field(default="", max_length=500)

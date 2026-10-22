@@ -1,14 +1,15 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Workflow } from "lucide-react";
+import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Wallet, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
+import FinanceTab from "../components/FinanceTab";
 
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; last_errors: string[] }
 interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
-type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine";
+type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
 export default function PlatformAdmin() {
@@ -49,7 +50,7 @@ export default function PlatformAdmin() {
   const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert]];
+  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -102,6 +103,7 @@ export default function PlatformAdmin() {
         <div className="row"><button className="btn" disabled={!aps.enabled} onClick={() => apsAction("/aps/test")}>{t("adm.aps_test")}</button><button className="btn" disabled={!aps.enabled} onClick={() => apsAction("/aps/setup-design-automation")}>{t("adm.aps_setup")}</button></div>
         {!aps.enabled && <div className="alert warn small">{t("adm.aps_hint")}</div>}
       </div>}
+      {tab === "finance" && <FinanceTab />}
       {tab === "audit" && <div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.action")}</th><th>{t("adm.col.entity")}</th><th>{t("adm.col.data")}</th></tr></thead>
         <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table>
         {auditNext && <div className="row" style={{ justifyContent: "center", padding: 10 }}><button className="btn sm" onClick={() => moreAudit(auditNext)}>{t("common.load_more")}</button></div>}</div>}

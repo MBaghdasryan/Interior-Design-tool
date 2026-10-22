@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
 
-export const NOTIF_KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert"] as const;
+export const NOTIF_KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert", "order_update"] as const;
 interface Notif { id: string; kind: string; params: Record<string, string | number>; link: string; read: boolean; created_at: string }
 
 /** Top-bar bell: unread counter (polled every minute), dropdown with the latest 50, mark read / all read. */
@@ -24,7 +24,7 @@ export default function NotificationBell() {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const text = (n: Notif) => t(`notif.kind.${n.kind}`, { ...n.params, job: n.params.job ? t(`notif.job.${n.params.job}`) : "", reason: n.params.reason ? t(`notif.reason.${n.params.reason}`) : "" });
+  const text = (n: Notif) => t(`notif.kind.${n.kind}`, { ...n.params, job: n.params.job ? t(`notif.job.${n.params.job}`) : "", reason: n.params.reason ? t(`notif.reason.${n.params.reason}`) : "", status: n.params.status ? t(`enum.order.${n.params.status}`) : "" });
   const go = async (n: Notif) => {
     if (!n.read) await api(`/notifications/${n.id}/read`, { method: "POST" }).catch(() => {});
     setOpen(false);

@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from .. import models as m
 from ..catalog.connectors.others import build_connector
 from ..catalog.discovery import source_dict, upsert_record
+from ..commerce import orders as orders_svc
+from ..commerce.payments import PaymentError, get_provider
 from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
@@ -150,16 +152,47 @@ def send_rfq(pid: str, rid: str, p: Principal = Depends(current_principal), db: 
     return rfq_dict(r)
 
 
-# ------------------------------------------------------------------ cart / orders
+# ------------------------------------------------------------------ cart / orders (P2-1)
+def order_dict(db: Session, o: m.Order) -> dict:
+    items = db.scalars(select(m.OrderItem).where(m.OrderItem.order_id == o.id)).all()
+    quote = db.scalar(select(m.SupplierQuote).where(m.SupplierQuote.order_id == o.id).order_by(m.SupplierQuote.created_at.desc()).limit(1))
+    d = db.scalar(select(m.Delivery).where(m.Delivery.order_id == o.id))
+    inst = db.scalar(select(m.Installation).where(m.Installation.order_id == o.id))
+    com = db.scalars(select(m.Commission).where(m.Commission.order_id == o.id)).all()
+    return {"id": o.id, "supplier_name": o.supplier_name, "supplier_id": o.supplier_id, "status": o.status, "payment_status": o.payment_status,
+            "items": [{"id": it.id, "ref": it.ref, "name": it.name, "sku": it.sku, "qty": it.qty, "unit": it.unit, "unit_price": it.unit_price, "total": it.total,
+                       "price_status": it.price_status, "rechecked_price": it.rechecked_price, "url": it.url, "lead_days": it.lead_days} for it in items] or o.items,
+            "totals": o.totals, "delivery": {**(o.delivery or {}), **({"status": d.status, "cost_amd": d.cost_amd} if d else {})},
+            "installation": {**(o.installation or {}), **({"status": inst.status, "cost_amd": inst.cost_amd} if inst else {})},
+            "quote": {"total_amd": quote.total_amd, "valid_until": quote.valid_until.isoformat(), "note": quote.note} if quote else None,
+            "commissions": [{"party": c.party, "pct": c.pct, "amount_amd": c.amount_amd} for c in com],
+            "history": o.history or [], "cart_id": o.cart_id, "created_at": o.created_at.isoformat(),
+            "next": sorted(orders_svc.TRANSITIONS.get(o.status, {}))}
+
+
 @router.get("/orders")
 def list_orders(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     project_access(pid, "project:read", p, db)
-    return [order_dict(o) for o in db.scalars(select(m.Order).where(m.Order.project_id == pid).order_by(m.Order.created_at))]
+    return [order_dict(db, o) for o in db.scalars(select(m.Order).where(m.Order.project_id == pid).order_by(m.Order.created_at))]
 
 
-def order_dict(o: m.Order) -> dict:
-    return {"id": o.id, "supplier_name": o.supplier_name, "status": o.status, "items": o.items, "totals": o.totals, "delivery": o.delivery,
-            "installation": o.installation, "created_at": o.created_at.isoformat()}
+def cart_dict(c: m.Cart | None) -> dict | None:
+    if not c:
+        return None
+    return {"id": c.id, "variant_id": c.variant_id, "status": c.status, "rechecked_at": c.rechecked_at.isoformat() if c.rechecked_at else None, "recheck": c.recheck or {},
+            "recheck_max_age_h": get_settings().order_recheck_max_age_h}
+
+
+@router.get("/cart")
+def get_cart(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    project_access(pid, "project:read", p, db)
+    c = db.scalar(select(m.Cart).where(m.Cart.project_id == pid).order_by(m.Cart.created_at.desc()).limit(1))
+    return {"cart": cart_dict(c), "payments": payment_status()}
+
+
+def payment_status() -> dict:
+    prov = get_provider()
+    return {"provider": prov.name, "status": "configured" if prov.configured() else prov.status}
 
 
 class CartIn(BaseModel):
@@ -168,48 +201,107 @@ class CartIn(BaseModel):
 
 @router.post("/cart")
 def build_cart(pid: str, body: CartIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    """Splits the approved estimate into per-supplier carts (MVP: request-for-quote checkout)."""
+    """Splits the approved estimate into per-supplier orders of one cart."""
     proj = project_access(pid, "project:write", p, db)
     v, ver = _current(db, pid, body.variant_id)
     if v.status != "approved":
         raise ApiError(409, "cart.requires_approval")
     snap = db.scalar(select(m.EstimateSnapshot).where(m.EstimateSnapshot.variant_id == v.id, m.EstimateSnapshot.reason == "approval").order_by(m.EstimateSnapshot.created_at.desc()).limit(1))
-    est = snap.data if snap else ver.estimate
-    db.query(m.Order).filter(m.Order.project_id == pid, m.Order.status == "cart").delete()
-    groups: dict[str, list[dict]] = defaultdict(list)
-    for ln in est.get("lines", []):
-        if ln.get("supplier_key") and ln["group"] not in ("works", "contingency"):
-            groups[ln["supplier_key"]].append(ln)
-    out = []
-    for key, lines in groups.items():
-        goods = [x for x in lines if x["group"] not in ("delivery", "installation")]
-        sup = db.scalar(select(m.Supplier).where(m.Supplier.slug == key))
-        totals = {"goods": sum(x["total"] or 0 for x in goods), "delivery": sum(x["total"] or 0 for x in lines if x["group"] == "delivery"),
-                  "installation": sum(x["total"] or 0 for x in lines if x["group"] == "installation"), "quote_required": sum(1 for x in goods if x["total"] is None)}
-        totals["commission_platform"] = round(totals["goods"] * ((sup.commission_pct if sup else 0) / 100))
-        o = m.Order(project_id=pid, supplier_id=sup.id if sup else None, supplier_name=lines[0].get("supplier") or key, status="cart",
-                    items=[{k: x.get(k) for k in ("id", "name", "sku", "qty", "unit", "unit_price", "total", "price_status", "url", "lead_days")} for x in goods],
-                    totals=totals, delivery=(sup.delivery if sup else {}), installation=(sup.installation if sup else {}))
-        db.add(o)
-        out.append(o)
+    cart, out = orders_svc.build_cart(db, proj, v, snap.data if snap else ver.estimate)
+    audit(db, p, "cart.build", "cart", cart.id, project_id=pid, data={"orders": len(out)})
     db.commit()
-    _ = proj
-    return [order_dict(o) for o in out]
+    return [order_dict(db, o) for o in out]
 
 
-@router.post("/orders/{oid}/request")
-def request_order(pid: str, oid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    proj = project_access(pid, "project:write", p, db)
+@router.post("/cart/recheck")
+def recheck_cart(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Mandatory before ordering: re-reads current prices and availability of every cart item."""
+    project_access(pid, "project:write", p, db)
+    c = db.scalar(select(m.Cart).where(m.Cart.project_id == pid, m.Cart.status == "open").order_by(m.Cart.created_at.desc()).limit(1))
+    if not c:
+        raise ApiError(404, "cart.not_found")
+    r = orders_svc.recheck_cart(db, c)
+    audit(db, p, "cart.recheck", "cart", c.id, project_id=pid, data={"changed": len(r["changed"]), "unavailable": len(r["unavailable"]), "delta_amd": r["delta_amd"]})
+    db.commit()
+    return cart_dict(c)
+
+
+def _order(db: Session, pid: str, oid: str) -> m.Order:
     o = db.get(m.Order, oid)
     if not o or o.project_id != pid:
         raise ApiError(404, "not_found")
-    sup = db.get(m.Supplier, o.supplier_id) if o.supplier_id else None
-    if sup and sup.is_demo:
-        raise ApiError(409, "order.demo_supplier")
-    made = [i for i in o.items if "изготов" in (i.get("name") or "").lower()]
+    return o
+
+
+@router.post("/orders/{oid}/request")
+def request_order(pid: str, oid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db),
+                  idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")):
+    proj = project_access(pid, "project:write", p, db)
+    o = _order(db, pid, oid)
+    made = [i for i in db.scalars(select(m.OrderItem).where(m.OrderItem.order_id == o.id)) if "изготов" in (i.name or "").lower()]
     if proj.accuracy_level != "production" and made:
         raise ApiError(409, "order.made_to_measure_requires_production")
-    o.status = "requested"
+    orders_svc.request(db, o, actor=p.user.email, idempotency_key=idempotency_key)
     audit(db, p, "order.request", "order", oid, project_id=pid)
+    _notify_supplier(db, o)
     db.commit()
-    return order_dict(o)
+    return order_dict(db, o)
+
+
+class TransitionIn(BaseModel):
+    to: str
+    note: str = ""
+
+
+@router.post("/orders/{oid}/transition")
+def bureau_transition(pid: str, oid: str, body: TransitionIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Bureau-side moves: cancel, dispute, close after delivery / installation."""
+    project_access(pid, "project:write", p, db)
+    o = _order(db, pid, oid)
+    if body.to == "requested":
+        raise ApiError(409, "order.bad_transition", frm=o.status, to=body.to)
+    orders_svc.transition(db, o, body.to, side="bureau", actor=p.user.email, note=body.note)
+    audit(db, p, f"order.{body.to}", "order", oid, project_id=pid, data={"note": body.note[:200]})
+    _notify_supplier(db, o)
+    db.commit()
+    return order_dict(db, o)
+
+
+@router.post("/orders/{oid}/pay")
+def pay_order(pid: str, oid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db),
+              idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")):
+    """Starts a hosted payment with the contracted provider. Without one → 409 payment.integration_pending
+    (the UI shows «Integration pending»; nothing is marked paid)."""
+    project_access(pid, "project:write", p, db)
+    o = _order(db, pid, oid)
+    prov = get_provider()
+    if not prov.configured():
+        raise ApiError(409, "payment.integration_pending", provider=prov.name)
+    if o.payment_status == "paid":
+        raise ApiError(409, "payment.already_paid")
+    amount = orders_svc.payable_amd(db, o)
+    key = idempotency_key or f"pay:{o.id}:{amount}"
+    existing = db.scalar(select(m.Payment).where(m.Payment.idempotency_key == key))
+    if existing:
+        return {"payment_id": existing.id, "status": existing.status, "redirect_url": None}
+    s = get_settings()
+    try:
+        r = prov.create_payment(order_id=o.id, amount_amd=amount, idempotency_key=key, return_url=f"{s.public_base_url.rstrip('/')}/app/p/{pid}/procurement")
+    except PaymentError as e:
+        raise ApiError(502, "payment.provider_error", info=str(e)[:200]) from e
+    pay = m.Payment(order_id=o.id, provider=prov.name, provider_ref=r["provider_ref"], amount_amd=amount, idempotency_key=key)
+    db.add(pay)
+    o.payment_status = "pending"
+    audit(db, p, "order.pay", "order", oid, project_id=pid, data={"amount_amd": amount, "provider": prov.name})
+    db.commit()
+    return {"payment_id": pay.id, "status": pay.status, "redirect_url": r.get("redirect_url")}
+
+
+def _notify_supplier(db: Session, o: m.Order) -> None:
+    from ..notify import notify
+
+    if not o.supplier_id:
+        return
+    sup = db.get(m.Supplier, o.supplier_id)
+    staff = [ms.user for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == sup.org_id))] if sup and sup.org_id else []
+    notify(db, staff, "order_update", params={"supplier": o.supplier_name, "status": o.status}, link="/app/supplier")

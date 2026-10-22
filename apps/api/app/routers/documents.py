@@ -115,7 +115,7 @@ def aps_capabilities(enabled: bool) -> list[dict]:
         {"key": "metadata", "status": ready, "formats": ["rvt", "ifc"], "live_verified": False},
         {"key": "editable_import", "status": "in_development", "formats": ["rvt", "ifc"], "live_verified": False},
         {"key": "ifc_export", "status": "in_development", "formats": ["ifc"], "live_verified": False},
-        {"key": "dwg_export", "status": ready, "formats": ["dwg"], "live_verified": False},
+        {"key": "dwg_export", "status": ready, "formats": ["dwg"], "live_verified": enabled},  # DXF→DWG via Design Automation, run live 2026-10-21
     ]
 
 

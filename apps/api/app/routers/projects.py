@@ -84,6 +84,9 @@ def create_project(body: ProjectIn, p: Principal = Depends(current_principal), d
     org_id = next((oid for oid, roles in p.roles.items() if roles & {"designer", "bureau_admin", "client", "platform_admin"}), None)
     if not org_id:
         raise ApiError(403, "auth.no_org")
+    from ..commerce.tariffs import check_project_quota
+
+    check_project_quota(db, org_id)
     proj = m.Project(org_id=org_id, owner_id=p.user.id, designer_name=p.user.name if "designer" in p.all_roles() else "", **body.model_dump())
     db.add(proj)
     db.flush()

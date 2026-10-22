@@ -185,4 +185,6 @@ export const account: Dict = {
   "notif.reason.blocked": e("հարցումն արգելափակված է", "запрос заблокирован", "request blocked"),
   "notif.reason.feed_guard": e("ֆիդը պահված է՝ գների զանգվածային փոփոխություն", "фид задержан: массовое изменение цен", "feed held: mass price change"),
   "notif.reason.feed_error": e("ֆիդը չհաջողվեց կարդալ", "фид не удалось прочитать", "feed could not be read"),
+  "notif.kind.order_update": e("Պատվեր՝ {supplier} — {status}", "Заказ: {supplier} — {status}", "Order: {supplier} — {status}"),
+  "notif.pref.order_update": e("Պատվերների կարգավիճակներ", "Статусы заказов", "Order status changes"),
 };

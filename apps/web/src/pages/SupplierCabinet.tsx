@@ -51,6 +51,7 @@ export default function SupplierCabinet() {
             {r.status === "sent" && <div className="row mt-8"><button className="btn sm primary" onClick={() => respond(r.id, "quoted")}>{t("supc.send_quote")}</button><button className="btn sm" onClick={() => respond(r.id, "declined")}>{t("supc.decline")}</button></div>}</div>)}
         </div>
       </div>
+      <SupplierOrders />
       <FeedCard />
       <div className="card" style={{ overflow: "auto", maxHeight: 520 }}>
         <table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("supc.col.name")}</th><th>{t("common.category")}</th><th className="right">{t("common.price")}</th><th>{t("common.status")}</th><th>{t("common.in_stock")}</th><th>{t("common.dims")}</th><th>{t("supc.col.3d")}</th></tr></thead>
@@ -96,6 +97,44 @@ function FeedCard() {
         <button className="btn" disabled={!f.url} onClick={sync}><RefreshCw size={15} /> {t("supc.feed.sync_now")}</button></div>
       {f.last_sync_at && <div className="small">{t("supc.feed.last", { at: dt(f.last_sync_at) })} <Badge tone={tone(f.last_status || "")}>{t(`supc.feed.status.${f.last_status}`)}</Badge></div>}
       {f.history.map((h) => <div key={h.at} className="tiny muted">{dt(h.at)} · {t(`supc.feed.status.${h.status}`)}{h.status === "ok" ? ` · ${t("supc.feed.counts", { created: h.created ?? 0, updated: h.updated ?? 0, rejected: h.rejected ?? 0 })}` : h.count ? ` · ${t("supc.feed.guard_count", { n: h.count })}` : h.error ? ` · ${h.error}` : ""}</div>)}
+    </section>
+  );
+}
+
+interface SOrder { id: string; supplier_name: string; status: string; payment_status: string; next: string[]; created_at: string; items: { name: string; qty: number; unit: string; rechecked_price?: number | null; unit_price?: number | null }[];
+  totals: { goods: number; delivery: number; installation: number; quoted?: number }; quote: { total_amd: number; valid_until: string } | null }
+const SUPPLIER_MOVES = ["in_production", "delivering", "installing", "cancelled"];
+
+/** Orders sent to this supplier: confirm with a binding total, then report production, delivery and installation. */
+function SupplierOrders() {
+  const { t } = useT();
+  const toast = useToast();
+  const [rows, setRows] = useState<SOrder[]>([]);
+  const [totals, setTotals] = useState<Record<string, string>>({});
+  const load = () => api<SOrder[]>("/supplier/orders").then(setRows).catch(() => {});
+  useEffect(() => { load(); }, []);
+  const run = async (fn: () => Promise<unknown>) => { try { await fn(); toast(t("supc.ord.saved")); load(); } catch (x) { toast((x as Error).message, true); } };
+  return (
+    <section className="card pad col gap-10" aria-labelledby="sord-h">
+      <h3 id="sord-h">{t("supc.ord.title")}</h3>
+      {!rows.length && <div className="small muted">{t("supc.ord.empty")}</div>}
+      {rows.map((o) => {
+        const suggested = o.totals.goods + o.totals.delivery + o.totals.installation;
+        return (
+          <div key={o.id} className="card flat pad col gap-6">
+            <div className="row between wrap"><b className="small">{t("supc.items", { n: o.items.length })} · {dt(o.created_at)}</b>
+              <div className="row gap-4"><Badge>{t(`enum.order.${o.status}`)}</Badge>{o.payment_status === "paid" && <Badge tone="sage">{t("pr.pay.paid")}</Badge>}</div></div>
+            <div className="tiny muted">{o.items.slice(0, 3).map((i) => `${i.name} × ${i.qty}`).join("; ")}{o.items.length > 3 ? " …" : ""}</div>
+            {o.quote && <div className="small">{t("supc.ord.quoted", { v: amd(o.quote.total_amd) })}</div>}
+            {o.status === "requested" && <div className="row gap-6 wrap">
+              <input className="input" style={{ width: 160 }} inputMode="numeric" aria-label={t("supc.ord.total")} placeholder={String(suggested)} value={totals[o.id] ?? ""} onChange={(e) => setTotals({ ...totals, [o.id]: e.target.value })} />
+              <button className="btn sm primary" onClick={() => run(() => api(`/supplier/orders/${o.id}/confirm`, { method: "POST", json: { total_amd: Number(totals[o.id] || suggested), valid_days: 7 } }))}>{t("supc.ord.confirm")}</button>
+            </div>}
+            <div className="row gap-6 wrap">{o.next.filter((n) => SUPPLIER_MOVES.includes(n)).map((n) => (
+              <button key={n} className="btn sm ghost" onClick={() => run(() => api(`/supplier/orders/${o.id}/status`, { method: "POST", json: { to: n } }))}>{t(`supc.ord.move.${n}`)}</button>))}</div>
+          </div>
+        );
+      })}
     </section>
   );
 }

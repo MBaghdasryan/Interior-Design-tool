@@ -7,7 +7,7 @@ import secrets
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -458,11 +458,140 @@ class Order(TimestampMixin, Base):
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
     supplier_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     supplier_name: Mapped[str] = mapped_column(String(200))
-    status: Mapped[str] = mapped_column(String(20), default="cart")  # cart | requested | confirmed | delivering | installed | cancelled
+    # cart | requested | confirmed | in_production | delivering | installing | closed | cancelled | disputed | refunded
+    status: Mapped[str] = mapped_column(String(20), default="cart")
     items: Mapped[list] = mapped_column(JSON, default=list)
     totals: Mapped[dict] = mapped_column(JSON, default=dict)
     delivery: Mapped[dict] = mapped_column(JSON, default=dict)
     installation: Mapped[dict] = mapped_column(JSON, default=dict)
+    cart_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
+    currency: Mapped[str] = mapped_column(String(3), default="AMD")
+    payment_status: Mapped[str] = mapped_column(String(20), default="none")  # none | pending | paid | refunded
+    history: Mapped[list] = mapped_column(JSON, default=list)  # [{at, from, to, by, note}]
+
+
+# ------------------------------------------------------------------ commerce (P2-1)
+class Cart(TimestampMixin, Base):
+    """The approved estimate split by supplier; checkout needs a fresh price re-check."""
+    __tablename__ = "carts"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    variant_id: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(20), default="open")  # open | checked_out | abandoned
+    rechecked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    recheck: Mapped[dict] = mapped_column(JSON, default=dict)  # {changed: [...], unavailable: [...], delta_amd}
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    ref: Mapped[str] = mapped_column(String(80), default="")  # pv:<variant> | ext:<record> | estimate line id
+    name: Mapped[str] = mapped_column(String(300))
+    sku: Mapped[str] = mapped_column(String(120), default="")
+    qty: Mapped[float] = mapped_column(Float, default=1)
+    unit: Mapped[str] = mapped_column(String(20), default="pcs")
+    unit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total: Mapped[float | None] = mapped_column(Float, nullable=True)
+    price_status: Mapped[str] = mapped_column(String(30), default="estimated")
+    rechecked_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    url: Mapped[str] = mapped_column(String(600), default="")
+    lead_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class SupplierQuote(TimestampMixin, Base):
+    __tablename__ = "supplier_quotes"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    supplier_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    total_amd: Mapped[int] = mapped_column(BigInteger)
+    valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20), default="accepted")  # offered | accepted | expired | rejected
+    note: Mapped[str] = mapped_column(Text, default="")
+
+
+class Delivery(TimestampMixin, Base):
+    __tablename__ = "deliveries"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | scheduled | shipped | delivered
+    window_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    window_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    address: Mapped[str] = mapped_column(String(300), default="")
+    cost_amd: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class Installation(TimestampMixin, Base):
+    __tablename__ = "installations"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # not_needed | pending | scheduled | done
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cost_amd: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class Commission(TimestampMixin, Base):
+    __tablename__ = "commissions"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    party: Mapped[str] = mapped_column(String(20))  # platform | designer
+    org_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    pct: Mapped[float] = mapped_column(Float)
+    amount_amd: Mapped[int] = mapped_column(BigInteger)
+
+
+class Payment(TimestampMixin, Base):
+    __tablename__ = "payments"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    order_id: Mapped[str] = mapped_column(String(32), index=True)
+    provider: Mapped[str] = mapped_column(String(30))
+    provider_ref: Mapped[str] = mapped_column(String(120), default="", index=True)
+    amount_amd: Mapped[int] = mapped_column(BigInteger)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | captured | failed | refunded
+    idempotency_key: Mapped[str] = mapped_column(String(100), unique=True)
+
+
+class Payout(TimestampMixin, Base):
+    __tablename__ = "payouts"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    supplier_id: Mapped[str] = mapped_column(String(32), index=True)
+    amount_amd: Mapped[int] = mapped_column(BigInteger)
+    status: Mapped[str] = mapped_column(String(20), default="recorded")  # recorded (bank transfer is outside the platform)
+    reference: Mapped[str] = mapped_column(String(200), default="")
+    txn_id: Mapped[str] = mapped_column(String(32))
+
+
+class LedgerEntry(Base):
+    """Immutable double-entry journal (AMD, whole drams). Rows are never updated or deleted —
+    corrections are new reversing transactions. Every transaction balances (Σdebit = Σcredit)."""
+    __tablename__ = "ledger_entries"
+    __table_args__ = (UniqueConstraint("idempotency_key", "line_no"),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    txn_id: Mapped[str] = mapped_column(String(32), index=True)
+    line_no: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(30))  # capture | refund | payout | adjustment | subscription | credits
+    account: Mapped[str] = mapped_column(String(120), index=True)
+    debit: Mapped[int] = mapped_column(BigInteger, default=0)
+    credit: Mapped[int] = mapped_column(BigInteger, default=0)
+    currency: Mapped[str] = mapped_column(String(3), default="AMD")
+    order_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(120))
+    memo: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ProcessedWebhook(Base):
+    __tablename__ = "processed_webhooks"
+    id: Mapped[str] = mapped_column(String(200), primary_key=True)  # provider:event id
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PlatformSetting(TimestampMixin, Base):
+    """Platform-wide configuration edited in the admin (tariffs, commission and tax rules)."""
+    __tablename__ = "platform_settings"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Comment(TimestampMixin, Base):
@@ -530,3 +659,13 @@ class Notification(TimestampMixin, Base):
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
+
+# the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)
+from sqlalchemy import event  # noqa: E402
+
+
+@event.listens_for(LedgerEntry, "before_update")
+@event.listens_for(LedgerEntry, "before_delete")
+def _ledger_is_immutable(mapper, connection, target):  # noqa: ARG001
+    raise ValueError("ledger entries are immutable — post a reversing transaction instead")

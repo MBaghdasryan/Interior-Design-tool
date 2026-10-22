@@ -316,6 +316,26 @@
     "title": "CommentIn",
     "type": "object"
    },
+   "CommerceSettingsIn": {
+    "properties": {
+     "designer_commission_pct": {
+      "default": 0.0,
+      "maximum": 30.0,
+      "minimum": 0.0,
+      "title": "Designer Commission Pct",
+      "type": "number"
+     },
+     "tax_rate_pct": {
+      "default": 0.0,
+      "maximum": 50.0,
+      "minimum": 0.0,
+      "title": "Tax Rate Pct",
+      "type": "number"
+     }
+    },
+    "title": "CommerceSettingsIn",
+    "type": "object"
+   },
    "CompleteIn": {
     "properties": {
      "content_type": {
@@ -363,6 +383,33 @@
      "filename"
     ],
     "title": "CompleteIn",
+    "type": "object"
+   },
+   "ConfirmIn": {
+    "properties": {
+     "note": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Note",
+      "type": "string"
+     },
+     "total_amd": {
+      "exclusiveMinimum": 0.0,
+      "title": "Total Amd",
+      "type": "integer"
+     },
+     "valid_days": {
+      "default": 7,
+      "maximum": 60.0,
+      "minimum": 1.0,
+      "title": "Valid Days",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "total_amd"
+    ],
+    "title": "ConfirmIn",
     "type": "object"
    },
    "ConsentsIn": {
@@ -418,6 +465,32 @@
     "title": "ControlDimIn",
     "type": "object"
    },
+   "CreditPack": {
+    "properties": {
+     "credits": {
+      "exclusiveMinimum": 0.0,
+      "title": "Credits",
+      "type": "integer"
+     },
+     "key": {
+      "pattern": "^[a-z0-9_]{2,30}$",
+      "title": "Key",
+      "type": "string"
+     },
+     "price_amd": {
+      "minimum": 0.0,
+      "title": "Price Amd",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "key",
+     "credits",
+     "price_amd"
+    ],
+    "title": "CreditPack",
+    "type": "object"
+   },
    "DeleteIn": {
     "properties": {
      "code": {
@@ -442,6 +515,28 @@
      "password"
     ],
     "title": "DeleteIn",
+    "type": "object"
+   },
+   "Fee": {
+    "properties": {
+     "mode": {
+      "default": "off",
+      "enum": [
+       "pct",
+       "fixed",
+       "off"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "value": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Value",
+      "type": "number"
+     }
+    },
+    "title": "Fee",
     "type": "object"
    },
    "FeedIn": {
@@ -576,6 +671,44 @@
      "password"
     ],
     "title": "LoginIn",
+    "type": "object"
+   },
+   "ManualRevenueIn": {
+    "properties": {
+     "amount_amd": {
+      "exclusiveMinimum": 0.0,
+      "title": "Amount Amd",
+      "type": "integer"
+     },
+     "org_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Org Id"
+     },
+     "reference": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Reference",
+      "type": "string"
+     },
+     "stream": {
+      "pattern": "^(subscription|credits|procurement|manufacturer|leads|white_label|exports)$",
+      "title": "Stream",
+      "type": "string"
+     }
+    },
+    "required": [
+     "stream",
+     "amount_amd",
+     "reference"
+    ],
+    "title": "ManualRevenueIn",
     "type": "object"
    },
    "MePatch": {
@@ -736,6 +869,23 @@
     "title": "OnboardingIn",
     "type": "object"
    },
+   "OrgPlanIn": {
+    "properties": {
+     "plan": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plan"
+     }
+    },
+    "title": "OrgPlanIn",
+    "type": "object"
+   },
    "OrgSettingsIn": {
     "properties": {
      "title_block": {
@@ -747,6 +897,32 @@
      "title_block"
     ],
     "title": "OrgSettingsIn",
+    "type": "object"
+   },
+   "PayoutIn": {
+    "properties": {
+     "amount_amd": {
+      "exclusiveMinimum": 0.0,
+      "title": "Amount Amd",
+      "type": "integer"
+     },
+     "reference": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Reference",
+      "type": "string"
+     },
+     "supplier_id": {
+      "title": "Supplier Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "supplier_id",
+     "amount_amd",
+     "reference"
+    ],
+    "title": "PayoutIn",
     "type": "object"
    },
    "PilotMarkIn": {
@@ -766,6 +942,69 @@
      "ok"
     ],
     "title": "PilotMarkIn",
+    "type": "object"
+   },
+   "Plan": {
+    "properties": {
+     "ai_credits_month": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Ai Credits Month",
+      "type": "integer"
+     },
+     "key": {
+      "pattern": "^[a-z0-9_]{2,30}$",
+      "title": "Key",
+      "type": "string"
+     },
+     "max_projects": {
+      "anyOf": [
+       {
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Projects"
+     },
+     "name": {
+      "maxLength": 60,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "price_amd_month": {
+      "minimum": 0.0,
+      "title": "Price Amd Month",
+      "type": "integer"
+     },
+     "renders_month": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Renders Month",
+      "type": "integer"
+     },
+     "seats": {
+      "anyOf": [
+       {
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seats"
+     }
+    },
+    "required": [
+     "key",
+     "name",
+     "price_amd_month"
+    ],
+    "title": "Plan",
     "type": "object"
    },
    "PrefsIn": {
@@ -1297,6 +1536,95 @@
     "title": "SourcePatch",
     "type": "object"
    },
+   "SupplierStatusIn": {
+    "properties": {
+     "note": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Note",
+      "type": "string"
+     },
+     "to": {
+      "pattern": "^(in_production|delivering|installing|cancelled)$",
+      "title": "To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "to"
+    ],
+    "title": "SupplierStatusIn",
+    "type": "object"
+   },
+   "Tariffs": {
+    "properties": {
+     "bureau_plans": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Plan"
+      },
+      "title": "Bureau Plans",
+      "type": "array"
+     },
+     "credit_packs": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/CreditPack"
+      },
+      "title": "Credit Packs",
+      "type": "array"
+     },
+     "export_prices_amd": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "default": {},
+      "title": "Export Prices Amd",
+      "type": "object"
+     },
+     "lead_fee_amd": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Lead Fee Amd",
+      "type": "integer"
+     },
+     "manufacturer": {
+      "$ref": "#/components/schemas/Fee",
+      "default": {
+       "mode": "off",
+       "value": 0.0
+      }
+     },
+     "partner_commission_default_pct": {
+      "default": 0,
+      "maximum": 50.0,
+      "minimum": 0.0,
+      "title": "Partner Commission Default Pct",
+      "type": "number"
+     },
+     "procurement_fee": {
+      "$ref": "#/components/schemas/Fee",
+      "default": {
+       "mode": "off",
+       "value": 0.0
+      }
+     },
+     "white_label_license_amd_month": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "White Label License Amd Month",
+      "type": "integer"
+     },
+     "white_label_setup_amd": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "White Label Setup Amd",
+      "type": "integer"
+     }
+    },
+    "title": "Tariffs",
+    "type": "object"
+   },
    "TokenIn": {
     "properties": {
      "token": {
@@ -1310,6 +1638,24 @@
      "token"
     ],
     "title": "TokenIn",
+    "type": "object"
+   },
+   "TransitionIn": {
+    "properties": {
+     "note": {
+      "default": "",
+      "title": "Note",
+      "type": "string"
+     },
+     "to": {
+      "title": "To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "to"
+    ],
+    "title": "TransitionIn",
     "type": "object"
    },
    "ValidationError": {
@@ -1533,6 +1879,108 @@
     ]
    }
   },
+  "/api/v1/admin/commerce-settings": {
+   "get": {
+    "operationId": "get_commerce_settings_api_v1_admin_commerce_settings_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Commerce Settings",
+    "tags": [
+     "payments"
+    ]
+   },
+   "put": {
+    "operationId": "put_commerce_settings_api_v1_admin_commerce_settings_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CommerceSettingsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Commerce Settings",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
   "/api/v1/admin/jobs": {
    "get": {
     "operationId": "jobs_api_v1_admin_jobs_get",
@@ -1608,6 +2056,317 @@
     ]
    }
   },
+  "/api/v1/admin/ledger": {
+   "get": {
+    "operationId": "ledger_overview_api_v1_admin_ledger_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ledger Overview",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/ledger/export.csv": {
+   "get": {
+    "operationId": "ledger_export_csv_api_v1_admin_ledger_export_csv_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ledger Export Csv",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/ledger/export.xlsx": {
+   "get": {
+    "operationId": "ledger_export_xlsx_api_v1_admin_ledger_export_xlsx_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ledger Export Xlsx",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/orgs": {
+   "get": {
+    "operationId": "list_orgs_api_v1_admin_orgs_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Orgs",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/orgs/{org_id}/plan": {
+   "put": {
+    "operationId": "set_org_plan_api_v1_admin_orgs__org_id__plan_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "org_id",
+      "required": true,
+      "schema": {
+       "title": "Org Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrgPlanIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Set Org Plan",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/payouts": {
+   "post": {
+    "operationId": "create_payout_api_v1_admin_payouts_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PayoutIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Payout",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
   "/api/v1/admin/quarantine": {
    "get": {
     "description": "Uploads rejected by the antivirus (kept 30 days for review; never served).",
@@ -1653,6 +2412,111 @@
     "summary": "Quarantine",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/revenue": {
+   "get": {
+    "operationId": "revenue_api_v1_admin_revenue_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Revenue",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/revenue/manual": {
+   "post": {
+    "description": "Records money received outside a payment provider (bank transfer against an invoice). Idempotent by reference.",
+    "operationId": "record_manual_revenue_api_v1_admin_revenue_manual_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManualRevenueIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Record Manual Revenue",
+    "tags": [
+     "payments"
     ]
    }
   },
@@ -1993,6 +2857,108 @@
     "summary": "Stats",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/tariffs": {
+   "get": {
+    "operationId": "get_tariffs_api_v1_admin_tariffs_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Tariffs",
+    "tags": [
+     "payments"
+    ]
+   },
+   "put": {
+    "operationId": "put_tariffs_api_v1_admin_tariffs_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Tariffs"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Tariffs",
+    "tags": [
+     "payments"
     ]
    }
   },
@@ -3571,6 +4537,53 @@
     ]
    }
   },
+  "/api/v1/bureau/plan": {
+   "get": {
+    "operationId": "my_plan_api_v1_bureau_plan_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "My Plan",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
   "/api/v1/bureau/settings": {
    "put": {
     "operationId": "bureau_settings_api_v1_bureau_settings_put",
@@ -4650,6 +5663,46 @@
     ]
    }
   },
+  "/api/v1/payments/webhook/{provider}": {
+   "post": {
+    "operationId": "webhook_api_v1_payments_webhook__provider__post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "provider",
+      "required": true,
+      "schema": {
+       "title": "Provider",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Webhook",
+    "tags": [
+     "payments"
+    ]
+   }
+  },
   "/api/v1/projects": {
    "get": {
     "operationId": "list_projects_api_v1_projects_get",
@@ -5314,8 +6367,62 @@
    }
   },
   "/api/v1/projects/{pid}/cart": {
+   "get": {
+    "operationId": "get_cart_api_v1_projects__pid__cart_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Cart",
+    "tags": [
+     "commerce"
+    ]
+   },
    "post": {
-    "description": "Splits the approved estimate into per-supplier carts (MVP: request-for-quote checkout).",
+    "description": "Splits the approved estimate into per-supplier orders of one cart.",
     "operationId": "build_cart_api_v1_projects__pid__cart_post",
     "parameters": [
      {
@@ -5375,6 +6482,63 @@
      }
     },
     "summary": "Build Cart",
+    "tags": [
+     "commerce"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/cart/recheck": {
+   "post": {
+    "description": "Mandatory before ordering: re-reads current prices and availability of every cart item.",
+    "operationId": "recheck_cart_api_v1_projects__pid__cart_recheck_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Recheck Cart",
     "tags": [
      "commerce"
     ]
@@ -6386,6 +7550,88 @@
     ]
    }
   },
+  "/api/v1/projects/{pid}/orders/{oid}/pay": {
+   "post": {
+    "description": "Starts a hosted payment with the contracted provider. Without one → 409 payment.integration_pending\n(the UI shows «Integration pending»; nothing is marked paid).",
+    "operationId": "pay_order_api_v1_projects__pid__orders__oid__pay_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Pay Order",
+    "tags": [
+     "commerce"
+    ]
+   }
+  },
   "/api/v1/projects/{pid}/orders/{oid}/request": {
    "post": {
     "operationId": "request_order_api_v1_projects__pid__orders__oid__request_post",
@@ -6406,6 +7652,22 @@
       "schema": {
        "title": "Oid",
        "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
       }
      },
      {
@@ -6446,6 +7708,82 @@
      }
     },
     "summary": "Request Order",
+    "tags": [
+     "commerce"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/orders/{oid}/transition": {
+   "post": {
+    "description": "Bureau-side moves: cancel, dispute, close after delivery / installation.",
+    "operationId": "bureau_transition_api_v1_projects__pid__orders__oid__transition_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TransitionIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bureau Transition",
     "tags": [
      "commerce"
     ]
@@ -8641,6 +9979,185 @@
      }
     },
     "summary": "Sync Feed Now",
+    "tags": [
+     "partners"
+    ]
+   }
+  },
+  "/api/v1/supplier/orders": {
+   "get": {
+    "operationId": "supplier_orders_api_v1_supplier_orders_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Orders",
+    "tags": [
+     "partners"
+    ]
+   }
+  },
+  "/api/v1/supplier/orders/{oid}/confirm": {
+   "post": {
+    "operationId": "supplier_confirm_api_v1_supplier_orders__oid__confirm_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfirmIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Confirm",
+    "tags": [
+     "partners"
+    ]
+   }
+  },
+  "/api/v1/supplier/orders/{oid}/status": {
+   "post": {
+    "operationId": "supplier_status_api_v1_supplier_orders__oid__status_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierStatusIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Status",
     "tags": [
      "partners"
     ]
