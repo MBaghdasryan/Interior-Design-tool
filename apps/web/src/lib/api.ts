@@ -71,6 +71,24 @@ export async function api<T = any>(path: string, opts: RequestInit & { json?: un
   return (ct.includes("json") ? r.json() : r.text()) as Promise<T>;
 }
 
+/** Uploads a project file: straight to object storage when the server hands out a presigned
+ *  URL (S3/MinIO), otherwise multipart through the API. Validation happens server-side either way. */
+export async function uploadAsset(pid: string, f: File, extra: Record<string, string> = {}): Promise<Asset> {
+  const type = f.type || "application/octet-stream";
+  const pre = await api<{ mode: string; url?: string; key?: string; headers?: Record<string, string> }>(`/projects/${pid}/assets/presign`,
+    { method: "POST", json: { filename: f.name, size: f.size, content_type: type } });
+  if (pre.mode === "presigned" && pre.url && pre.key) {
+    let put: Response;
+    try { put = await fetch(pre.url, { method: "PUT", body: f, headers: pre.headers }); } catch { throw new ApiError(0, "network"); }
+    if (!put.ok) throw new ApiError(put.status, "file.upload_failed");
+    return api<Asset>(`/projects/${pid}/assets/complete`, { method: "POST", json: { key: pre.key, filename: f.name, content_type: type, ...extra } });
+  }
+  const fd = new FormData();
+  fd.append("file", f);
+  for (const [k, v] of Object.entries(extra)) fd.append(k, v);
+  return api<Asset>(`/projects/${pid}/assets`, { method: "POST", body: fd });
+}
+
 /** Signed file URLs are absolute to the API base; rewrite to the current origin (dev proxy). */
 export function fileUrl(u?: string | null): string {
   if (!u) return "#";

@@ -12,5 +12,7 @@ __pycache__/
 *.sqlite3
 .env.*
 !.env.example
+!.env.prod.example
 # third-party reference album (real client project) — kept locally, not published
 Պարույր_Սևակ_5_*.pdf
+backups/

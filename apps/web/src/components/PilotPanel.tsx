@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Circle, Download, FlaskConical, Paperclip } from "lucide-react";
-import { api } from "../lib/api";
+import { api, uploadAsset } from "../lib/api";
 import { pct } from "../lib/format";
 import { getLang, useT } from "../i18n";
 import { Badge, useToast } from "./ui";
@@ -23,10 +23,7 @@ export default function PilotPanel({ pid, onUpload }: { pid: string; onUpload?: 
   const upload = async (files: FileList | null) => {
     if (!files || !target) return;
     for (const f of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("file", f);
-      fd.append("manifest_item", target);
-      try { await api(`/projects/${pid}/assets`, { method: "POST", body: fd }); toast(t("pilot.uploaded", { item: t(`pilot.item.${target}`) })); }
+      try { await uploadAsset(pid, f, { manifest_item: target }); toast(t("pilot.uploaded", { item: t(`pilot.item.${target}`) })); }
       catch (x) { toast(`${f.name}: ${(x as Error).message}`, true); }
     }
     setTarget(null);

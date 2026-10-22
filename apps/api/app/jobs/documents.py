@@ -9,7 +9,7 @@ from ..album.builder import build_album
 from ..aps.client import ApsDisabled, extract_rooms, get_aps
 from ..exports.files import estimate_csv, estimate_xlsx, to_dxf, to_glb
 from ..scene.model import Scene
-from ..storage import get_storage
+from ..storage import get_storage, media_type
 from .runner import JobContext, handler
 
 
@@ -23,7 +23,7 @@ def _ctx_entities(ctx: JobContext):
 
 def _store(db, project, variant, version, kind: str, filename: str, data: bytes, lang: str = "ru", meta: dict | None = None) -> m.Document:
     key = f"projects/{project.id}/documents/{version.id}/{filename}"
-    get_storage().put(key, data)
+    get_storage().put(key, data, media_type(filename))
     doc = m.Document(project_id=project.id, variant_id=variant.id, version_id=version.id, kind=kind, lang=lang, filename=filename,
                      storage_key=key, size=len(data), status="ready", meta=meta or {})
     db.add(doc)

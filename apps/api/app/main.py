@@ -1,4 +1,3 @@
-import logging
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,15 +10,19 @@ from .db import Base, SessionLocal, engine
 from .errors import http_error_handler, validation_error_handler
 from .jobs import catalog as catalog_jobs  # noqa: F401  (register job handlers)
 from .jobs import documents, pipeline, recognize  # noqa: F401
+from .observability import RequestIdMiddleware, setup_logging, setup_sentry, setup_tracing
 from .routers import admin, auth, catalog, commerce, partners, projects
 from .routers import documents as documents_router
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 settings = get_settings()
+setup_logging(settings.log_format)
+setup_sentry(settings.sentry_dsn, settings.env)
 
 app = FastAPI(title=f"{settings.brand_name} API", version="0.1.0", description="AI interior design & real-product sourcing platform",
               openapi_url="/api/v1/openapi.json", docs_url="/api/docs")
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(RequestIdMiddleware)
+setup_tracing(app, engine, endpoint=settings.otel_exporter_otlp_endpoint, service_name=settings.otel_service_name)
 
 for r in (auth.router, projects.router, commerce.router, documents_router.router, catalog.router, admin.router, partners.router):
     app.include_router(r)
@@ -55,6 +58,10 @@ def production_guard(s=settings) -> None:
 @app.on_event("startup")
 def startup() -> None:
     production_guard()
+    if settings.storage_backend == "s3":
+        from .storage import get_storage
+
+        get_storage().ensure_bucket()  # idempotent; private bucket, objects only via presigned URLs
     # Development convenience: create tables if migrations were not run. Production
     # runs `alembic upgrade head` in the container entrypoint (see Dockerfile/compose).
     # Schema is managed by Alembic (`python -m app.migrate`, also run by the container
@@ -83,11 +90,40 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/live")
+def live():
+    """Liveness: the process answers (no dependencies checked — a DB outage must not restart the API)."""
+    return {"status": "alive"}
+
+
 @app.get("/api/ready")
 def ready():
-    with SessionLocal() as db:
-        db.execute(text("SELECT 1"))
-    return {"status": "ready", "brand": settings.brand_name, "aps": settings.aps_enabled}
+    """Readiness: database, Redis (when configured) and object storage are reachable."""
+    checks: dict[str, str] = {}
+    try:
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
+        checks["db"] = "ok"
+    except Exception as e:  # noqa: BLE001
+        checks["db"] = f"error: {type(e).__name__}"
+    if settings.redis_url:
+        try:
+            from redis import Redis
+
+            Redis.from_url(settings.redis_url, socket_timeout=2).ping()
+            checks["redis"] = "ok"
+        except Exception as e:  # noqa: BLE001
+            checks["redis"] = f"error: {type(e).__name__}"
+    try:
+        from .storage import get_storage
+
+        get_storage().exists("_probe/ready")
+        checks["storage"] = "ok"
+    except Exception as e:  # noqa: BLE001
+        checks["storage"] = f"error: {type(e).__name__}"
+    ok = all(v == "ok" for v in checks.values())
+    body = {"status": "ready" if ok else "degraded", "checks": checks, "brand": settings.brand_name, "aps": settings.aps_enabled}
+    return body if ok else JSONResponse(status_code=503, content=body)
 
 
 @app.get("/api/v1/config")

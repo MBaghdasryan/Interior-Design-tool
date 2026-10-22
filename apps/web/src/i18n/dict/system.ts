@@ -12,6 +12,7 @@ export const errors: Dict = {
   "errors.auth.csrf": { hy: "Հարցումը մերժվել է CSRF պաշտպանությամբ — թարմացրեք էջը", ru: "Запрос отклонён защитой CSRF — обновите страницу", en: "Request blocked by CSRF protection — reload the page" },
   "errors.auth.demo_disabled": { hy: "Դեմո մուտքն անջատված է", ru: "Демо-доступ отключён", en: "Demo access is disabled" },
   "errors.auth.account_disabled": { hy: "Հաշիվն անջատված է", ru: "Учётная запись отключена", en: "This account is disabled" },
+  "errors.file.upload_failed": { hy: "Ֆայլը չի հաջողվել վերբեռնել պահոց", ru: "Не удалось загрузить файл в хранилище", en: "The file could not be uploaded to storage" },
   "errors.rate_limited": { hy: "Չափազանց շատ հարցումներ — կրկնեք {retry_after} վ հետո", ru: "Слишком много запросов — повторите через {retry_after} с", en: "Too many requests — try again in {retry_after} s" },
   "errors.auth.bad_credentials": { hy: "Սխալ էլ. փոստ կամ գաղտնաբառ", ru: "Неверный email или пароль", en: "Wrong email or password" },
   "errors.auth.forbidden": { hy: "Բավարար իրավունքներ չկան", ru: "Недостаточно прав", en: "You don't have permission" },

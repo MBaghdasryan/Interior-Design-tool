@@ -1,0 +1,16 @@
+# Reverse proxy with automatic TLS (Let's Encrypt for real domains; an internal CA for *.localhost).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:80
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
+# presigned upload/download URLs point here (S3_PUBLIC_ENDPOINT)
+{$FILES_DOMAIN} {
+	reverse_proxy objectstore:8333
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}

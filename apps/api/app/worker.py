@@ -13,12 +13,14 @@ from .config import get_settings
 from .db import SessionLocal
 from .jobs import catalog, documents, pipeline, recognize  # noqa: F401  (register job handlers)
 from .jobs.runner import get_queue, recover_orphans
+from .observability import setup_logging, setup_sentry
 
 log = logging.getLogger("forma.worker")
 
 
 def maintenance_loop(q, interval_s: int = 60) -> None:
     """Every minute: re-submit orphaned jobs (a killed worker), then run due periodic tasks."""
+    from . import retention  # noqa: F401  (registers the daily retention task)
     from .scheduler import run_due
 
     while True:
@@ -34,8 +36,10 @@ def maintenance_loop(q, interval_s: int = 60) -> None:
 def main() -> None:
     from rq import Worker
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    if not get_settings().redis_url:
+    s = get_settings()
+    setup_logging(s.log_format)
+    setup_sentry(s.sentry_dsn, s.env)
+    if not s.redis_url:
         raise SystemExit("REDIS_URL is not set — the API runs jobs in-process; no worker needed")
     q = get_queue()
     with SessionLocal() as db:

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, Armchair, CloudUpload, Database, FileText, Globe2, Info, Palette, Plus, ScanLine, ShoppingCart, Sparkles, Users, Wallet, X } from "lucide-react";
-import { api, fileUrl, type Project } from "../lib/api";
+import { api, fileUrl, uploadAsset, type Project } from "../lib/api";
 import { kb, styleName, tierName } from "../lib/format";
 import { LANGS, useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
@@ -76,9 +76,7 @@ function Intake({ pid }: { pid: string }) {
   const upload = async (files: FileList | File[]) => {
     setBusy(true);
     for (const f of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("file", f);
-      try { await api(`/projects/${pid}/assets`, { method: "POST", body: fd }); } catch (x) { toast(`${f.name}: ${(x as Error).message}`, true); }
+      try { await uploadAsset(pid, f); } catch (x) { toast(`${f.name}: ${(x as Error).message}`, true); }
     }
     setBusy(false);
     load();

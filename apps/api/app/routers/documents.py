@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ from ..errors import ApiError
 from ..jobs.runner import enqueue, job_dict
 from ..ratelimit import check as rate_check
 from ..security import Principal, audit, current_principal, project_access, require
-from ..storage import LocalStorage, get_storage
+from ..storage import INLINE_EXT, LocalStorage, get_storage, media_type
 
 router = APIRouter(tags=["documents"])
 MEDIA = {"album_pdf": "application/pdf", "dxf": "application/dxf", "dwg": "image/vnd.dwg", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -88,11 +88,11 @@ def download(key: str, exp: int, sig: str):
     if not st.exists(key):
         raise ApiError(404, "not_found")
     name = key.rsplit("/", 1)[-1]
-    ext = name.rsplit(".", 1)[-1].lower()
-    media = {"pdf": "application/pdf", "dxf": "application/dxf", "dwg": "image/vnd.dwg", "xlsx": MEDIA["xlsx"], "csv": "text/csv", "glb": "model/gltf-binary",
-             "json": "application/json", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp", "mp4": "video/mp4"}.get(ext, "application/octet-stream")
-    inline = ext in ("pdf", "png", "jpg", "jpeg", "webp", "mp4", "glb")
-    return FileResponse(st.path(key), media_type=media, filename=name, content_disposition_type="inline" if inline else "attachment")
+    inline = name.rsplit(".", 1)[-1].lower() in INLINE_EXT
+    presigned = st.presigned_get(key, name, inline)
+    if presigned:  # S3/MinIO: our signature was checked; hand out a 5-minute object URL
+        return RedirectResponse(presigned, status_code=302)
+    return FileResponse(st.path(key), media_type=media_type(name), filename=name, content_disposition_type="inline" if inline else "attachment")
 
 
 # ------------------------------------------------------------------ Autodesk APS

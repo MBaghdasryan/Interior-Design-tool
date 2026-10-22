@@ -4,3 +4,4 @@ respx==0.22.0
 ruff==0.8.6
 pymupdf==1.25.1
 fakeredis==2.26.2
+moto[s3]==5.0.24

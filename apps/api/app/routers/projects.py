@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import secrets
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
@@ -154,36 +155,101 @@ async def upload_asset(pid: str, file: UploadFile = File(...), room_hint: str | 
                        p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     proj = project_access(pid, "project:write", p, db)
     data = await file.read()
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise ApiError(413, "file.too_large")
-    kind = detect_kind(file.filename or "file", file.content_type or "", data[:16])
-    if not kind:
-        raise ApiError(415, "file.unsupported")
-    if not scan_for_malware(data):
-        raise ApiError(422, "file.malware")
+    return _ingest(db, p, proj, data, file.filename or "file", file.content_type or "", room_hint, manifest_item)
+
+
+def _ingest(db: Session, p: Principal, proj: m.Project, data: bytes, filename: str, content_type: str, room_hint: str | None,
+            manifest_item: str | None, incoming_key: str | None = None) -> dict:
+    """Validates and stores an upload (multipart or a completed presigned upload): size,
+    extension vs. magic bytes, malware scan, de-duplication by SHA-256."""
+    st = get_storage()
+    try:
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise ApiError(413, "file.too_large")
+        if not data:
+            raise ApiError(422, "file.empty")
+        kind = detect_kind(filename, content_type, data[:16])
+        if not kind:
+            raise ApiError(415, "file.unsupported")
+        if not scan_for_malware(data):
+            raise ApiError(422, "file.malware")
+    except ApiError:
+        if incoming_key:
+            st.delete(incoming_key)  # rejected presigned uploads never leave quarantine
+        raise
     sha = hashlib.sha256(data).hexdigest()
-    dup = db.scalar(select(m.SourceAsset).where(m.SourceAsset.project_id == pid, m.SourceAsset.sha256 == sha))
+    dup = db.scalar(select(m.SourceAsset).where(m.SourceAsset.project_id == proj.id, m.SourceAsset.sha256 == sha))
     if dup:
+        if incoming_key:
+            st.delete(incoming_key)
         _attach_to_pilot(proj, manifest_item, dup.id)
         db.commit()
         return asset_dict(dup)
-    key = f"projects/{pid}/assets/{sha[:16]}_{(file.filename or 'file').replace('/', '_')[-80:]}"
-    get_storage().put(key, data)
-    a = m.SourceAsset(project_id=pid, kind=kind, filename=file.filename or "file", mime=file.content_type or "application/octet-stream", size=len(data), sha256=sha,
+    key = f"projects/{proj.id}/assets/{sha[:16]}_{filename.replace('/', '_')[-80:]}"
+    if incoming_key:
+        st.move(incoming_key, key)
+    else:
+        st.put(key, data, content_type or "application/octet-stream")
+    a = m.SourceAsset(project_id=proj.id, kind=kind, filename=filename, mime=content_type or "application/octet-stream", size=len(data), sha256=sha,
                       storage_key=key, room_hint=room_hint, quality=assess_quality(kind, data))
     db.add(a)
     db.flush()
     _attach_to_pilot(proj, manifest_item, a.id)
     if proj.status == "draft":
         proj.status = "intake"
-    audit(db, p, "asset.upload", "asset", None, project_id=pid, data={"filename": a.filename, "kind": kind, "size": len(data)})
+    audit(db, p, "asset.upload", "asset", None, project_id=proj.id, data={"filename": a.filename, "kind": kind, "size": len(data), "via": "presigned" if incoming_key else "api"})
     db.commit()
     if kind in ("dwg", "rvt", "ifc"):
         from ..config import get_settings
 
         if get_settings().aps_enabled:
-            enqueue(db, "aps_translate", project_id=pid, params={"asset_id": a.id}, idempotency_key=f"aps_translate:{a.id}")
+            enqueue(db, "aps_translate", project_id=proj.id, params={"asset_id": a.id}, idempotency_key=f"aps_translate:{a.id}")
     return asset_dict(a)
+
+
+class PresignIn(BaseModel):
+    filename: str = Field(min_length=1, max_length=300)
+    size: int = Field(gt=0)
+    content_type: str = Field(default="application/octet-stream", max_length=100)
+
+
+@router.post("/{pid}/assets/presign")
+def presign_upload(pid: str, body: PresignIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Direct-to-storage upload (S3/MinIO): returns a 15-minute PUT URL into a per-project
+    quarantine prefix. With local storage the client falls back to multipart upload."""
+    from ..storage import EXT_KIND
+
+    project_access(pid, "project:write", p, db)
+    if body.size > MAX_UPLOAD_BYTES:
+        raise ApiError(413, "file.too_large")
+    ext = "." + body.filename.rsplit(".", 1)[-1].lower() if "." in body.filename else ""
+    if ext not in EXT_KIND:
+        raise ApiError(415, "file.unsupported")
+    key = f"incoming/{pid}/{secrets.token_hex(8)}_{body.filename.replace('/', '_')[-80:]}"
+    url = get_storage().presigned_put(key, body.content_type)
+    if not url:
+        return {"mode": "multipart"}
+    return {"mode": "presigned", "url": url, "key": key, "headers": {"Content-Type": body.content_type,
+                                                                      **({"x-amz-server-side-encryption": get_storage().sse} if getattr(get_storage(), "sse", None) else {})}}
+
+
+class CompleteIn(BaseModel):
+    key: str = Field(max_length=400)
+    filename: str = Field(min_length=1, max_length=300)
+    content_type: str = Field(default="application/octet-stream", max_length=100)
+    room_hint: str | None = None
+    manifest_item: str | None = None
+
+
+@router.post("/{pid}/assets/complete")
+def complete_upload(pid: str, body: CompleteIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    proj = project_access(pid, "project:write", p, db)
+    if not body.key.startswith(f"incoming/{pid}/") or ".." in body.key:
+        raise ApiError(422, "validation", fields=["key"])  # only this project's quarantine
+    st = get_storage()
+    if not st.exists(body.key):
+        raise ApiError(404, "not_found")
+    return _ingest(db, p, proj, st.get(body.key), body.filename, body.content_type, body.room_hint, body.manifest_item, incoming_key=body.key)
 
 
 def _attach_to_pilot(proj: m.Project, manifest_item: str | None, asset_id: str) -> None:

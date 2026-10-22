@@ -1,0 +1,77 @@
+# Production profile — overrides docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# TLS reverse proxy (Caddy), S3 object storage (SeaweedFS, encrypted at rest), no demo data, JSON logs,
+# only Caddy publishes ports. Secrets come from .env.prod (see .env.prod.example).
+services:
+  caddy:
+    image: caddy:2.8.4-alpine
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+      FILES_DOMAIN: ${FILES_DOMAIN:?set FILES_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    volumes: [./deploy/Caddyfile:/etc/caddy/Caddyfile:ro, caddydata:/data]
+    depends_on: [web, objectstore]
+    restart: unless-stopped
+
+  web:
+    ports: !reset []
+    restart: unless-stopped
+
+  api:
+    ports: !reset []
+    env_file: !override [.env.prod]
+    environment: &prodenv
+      ENV: production
+      SEED_DEMO: "false"
+      COOKIE_SECURE: "true"
+      LOG_FORMAT: json
+      PUBLIC_BASE_URL: https://${DOMAIN}
+      API_BASE_URL: https://${DOMAIN}
+      CORS_ORIGINS: https://${DOMAIN}
+      MAIL_BACKEND: ${MAIL_BACKEND:-smtp}
+      STORAGE_BACKEND: s3
+      S3_ENDPOINT: http://objectstore:8333
+      S3_PUBLIC_ENDPOINT: https://${FILES_DOMAIN}
+      S3_BUCKET: ${S3_BUCKET:-renovara}
+      S3_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY:?set OBJECTSTORE_ACCESS_KEY}
+      S3_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY:?set OBJECTSTORE_SECRET_KEY}
+      S3_SSE: ""  # encryption at rest is done by the object store; AWS S3: set AES256
+    depends_on:
+      objectstore: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    env_file: !override [.env.prod]
+    environment: *prodenv
+    restart: unless-stopped
+
+  db:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  # S3-compatible object storage (SeaweedFS, Apache-2.0). Data is encrypted at rest on the
+  # volume servers (-filer.encryptVolumeData); the API creates the bucket on start.
+  objectstore:
+    image: chrislusf/seaweedfs:3.80
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        printf '{"identities":[{"name":"renovara","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write","List","Tagging"]}]}'
+        "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /tmp/s3.json &&
+        exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json -filer.encryptVolumeData -volume.max=0 -master.volumeSizeLimitMB=1024
+    environment:
+      S3_ACCESS_KEY: ${OBJECTSTORE_ACCESS_KEY:?set OBJECTSTORE_ACCESS_KEY}
+      S3_SECRET_KEY: ${OBJECTSTORE_SECRET_KEY:?set OBJECTSTORE_SECRET_KEY}
+    volumes: [objectdata:/data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/status || wget -q -O - http://127.0.0.1:9333/cluster/status >/dev/null"]
+      interval: 5s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  caddydata:
+  objectdata:

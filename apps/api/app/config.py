@@ -75,6 +75,26 @@ class Settings(BaseSettings):
     reset_token_ttl_min: int = 60
     terms_version: str = "2026-10"
 
+    # Object storage: local (development) | s3 (S3 / MinIO, production profile)
+    storage_backend: str = "local"
+    s3_bucket: str = "renovara"
+    s3_endpoint: str | None = None  # internal, e.g. http://minio:9000 (None = AWS)
+    s3_public_endpoint: str | None = None  # what browsers reach for presigned URLs
+    s3_region: str = "us-east-1"
+    s3_access_key: str | None = None
+    s3_secret_key: str | None = None
+    s3_sse: str | None = "AES256"
+    # Retention (days): incoming uploads never completed, outgoing mail copies, orphaned objects
+    retention_incoming_days: int = 1
+    retention_mail_days: int = 30
+    retention_orphan_days: int = 7
+
+    # Observability
+    log_format: str = "text"  # text | json
+    otel_exporter_otlp_endpoint: str | None = None
+    otel_service_name: str = "renovara-api"
+    sentry_dsn: str | None = None
+
     # Rate limiting (in-memory per process; Redis when REDIS_URL is set)
     rate_limit_enabled: bool = True
     redis_url: str | None = None
