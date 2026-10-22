@@ -78,18 +78,23 @@ export function fileUrl(u?: string | null): string {
   return i >= 0 ? u.slice(i) : u;
 }
 
+/** Live job progress over SSE. EventSource reconnects by itself and sends Last-Event-ID, so the
+ *  server resumes from the last state; polling is used only if the stream keeps failing. */
 export function streamJob(pid: string, jid: string, onJob: (j: Job) => void): () => void {
-  const es = new EventSource(`/api/v1/projects/${pid}/jobs/${jid}/events`, { withCredentials: true });
-  es.addEventListener("progress", (e) => { try { onJob(JSON.parse((e as MessageEvent).data)); } catch { /* ignore */ } });
-  es.addEventListener("end", () => es.close());
+  let es: EventSource | null = new EventSource(`/api/v1/projects/${pid}/jobs/${jid}/events`, { withCredentials: true });
+  let failures = 0;
+  let poll: ReturnType<typeof setInterval> | null = null;
+  const stop = () => { es?.close(); es = null; if (poll) clearInterval(poll); };
+  es.addEventListener("progress", (e) => { failures = 0; try { onJob(JSON.parse((e as MessageEvent).data)); } catch { /* ignore */ } });
+  es.addEventListener("end", stop);
   es.onerror = () => {
-    es.close();
-    // fallback: poll
-    const t = setInterval(async () => {
-      try { const j = await api<Job>(`/projects/${pid}/jobs/${jid}`); onJob(j); if (["succeeded", "failed"].includes(j.status)) clearInterval(t); } catch { clearInterval(t); }
+    if (++failures < 3 || !es) return;  // let the browser retry (it honours the server's retry hint)
+    es.close(); es = null;
+    poll = setInterval(async () => {
+      try { const j = await api<Job>(`/projects/${pid}/jobs/${jid}`); onJob(j); if (["succeeded", "failed"].includes(j.status)) stop(); } catch { stop(); }
     }, 1500);
   };
-  return () => es.close();
+  return stop;
 }
 
 // Persist the interface language in the user profile whenever it changes.

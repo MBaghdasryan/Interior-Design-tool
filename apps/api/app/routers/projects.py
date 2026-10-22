@@ -389,7 +389,10 @@ async def job_events(pid: str, jid: str, request: Request, authorization: str | 
         db.close()
 
     async def gen():
-        last = None
+        # resumable stream: every event carries an id (hash of the job state); after a reconnect the
+        # browser sends Last-Event-ID and an unchanged state is not re-sent
+        last = request.headers.get("last-event-id")
+        yield {"event": "hello", "data": "", "retry": 3000}  # reconnect delay hint for EventSource
         while True:
             if await request.is_disconnected():
                 break
@@ -400,9 +403,10 @@ async def job_events(pid: str, jid: str, request: Request, authorization: str | 
                 status = job.status if job else "missing"
             finally:
                 s.close()
-            if payload != last:
-                last = payload
-                yield {"event": "progress", "data": payload or "{}"}
+            eid = hashlib.sha1((payload or "").encode()).hexdigest()[:16]
+            if eid != last:
+                last = eid
+                yield {"event": "progress", "data": payload or "{}", "id": eid}
             if status in ("succeeded", "failed", "missing"):
                 yield {"event": "end", "data": status}
                 break

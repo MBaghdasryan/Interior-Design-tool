@@ -70,6 +70,12 @@ def startup() -> None:
 
         with SessionLocal() as db:
             seed(db)
+    if settings.env != "test" and not settings.redis_url:
+        # in-process queue: jobs of the previous process died with it → run them again
+        from .jobs.runner import recover_orphans
+
+        with SessionLocal() as db:
+            recover_orphans(db, running_older_than_s=0)
 
 
 @app.get("/api/health")

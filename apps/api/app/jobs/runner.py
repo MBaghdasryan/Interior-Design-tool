@@ -1,7 +1,13 @@
 """Background job runner. Jobs and their steps are persisted, so progress survives
-API restarts and is streamed to the UI over SSE. The in-process thread pool is the
-MVP queue driver; the interface matches a Redis/BullMQ/Celery worker so it can be
-swapped without touching job code (docs/ADR-004)."""
+restarts and is streamed to the UI over SSE.
+
+Queue drivers (same job code, docs/ADR-004):
+* `REDIS_URL` set → Redis + RQ: jobs run in the separate `worker` service
+  (`python -m app.worker`) with retries and backoff; jobs that exhaust their
+  retries stay in RQ's FailedJobRegistry (dead letter) and are flagged in the DB.
+* no Redis (local dev) → in-process thread pool.
+* `FORMA_JOBS_SYNC=1` (tests, CLI) → inline.
+`recover_orphans()` re-submits jobs left queued/running by a crashed process."""
 from __future__ import annotations
 
 import logging
@@ -9,15 +15,19 @@ import os
 import traceback
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
 from .. import models as m
+from ..config import get_settings
 from ..db import SessionLocal
 
 log = logging.getLogger("forma.jobs")
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="forma-job")
+QUEUE_NAME = "forma"
+MAX_ATTEMPTS = 3  # first run + 2 retries
+RETRY_INTERVALS_S = [15, 60]
 HANDLERS: dict[str, Callable[["JobContext"], dict]] = {}
 
 
@@ -87,9 +97,27 @@ def enqueue(db: Session, kind: str, *, project_id: str | None, params: dict, ide
     return job
 
 
-def submit(job_id: str) -> None:
-    if os.environ.get("FORMA_JOBS_SYNC") == "1":  # tests / CLI: run inline, deterministically
+def get_queue(connection=None):
+    from redis import Redis
+    from rq import Queue
+
+    conn = connection or Redis.from_url(get_settings().redis_url)
+    return Queue(QUEUE_NAME, connection=conn, default_timeout=3600)
+
+
+def _uses_rq(queue) -> bool:
+    return queue is not None or bool(get_settings().redis_url)
+
+
+def submit(job_id: str, queue=None) -> None:
+    if os.environ.get("FORMA_JOBS_SYNC") == "1" and queue is None:  # tests / CLI: run inline, deterministically
         _run(job_id)
+        return
+    if _uses_rq(queue):
+        from rq import Retry
+
+        (queue or get_queue()).enqueue("app.jobs.runner.run_job", job_id, job_id=f"forma-{job_id}-{os.urandom(3).hex()}",
+                                       retry=Retry(max=MAX_ATTEMPTS - 1, interval=RETRY_INTERVALS_S), failure_ttl=7 * 24 * 3600)
         return
     _pool.submit(_run, job_id)
 
@@ -99,17 +127,62 @@ def run_sync(job_id: str) -> None:
     _run(job_id)
 
 
-def _run(job_id: str) -> None:
+def run_job(job_id: str) -> None:
+    """RQ entrypoint: a failed run raises so RQ applies the retry policy; the DB keeps the error."""
+    if _run(job_id) == "failed":
+        raise RuntimeError(f"job {job_id} failed")
+
+
+def _active_rq_job_ids(queue) -> set[str]:
+    """Jobs RQ is still responsible for: waiting, waiting for a retry, or being run by a
+    worker whose heartbeat is fresh (a killed worker stops beating)."""
+    from rq import Worker
+    from rq.registry import ScheduledJobRegistry
+
+    ids = list(queue.get_job_ids()) + list(ScheduledJobRegistry(queue=queue).get_job_ids())
+    alive_after = datetime.now(timezone.utc) - timedelta(seconds=90)
+    for w in Worker.all(queue=queue):
+        hb = w.last_heartbeat
+        if hb and (hb if hb.tzinfo else hb.replace(tzinfo=timezone.utc)) > alive_after and w.get_current_job_id():
+            ids.append(w.get_current_job_id())
+    return {jid.split("-")[1] for jid in ids if jid and jid.startswith("forma-")}
+
+
+def recover_orphans(db: Session, *, running_older_than_s: int = 120, queue=None) -> list[str]:
+    """Re-submit jobs a dead process left behind: `queued` jobs nobody holds and `running`
+    jobs without a live worker. A just-started job (< running_older_than_s) gets time to
+    appear in a worker heartbeat before it is judged."""
+    rq = _uses_rq(queue)
+    q = (queue or get_queue()) if rq else None
+    active = _active_rq_job_ids(q) if rq else set()
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=running_older_than_s)
+    out = []
+    for job in db.query(m.GenerationJob).filter(m.GenerationJob.status.in_(("queued", "running"))):
+        if job.id in active:
+            continue
+        started = job.started_at if (job.started_at is None or job.started_at.tzinfo) else job.started_at.replace(tzinfo=timezone.utc)
+        if job.status == "running" and started and started > cutoff:
+            continue
+        job.status = "queued"
+        out.append(job.id)
+    db.commit()
+    for jid in out:
+        log.warning("recovering orphaned job %s", jid)
+        submit(jid, queue=q)
+    return out
+
+
+def _run(job_id: str) -> str | None:
     db = SessionLocal()
     try:
         job = db.get(m.GenerationJob, job_id)
         if not job or job.status in ("succeeded", "running"):
-            return
+            return None
         fn = HANDLERS.get(job.kind)
         if not fn:
             job.status, job.error = "failed", f"no handler for {job.kind}"
             db.commit()
-            return
+            return None  # nothing to retry
         job.status, job.started_at, job.attempts = "running", datetime.now(timezone.utc), job.attempts + 1
         db.commit()
         ctx = JobContext(db, job)
@@ -121,13 +194,16 @@ def _run(job_id: str) -> None:
         except Exception as e:  # noqa: BLE001 - job failures are recorded, never raised into the pool
             db.rollback()
             job = db.get(m.GenerationJob, job_id)
-            log.error("job %s failed: %s", job_id, traceback.format_exc())
+            log.error("job %s failed (attempt %s): %s", job_id, job.attempts, traceback.format_exc())
             job.status, job.error = "failed", f"{type(e).__name__}: {e}"
+            if job.attempts >= MAX_ATTEMPTS:
+                job.counters = {**(job.counters or {}), "dead_letter": True}
             for s in job.steps:
                 if s.status == "running":
                     s.status, s.detail = "failed", str(e)[:400]
         job.finished_at = datetime.now(timezone.utc)
         db.commit()
+        return job.status
     finally:
         db.close()
 

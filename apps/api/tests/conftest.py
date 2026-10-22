@@ -39,3 +39,13 @@ def designer(client):
 @pytest.fixture(scope="session")
 def admin(client):
     return login(client, "admin@forma.local")
+
+
+@pytest.fixture(autouse=True)
+def _sse_event_loop_reset():
+    """sse-starlette keeps a module-level exit Event bound to the first event loop;
+    several TestClient instances (one loop each) need a fresh one per test."""
+    from sse_starlette.sse import AppStatus
+
+    AppStatus.should_exit_event = None
+    yield
