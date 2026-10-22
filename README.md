@@ -34,12 +34,12 @@ cd apps/web && npm install && npm run dev      # http://localhost:5173 (прок
 
 ```bash
 docker build -t forma-api-dev --build-arg DEV=1 apps/api
-docker run --rm -v $PWD/apps:/apps -w /apps/api forma-api-dev sh -c "ruff check app tests && python -m pytest -q"   # 66 тестов
-docker run --rm -v $PWD/apps:/apps -w /apps/web node:22-alpine sh -c "npm ci && node scripts/i18n-check.mjs && npx tsc --noEmit -p . && npx vite build"
+docker run --rm -v $PWD/apps:/apps -w /apps/api forma-api-dev sh -c "ruff check app tests evals && python -m pytest -q"   # 155 тестов
+docker run --rm -v $PWD/apps:/apps -w /apps/web node:22-alpine sh -c "npm ci && node scripts/i18n-check.mjs && npm run -s api:check && npx tsc --noEmit -p . && npx vite build"
 docker run --rm -v $PWD/apps:/apps -w /apps/web node:22-alpine node --experimental-strip-types scripts/export-server-dict.mjs --check
 # E2E против запущенного compose (http://localhost:8085)
 docker run --rm --network host -v $PWD/apps/web/e2e:/e2e mcr.microsoft.com/playwright/python:v1.49.0-jammy \
-  sh -c "pip install -q playwright==1.49.0 && BASE=http://localhost:8085 python /e2e/i18n_e2e.py && BASE=http://localhost:8085 python /e2e/routes_smoke.py"
+  sh -c "pip install -q playwright==1.49.0 axe-playwright-python==0.1.4 pillow==11.0.0 && for s in visual_a11y_e2e i18n_e2e routes_smoke notifications_e2e commerce_e2e search_e2e custom_furniture_e2e bim_pwa_e2e; do python /e2e/\$s.py || exit 1; done"
 ```
 
 Служебные команды в стеке:
@@ -48,6 +48,9 @@ docker run --rm --network host -v $PWD/apps/web/e2e:/e2e mcr.microsoft.com/playw
 docker compose exec api alembic current            # миграции (применяются автоматически при старте)
 docker compose exec api python -m app.seed_sources # идемпотентный seed 8 внешних источников
 docker compose exec api python -m app.pilot_n99    # workspace и чек-лист пилота N99
+docker compose exec api alembic downgrade -1       # откат последней миграции (каждая имеет downgrade)
+docker compose exec api python -m evals.run --providers gemini,stub --suite all   # оценка AI → EVAL_REPORT.md
+docker compose exec api python -m app.album.glossary export /tmp/terms.xlsx       # термины альбома для вычитки
 ```
 
 ## CI/CD
@@ -60,7 +63,9 @@ docker compose exec api python -m app.pilot_n99    # workspace и чек-лис�
 | migrations | upgrade → downgrade → upgrade на Postgres |
 | frontend | i18n-check; синхронность словаря для сервера; tsc; vite build; `npm audit` (prod, high) |
 | security | pip-audit; trivy по образам api и web (critical, для которых есть исправление) |
-| e2e | `docker compose` с нуля → seed → Playwright: регистрация, локализация, 22 маршрута |
+| backend (доп.) | синхронность `openapi.json` с API |
+| frontend (доп.) | сгенерированные TS-типы OpenAPI актуальны; контракт: каждый вызов фронтенда существует в API |
+| e2e | `docker compose` с нуля → seed → Playwright: визуальная регрессия, axe (WCAG A/AA), регистрация, локализация, 22 маршрута, уведомления, каталог, коммерция, онбординг поставщика, поиск, мебель на заказ |
 | images | публикация образов в GHCR при push в main и по тегам |
 | deploy-staging | по тегу `v*`; нужны секреты `STAGING_HOST` / `STAGING_SSH_KEY`, пока не заданы |
 
@@ -69,8 +74,9 @@ docker compose exec api python -m app.pilot_n99    # workspace и чек-лис�
 Платформа — **MVP на демо-данных**, не production. Статусы по каждой функции: [AUDIT_REPORT.md](AUDIT_REPORT.md),
 [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md), [TEST_REPORT.md](TEST_REPORT.md), [LOCALIZATION_REPORT.md](LOCALIZATION_REPORT.md),
 [SECURITY_REPORT.md](SECURITY_REPORT.md), [EXTERNAL_CATALOG_REPORT.md](EXTERNAL_CATALOG_REPORT.md), [N99_VALIDATION_REPORT.md](N99_VALIDATION_REPORT.md).
-Живьём проверены: Autodesk APS (DXF→DWG), Gemini (`gemini-3-flash-preview`), Domus live-каталог. OpenAI — нет кредитов;
-фото-рендер ИИ — заблокирован квотой; пилот N99 — ждёт исходники.
+Живьём проверены: Autodesk APS (DXF→DWG), Gemini (тексты, зрение, фото-рендер 2K — до исчерпания предоплаты 2026-10-22),
+Domus и VLV (фоновый индекс). OpenAI — нет кредитов, Gemini — предоплата исчерпана; онлайн-оплата — ждёт договора
+с провайдером (UI пишет «Integration pending»); пилот N99 — ждёт исходники. Итоги: [EVAL_REPORT.md](EVAL_REPORT.md).
 
 ## Что внутри
 
@@ -82,7 +88,11 @@ docker compose exec api python -m app.pilot_n99    # workspace и чек-лис�
 | Смета | `apps/api/app/estimate` | детерминированный расчёт, `Q=⌈A·(1+w)/A_pkg⌉`, статусы цен, диапазон бюджета |
 | Альбом | `apps/api/app/album` | 41 лист A3 на hy/ru/en: ДН1 инженерный, ДН2 отделка, ДН3 развёртки, ДН4 визуализация, ДН5 спецификация/смета/утверждение |
 | Autodesk APS | `apps/api/app/aps` | OAuth, OSS, Model Derivative (DWG/RVT/IFC→SVF2 + помещения), Design Automation (DXF→DWG), Viewer |
-| Web | `apps/web` | 20 маршрутов (hy/ru/en): лендинг, загрузка, проверка геометрии, генерация, результаты, редактор 2D/3D, документы, закупки, версии, кабинеты, админка |
+| Коммерция | `apps/api/app/commerce` | корзина → перепроверка цен → заказ → подтверждение поставщиком → доставка/монтаж; ledger двойной записи (только добавление), выплаты, тарифы, выручка; платёжный адаптер |
+| Поиск | `apps/api/app/search` | эмбеддинги за интерфейсом (локальный многоязычный / Gemini), «похожие по фото», аналоги с разбором |
+| Мебель на заказ | `apps/api/app/custom` | модули кухонь/шкафов/гардеробных/ТВ, ограничения производства, раскрой, цена по ставкам производителя, DXF/PDF |
+| BIM | `apps/api/app/bim` | IFC4 экспорт и импорт (IfcOpenShell), Apple RoomPlan |
+| Web | `apps/web` | маршруты hy/ru/en, PWA: лендинг, загрузка, геометрия, генерация, результаты, редактор 2D/3D, документы, закупки, мебель на заказ, каталог, кабинеты бюро и поставщика, админка с финансами |
 
 Документация: [docs/](docs/) — продукт, архитектура, ERD, AI-пайплайн, безопасность, дорожная карта, ADR,
 APS, альбом, внешний каталог и [список того, что было добавлено сверх ТЗ](docs/GAPS.md).

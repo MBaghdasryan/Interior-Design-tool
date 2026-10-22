@@ -1,0 +1,11 @@
+{
+  "name": "Renovara",
+  "short_name": "Renovara",
+  "description": "AI renovation & sourcing tool",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f3ee",
+  "theme_color": "#2e2e2e",
+  "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

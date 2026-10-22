@@ -98,6 +98,17 @@ export default function Geometry() {
             <span className="row gap-6 small"><i className="dot" style={{ background: "#c8463d" }} /> {t("geo.red", { n: s.red })}</span>
             <span className="muted small grow right">{t("geo.click_hint")}</span>
           </div>
+          <div className="row wrap gap-6" style={{ padding: 12, borderTop: "1px solid var(--line)" }} role="group" aria-label={t("bim.title")}>
+            <b className="small">{t("bim.title")}</b>
+            <a className="btn sm" href={`/api/v1/projects/${pid}/geometry.ifc`}>{t("bim.export_ifc")}</a>
+            {(project?.assets || []).filter((a) => a.kind === "ifc").map((a) => (
+              <button key={a.id} className="btn sm ghost" onClick={async () => { try { const r = await api<{ walls: number; openings: number; rooms: number }>(`/projects/${pid}/assets/${a.id}/import-ifc`, { method: "POST" }); toast(t("bim.imported", r)); load(); } catch (x) { toast((x as Error).message, true); } }}>
+                {t("bim.import_ifc", { name: a.filename })}</button>))}
+            <label className="btn sm ghost">{t("bim.roomplan")}
+              <input type="file" hidden accept=".json,application/json" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const fd = new FormData(); fd.append("file", f);
+                try { const r = await api<{ walls: number; openings: number; rooms: number }>(`/projects/${pid}/import/roomplan`, { method: "POST", body: fd }); toast(t("bim.imported", r)); load(); } catch (x) { toast((x as Error).message, true); } }} /></label>
+            <span className="tiny muted">{t("bim.hint")}</span>
+          </div>
         </div>
         <div className="col gap-16">
           <div className="card pad col gap-10">

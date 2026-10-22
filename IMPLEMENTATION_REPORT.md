@@ -1,134 +1,63 @@
-# IMPLEMENTATION_REPORT — итерация «аудит + P0 локализация + достоверность»
+# IMPLEMENTATION_REPORT — итерация RENOVARA_NEXT_ITERATION (P0-1 … P2-6)
 
-Статусы:
-- `VERIFIED` — доказано тестом, артефактом или E2E;
-- `IMPLEMENTED_NOT_LIVE_VERIFIED` — код есть, но живой проверки не было;
-- `PARTIAL`;
-- `STUB/DEMO`;
-- `NOT IMPLEMENTED`;
-- `BLOCKED_BY_EXTERNAL_DEPENDENCY`.
+Дата: 2026-10-22. Отчёт предыдущей итерации (аудит, локализация, уровни достоверности) — в истории git (`git show 2aab6c5:IMPLEMENTATION_REPORT.md`).
 
-## Phase B — локализация (P0) — VERIFIED
+Статусы: **VERIFIED** — работает и подтверждено тестом, E2E или живым прогоном; **IMPLEMENTED_NOT_LIVE_VERIFIED** — код и тесты есть, живой внешний сервис не проверен; **PARTIAL** — часть пункта; **BLOCKED_BY_EXTERNAL_DEPENDENCY** — дальше без владельца нельзя. Платформа **не** объявляется готовой к продакшену.
 
-Подробности — в `LOCALIZATION_REPORT.md`.
+Числа на момент отчёта: backend **155 тестов**, 13 E2E-сценариев Playwright, 12 миграций Alembic (`0001` → `0012`, каждая с downgrade, проверены вниз-вверх на Postgres).
 
-| Что | Файлы |
-|---|---|
-| Движок i18n | `apps/web/src/i18n/index.ts` |
-| Словари | `apps/web/src/i18n/dict/*.ts` (932 ключа) |
-| Переведены все страницы и компоненты | `apps/web/src/pages/*`, `apps/web/src/components/*` |
-| Форматирование по локали | `src/lib/format.ts` |
-| Перевод сообщений сервера | `src/lib/messages.ts` |
-| Коды ошибок API | `apps/api/app/errors.py` (`ApiError(status, code, **params)`, единый формат ответа) |
-| Язык в профиле | `PATCH /auth/me` |
-| Коды и параметры | правила (`scene/rules.py`), шаги задач (`jobs/runner.py`, `pipeline.py`, `documents.py`), уведомления сметы (`estimate/estimator.py`) |
-| Альбом hy/en без русской лексики | `app/album/i18n.py` (`TX`, `shared()`, `line_name`, `rule_text`, `elec_note`), `app/album/sheets.py` |
-| Общий словарь UI ↔ документы | `apps/web/scripts/export-server-dict.mjs` → `apps/api/app/i18n_shared.json` |
-| Стабильный ключ заметки у розеток | `Electrical.note_key` (`scene/model.py`, `scene/layout.py`) |
-| Проверки | `apps/web/scripts/i18n-check.mjs`, `apps/web/e2e/i18n_e2e.py` |
+## P0
 
-## Phase C — три уровня достоверности — VERIFIED (API, UI)
+| Пункт | Статус | Доказательство | Коммит |
+|---|---|---|---|
+| P0-1 Регистрация, подтверждение e-mail, сброс пароля, онбординг | VERIFIED (почта — консольный бэкенд); SMTP — BLOCKED | `tests/test_auth.py`, `e2e/auth_e2e.py` (регистрация → письмо → подтверждение → онбординг → сброс) | 83c9c95 |
+| P0-2 Сессии в HttpOnly-cookie, CSRF, rate limit, prod-guard | VERIFIED | тесты auth, проверка на прод-стеке по HTTPS | 83c9c95 |
+| P0-3 Второй источник каталога | VERIFIED (VLV, фоновый индекс по sitemap с crawl-delay 3 с); официальный фид — BLOCKED | живой прогон 80 карточек → 9 товаров; индекс по расписанию каждые 30 мин (P1-7) | 918d751 |
+| P0-4 Инструменты пилота N99 | IMPLEMENTED; валидация — BLOCKED (нет материалов квартиры и верификатора) | отчёт пилота JSON/PDF hy/ru/en | 2c1bf1f |
 
-- `app/trust.py`: уровни, чек-листы перехода, экспорты по уровням, ограничения, provenance.
-- Эндпоинты:
-  - `GET /projects/{pid}/trust`;
-  - `POST /projects/{pid}/trust/signoff` — только verifier / bureau_admin / platform;
-  - `POST /projects/{pid}/trust/advance`.
-- DWG/DXF заблокированы на уровне Concept (409). Заказ изделий по размерам — только на Production Ready.
-- UI: `TrustPanel.tsx` на экранах геометрии и результатов.
-- Статусы roadmap заменены честными метками.
+## P1
 
-## Phase D — External catalog — VERIFIED
+| Пункт | Статус | Доказательство | Коммит |
+|---|---|---|---|
+| P1-1 Redis + RQ, ретраи, dead letter, восстановление | VERIFIED | SIGKILL воркера посреди задачи → восстановлено, 2-я попытка успешна | a567a8a |
+| P1-2 S3, presigned upload, бэкапы, наблюдаемость, prod-профиль | VERIFIED на одноразовом prod-стеке; реальный VPS/домен — BLOCKED | restore-учения с сравнением строк, HTTPS через Caddy | 4b58057 |
+| P1-3 CI/CD | VERIFIED (GitHub Actions зелёный); деплой staging — BLOCKED (нет секретов/VPS) | backend, migrations, frontend, security, e2e, images | 6fddb83 |
+| P1-4 MFA, ClamAV, персональные данные, CSP | VERIFIED | EICAR → отклонён; 0 нарушений CSP | fc37ebf |
+| P1-5 AI-бюджеты, фотореалистичный рендер, оценки | Бюджеты VERIFIED; рендер VERIFIED (живой Gemini 2752×1536, grounding 0.63); оценки PARTIAL | `EVAL_REPORT.md` с примечаниями: команды 32/32, фото 75 %/87,5 %; метрики планов недостоверны (найден и исправлен баг провайдера), повтор — BLOCKED: кредиты Gemini исчерпаны (402), у OpenAI кредитов нет, ключа Anthropic нет | f4c0630, 303c92b, dc60c51, ef7b57d, 966a3d4 |
+| P1-6 Распознавание планов и фото | PARTIAL | контрольный размер реально перемасштабирует план (тест); фото-конвейер с живым прогоном; качество распознавания планов — BLOCKED (кредиты) | ef7b57d |
+| P1-7 TTL каталога, алерты, фиды поставщиков | VERIFIED; живой фид поставщика — BLOCKED | `tests/test_catalog_maintenance.py`; плановый батч VLV запустился в воркере; история коннектора в админке | 5c8895e |
+| P1-8 Уведомления | VERIFIED; отправка дайджеста через SMTP — BLOCKED | `e2e/notifications_e2e.py` (колокольчик hy/ru/en), дайджест раз в сутки | 41e74d8 |
+| P1-9 Тесты качества | VERIFIED | изоляция тенантов по всем маршрутам OpenAPI (нашла 3 реальные дыры, исправлены), визуальная регрессия 12 снимков, axe-core на 17 маршрутах, контракт OpenAPI→TS, курсорная пагинация | 30cf68a |
+| P1-10 Метки APS, вычитка альбома | Метки VERIFIED; RVT/IFC вживую — BLOCKED (нужен файл бюро); вычитка — BLOCKED (нужен архитектор), комплект `docs/album_terms_for_review.xlsx` (385 терминов) готов | 713bd6b |
 
-Подробности — в `EXTERNAL_CATALOG_REPORT.md`.
+## P2
 
-- **Миграция `0002_i18n_sources`:**
-  - `canonical_domain` UNIQUE;
-  - `connector_type`, `live_enabled`, `policy_status`, `health_status`;
-  - `generation_steps.params`.
-- **Seed:**
-  - `seed_external_sources()` с идемпотентным upsert;
-  - CLI `app/seed_sources.py`;
-  - `SEED_POLICY`: Domus — live, Profal — RFQ, остальные — disabled.
-- **`SafeFetcher`:** проверка IP пира, content-type и размера, бюджет запросов.
-- **Live:** включается только при `EXTERNAL_FETCH_LIVE` **и** `source.live_enabled`.
-- **Классификатор:** стоп-слова и аксессуары; `app/reclassify_external.py`.
+| Пункт | Статус | Что сделано | Коммит |
+|---|---|---|---|
+| P2-1 Корзина, заказы, ledger, платежи | Поток и ledger VERIFIED; оплата — IMPLEMENTED_NOT_LIVE_VERIFIED / BLOCKED (договор с провайдером) | корзина по поставщикам → обязательная перепроверка цен → идемпотентный заказ → подтверждение поставщиком (комиссии фиксируются) → производство → доставка → монтаж → закрыт; отмена/спор/возврат; неизменяемый журнал двойной записи (ORM + триггер Postgres), сверка, CSV/XLSX; адаптер `stripe_compat` с HMAC-webhook; без провайдера UI показывает «Integration pending» | 2c1d86c |
+| P2-2 Бизнес-модель | VERIFIED; реальные цены — владелец | тарифы как конфигурация (по умолчанию пусто), лимит проектов тарифа (402), выручка по потокам и месяцам из ledger, учёт оплат по счёту | 2c1d86c |
+| P2-3 Онбординг поставщика, ассеты | VERIFIED; текст партнёрского договора — владелец (юрист) | профиль → договор (версия, кто/когда/IP) → каталог/фид → сопоставление категорий → проверка платформой; непроверенные скрыты из каталога и дизайна; GLB/glTF/PBR/IFC/DWG/DXF/RVT/PDF проверяются по содержимому; 3D-превью; склады, доставка, монтаж | e698549 |
+| P2-4 Семантический поиск | PARTIAL | локальный многоязычный лексический поиск (честно помечен «не нейросеть») VERIFIED; «похожие по фото» по цвету/текстуре; аналоги с разбором 7 факторов; нейросетевые эмбеддинги Gemini — BLOCKED (кредиты); pgvector — не включён (стоковый образ Postgres, ADR-009) | 8798a46 |
+| P2-5 Мебель на заказ | VERIFIED с тестовыми ставками; реальные ставки и проверка чертежей производителем — BLOCKED (партнёр) | 14 модулей (кухня, шкаф, гардеробная, ТВ), ограничения производства, раскрой, цена только по ставкам производителя (иначе «по запросу»), версии спецификации, DXF и PDF, заказ только на Production Ready | 169ea8a |
+| P2-6 CAD/BIM и мобильный обмер | IFC VERIFIED; RoomPlan VERIFIED на синтетических сканах (реальный скан — пилот); PWA VERIFIED; ADR готовы | IFC4 экспорт и редактируемый импорт (IfcOpenShell 0.8.5), круговой тест совпадает до 1 мм; импорт Apple RoomPlan JSON; PWA (манифест, service worker без кэша API); ADR-010 (BCF, OpenUSD, Revit DA, Archicad, SketchUp, 3ds Max), ADR-011 (PWA прежде нативных) | P2-6 (последний коммит) |
 
-## Phase E — AI — PARTIAL
-
-| Что | Статус |
-|---|---|
-| Абстракция провайдеров (OpenAI Responses / Anthropic tool-use / Gemini `responseJsonSchema` / stub), версии промптов, валидация схемы, fallback, кэш, учёт токенов | IMPLEMENTED |
-| Новое: экспоненциальный backoff между повторами (429/503), circuit breaker на провайдера (3 ошибки → пауза 5 мин), trace id в логах, обрезка ошибок в логах | VERIFIED (тесты оркестратора) |
-| Gemini `gemini-3-flash-preview` — живой `change_command` | VERIFIED live |
-| OpenAI `gpt-5.5` | BLOCKED_BY_EXTERNAL_DEPENDENCY: 429 `credit_balance_exhausted` |
-| Gemini Pro и image-модели | BLOCKED_BY_EXTERNAL_DEPENDENCY: квота free tier = 0 |
-| Фотореалистичный рендер, маски, регенерация зоны, product-grounding score | NOT IMPLEMENTED (граница интеграции есть: шаг `visuals` честно пишет «провайдер изображений не подключён») |
-| Evaluation dataset и harness | NOT IMPLEMENTED (P1) |
-| Квоты на тенанта и лимиты стоимости | NOT IMPLEMENTED (usage пишется в `AIUsage`) |
-
-## Лендинг «до / после» — VERIFIED (скриншот)
-
-- Сторона «после» — реалистичный кукольный домик на Three.js в режиме высокого качества:
-  - PBR-текстуры (ёлочка, плитка, ткань, шпон);
-  - RoomEnvironment, GTAO;
-  - скруглённая мебель, рамы окон, приоткрытые двери, шторы, подвесы со светом.
-- Код: `src/lib/scene3d.ts`, `src/lib/textures.ts`, `src/components/Scene3D.tsx`.
-- Фото-рендер ИИ не используется: он заблокирован квотой (см. выше).
-
-## Phase F — hardening — PARTIAL
-
-| Что | Статус |
-|---|---|
-| Alembic вместо `create_all`: `0001_baseline`, `0002`; `app/migrate.py` штампует старую БД и делает upgrade; Dockerfile запускает миграции перед uvicorn | VERIFIED (Postgres перенесён) |
-| Security headers (nginx), CSP Report-Only | PARTIAL |
-| Ключ идемпотентности альбома включает `RENDERER_VERSION` (иначе после исправлений отдавался старый PDF) | VERIFIED |
-| Redis-очередь, отдельные workers, S3/MinIO, OpenTelemetry, бэкапы, CI/CD, staging | NOT IMPLEMENTED (`docs/GAPS.md`, P1) |
-| Cookies/CSRF/MFA/rate limit | NOT IMPLEMENTED (`SECURITY_REPORT.md` S1–S5) |
-
-## Phase G — артефакты и N99
-
-- **Артефакты** — VERIFIED (`TEST_REPORT.md`):
-  - 41 лист A3 на hy/ru/en;
-  - DXF audit без ошибок;
-  - GLB, XLSX, CSV, JSON;
-  - живой DWG.
-- **N99** — workspace, манифест, API и UI созданы; пилот **не пройден** (`N99_VALIDATION_REPORT.md`).
-
-## Изменённые и новые файлы
-
-**Backend (`apps/api`)**
-- `alembic/` (новые миграции)
-- `app/migrate.py`, `app/errors.py`, `app/trust.py`, `app/pilot.py`, `app/pilot_n99.py`, `app/seed_sources.py`, `app/reclassify_external.py`, `app/i18n_shared.json`
-- `app/config.py`, `app/main.py`, `app/models.py`, `app/seed.py`
-- `app/catalog/{sources,net,normalize,discovery}.py`, `app/catalog/connectors/{others,jsonld}.py`
-- `app/scene/{rules,layout,model}.py`, `app/estimate/estimator.py`
-- `app/jobs/{runner,pipeline,documents}.py`
-- `app/album/{i18n,sheets,builder}.py`
-- `app/exports/files.py`, `app/ai/orchestrator.py`
-- `app/routers/{projects,auth,documents,admin}.py`
-- `Dockerfile`
-- `tests/test_artifacts.py`, `tests/test_i18n_trust.py` (новые) и правки остальных тестов
-
-**Frontend (`apps/web`)**
-- `src/i18n/**`
-- `src/lib/{api,format,messages,scene3d,textures}.ts`
-- все `src/pages/*`
-- `src/components/{AppShell,ui,EstimateView,CommandDrawer,AlternativesDrawer,PlanView,BeforeAfter,ApsViewer,Scene3D,TrustPanel,PilotPanel}.tsx`
-- `scripts/{i18n-check,export-server-dict}.mjs`, `e2e/{i18n_e2e,routes_smoke}.py`
-- `nginx.conf`
-
-**Корень репозитория**
-- `.env.example`, `README.md`
-- `docs/{ROADMAP,GAPS,APS,SECURITY}.md`
-- `samples/*`, `docs/screenshots/*`
-- `*_REPORT.md`
+## Найдено и исправлено по ходу (не из промпта)
+- Изоляция тенантов: чтение версии/сравнение версий и SSE-поток задачи принимали id объектов чужого проекта; поставщик мог модерировать внешние записи каталога (P1-9).
+- Провайдер Gemini брал только первую часть ответа (`parts[0]`) — у Gemini 3 JSON приходит несколькими частями; харнесс оценок пропускал реальные листы (P1-6, 966a3d4).
+- Решение клиента по варианту без сгенерированной версии давало 500 (P1-8).
+- Контраст ниже WCAG AA у 4 токенов цвета, 20 полей без подписей; шрифты перенесены с Google Fonts на self-hosted; 3D-сцена рендерилась каждый кадр (теперь по требованию) (P1-9).
 
 ## Миграции
+`0003_auth_sessions`, `0004_vlv_index_source`, `0005_mfa_privacy_scan`, `0006_ai_budget`, `0007_notifications`, `0008_supplier_feed`, `0009_commerce` (с триггером неизменяемости ledger на Postgres), `0010_supplier_partner`, `0011_search` (pgvector — если доступен), `0012_custom_furniture`. Откат: `docker compose exec api alembic downgrade <revision>`.
 
-| Ревизия | Содержание |
+## Что нужно от владельца
+| Нужно | Разблокирует |
 |---|---|
-| `0001_baseline` | схема на момент аудита (для существующих БД — `stamp`) |
-| `0002_i18n_sources` | колонки `external_sources` + UNIQUE `canonical_domain`; `generation_steps.params`. Есть `downgrade()` |
-
-Поле `Electrical.note_key` хранится в JSON сцены, поэтому миграция для него не нужна.
+| Пополнение Gemini (предоплата исчерпана), OpenAI; ключ Anthropic — по желанию | повтор оценок планов (P1-5/6), нейросетевой поиск (P2-4), рендеры |
+| SMTP-доступ, домен и TLS, VPS/staging и секреты CI | реальные письма (P0-1, P1-8), деплой (P1-2, P1-3) |
+| Официальный фид или разрешение магазинов | P0-3, P1-7 |
+| Материалы квартиры N99, верификатор, реальный RoomPlan-скан | P0-4, P2-6 |
+| RVT/IFC-файлы бюро | P1-10, P2-6 |
+| Архитектор-носитель армянского | вычитка альбома (P1-10) |
+| Договор с платёжным провайдером (Idram / ArCa / Ameriabank / Stripe-совместимый) | онлайн-оплата (P2-1) |
+| Цены тарифов, текст партнёрского договора, производитель-партнёр со ставками | P2-2, P2-3, P2-5 |

@@ -1,7 +1,7 @@
 """Product embedding index (P2-4). Vectors live in `product_embeddings` (JSON; dimension per
 provider) and are searched in memory with numpy — enough for tens of thousands of items. The
 migration enables pgvector when the database has it, for an ANN index once the catalogue outgrows
-memory (docs/ADR-010)."""
+memory (docs/DECISIONS/ADR-009.md)."""
 from __future__ import annotations
 
 import hashlib

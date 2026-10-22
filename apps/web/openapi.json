@@ -140,6 +140,20 @@
     "title": "Body_import_preview_api_v1_catalog_import_preview_post",
     "type": "object"
    },
+   "Body_import_roomplan_api_v1_projects__pid__import_roomplan_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_roomplan_api_v1_projects__pid__import_roomplan_post",
+    "type": "object"
+   },
    "Body_upload_asset_api_v1_projects__pid__assets_post": {
     "properties": {
      "file": {
@@ -7144,6 +7158,71 @@
     ]
    }
   },
+  "/api/v1/projects/{pid}/assets/{aid}/import-ifc": {
+   "post": {
+    "operationId": "import_ifc_api_v1_projects__pid__assets__aid__import_ifc_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Import Ifc",
+    "tags": [
+     "bim"
+    ]
+   }
+  },
   "/api/v1/projects/{pid}/audit": {
    "get": {
     "operationId": "project_audit_api_v1_projects__pid__audit_get",
@@ -8494,6 +8573,62 @@
     ]
    }
   },
+  "/api/v1/projects/{pid}/geometry.ifc": {
+   "get": {
+    "operationId": "export_ifc_api_v1_projects__pid__geometry_ifc_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Export Ifc",
+    "tags": [
+     "bim"
+    ]
+   }
+  },
   "/api/v1/projects/{pid}/geometry/confirm": {
    "post": {
     "operationId": "confirm_geometry_api_v1_projects__pid__geometry_confirm_post",
@@ -8614,6 +8749,72 @@
     "summary": "Control Dimension",
     "tags": [
      "projects"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/import/roomplan": {
+   "post": {
+    "operationId": "import_roomplan_api_v1_projects__pid__import_roomplan_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_roomplan_api_v1_projects__pid__import_roomplan_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Import Roomplan",
+    "tags": [
+     "bim"
     ]
    }
   },

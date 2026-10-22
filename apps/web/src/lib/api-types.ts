@@ -1581,6 +1581,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{pid}/assets/{aid}/import-ifc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Ifc */
+        post: operations["import_ifc_api_v1_projects__pid__assets__aid__import_ifc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{pid}/audit": {
         parameters: {
             query?: never;
@@ -1867,6 +1884,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{pid}/geometry.ifc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Ifc */
+        get: operations["export_ifc_api_v1_projects__pid__geometry_ifc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{pid}/geometry/confirm": {
         parameters: {
             query?: never;
@@ -1898,6 +1932,23 @@ export interface paths {
          * @description Sets a verified dimension; optionally rescales the whole plan so that the wall matches.
          */
         post: operations["control_dimension_api_v1_projects__pid__geometry_control_dimension_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{pid}/import/roomplan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Roomplan */
+        post: operations["import_roomplan_api_v1_projects__pid__import_roomplan_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2993,6 +3044,11 @@ export interface components {
         };
         /** Body_import_preview_api_v1_catalog_import_preview_post */
         Body_import_preview_api_v1_catalog_import_preview_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_import_roomplan_api_v1_projects__pid__import_roomplan_post */
+        Body_import_roomplan_api_v1_projects__pid__import_roomplan_post: {
             /** File */
             file: string;
         };
@@ -6915,6 +6971,40 @@ export interface operations {
             };
         };
     };
+    import_ifc_api_v1_projects__pid__assets__aid__import_ifc_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                pid: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     project_audit_api_v1_projects__pid__audit_get: {
         parameters: {
             query?: {
@@ -7652,6 +7742,39 @@ export interface operations {
             };
         };
     };
+    export_ifc_api_v1_projects__pid__geometry_ifc_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     confirm_geometry_api_v1_projects__pid__geometry_confirm_post: {
         parameters: {
             query?: never;
@@ -7699,6 +7822,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ControlDimIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_roomplan_api_v1_projects__pid__import_roomplan_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_roomplan_api_v1_projects__pid__import_roomplan_post"];
             };
         };
         responses: {

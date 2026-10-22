@@ -236,4 +236,10 @@ export const workspace: Dict = {
   "crt.back": e("Հետնապատ, ֏/մ²", "Задняя стенка, ֏/м²", "Back panel, ֏/m²"),
   "crt.edge": e("Եզր, ֏/մ", "Кромка, ֏/м", "Edge, ֏/m"),
   "crt.assembly": e("Հավաքում, %", "Сборка, %", "Assembly, %"),
+  "bim.title": e("BIM / LiDAR", "BIM / LiDAR", "BIM / LiDAR"),
+  "bim.export_ifc": e("Արտահանել IFC4", "Экспорт IFC4", "Export IFC4"),
+  "bim.import_ifc": e("Ներմուծել պատերը՝ {name}", "Импорт стен из {name}", "Import walls from {name}"),
+  "bim.roomplan": e("Ներմուծել RoomPlan սկան (JSON)", "Импорт скана RoomPlan (JSON)", "Import a RoomPlan scan (JSON)"),
+  "bim.imported": e("Ներմուծված է՝ պատեր {walls}, բացվածքներ {openings}, սենյակներ {rooms}։ Ստուգեք և հաստատեք։", "Импортировано: стен {walls}, проёмов {openings}, помещений {rooms}. Проверьте и подтвердите.", "Imported: {walls} walls, {openings} openings, {rooms} rooms. Review and confirm."),
+  "bim.hint": e("Ներմուծումը ստեղծում է երկրաչափության սևագիր տարբերակ։", "Импорт создаёт черновую версию геометрии.", "An import creates a draft geometry version."),
 };

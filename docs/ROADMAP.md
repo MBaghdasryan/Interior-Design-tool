@@ -14,35 +14,31 @@
 
 ## Фазы
 
-| Фаза | Содержание | Статус |
+| Фаза | Содержание | Статус (2026-10-22) |
 |---|---|---|
-| 0 Discovery | аудит образца альбома и магазинов, архитектура, ERD, ADR | Architecture complete |
-| 1 Foundation | API, БД, Alembic, RBAC/tenants, хранилище, задачи, UI-kit, i18n hy/ru/en | MVP implemented · Production hardening pending (Redis, S3, CI, cookies/CSRF) |
-| 2 Intake | загрузка и проверка файлов, контрольные размеры, проверка геометрии, DXF-импорт, APS-импорт | MVP implemented · Integration pending (vision-распознавание растровых планов; RVT/IFC live) |
-| 3 AI Autopilot v1 | провайдеры, ТЗ, пайплайн, 3 варианта, версии промптов, usage, backoff/breaker | MVP implemented (Gemini live) · Integration pending (OpenAI credits, image-модели, eval-набор) |
-| 4 Catalog grounding | PIM, CSV/XLSX, External Catalog (Domus live, Profal RFQ), снимок, аналоги | MVP implemented · Integration pending (официальные фиды 6 магазинов) |
-| 5 Spec & estimate | смета, снимки, альбом A3 41 лист hy/ru/en, DXF/XLSX/CSV/GLB/JSON, DWG через APS, RFQ | MVP implemented · Real-world validation pending (проверка архитектором) |
-| 6 Refinement | 2D/3D-редактор, hotspots, AI-команды, замена аналогом, версии | MVP implemented |
-| C Trust levels | Concept / Verified / Production, sign-off, блокировки экспортов | MVP implemented |
-| 7 Pilot N99 | workspace, манифест, чек-лист (`N99_VALIDATION_REPORT.md`) | Real-world validation pending — ждём исходники |
-| Коммерция | ledger, комиссии, платежи, доставка/монтаж, споры | Architecture complete (частично) · NOT IMPLEMENTED (ledger, платежи) |
+| 0 Discovery | аудит образца альбома и магазинов, архитектура, ERD, ADR-001…011 | Architecture complete |
+| 1 Foundation | API, БД, Alembic 0001–0012, RBAC/tenants (тест по всем маршрутам), Redis/RQ, S3, CI/CD, MFA, ClamAV, CSP, персональные данные | MVP implemented · Integration pending (VPS/домен/SMTP) |
+| 2 Intake | загрузка, контрольные размеры, DXF, APS, IFC импорт/экспорт, RoomPlan, фото-обследование | MVP implemented · Real-world validation pending (RVT, реальный скан) |
+| 3 AI Autopilot | провайдеры, бюджеты по организациям, оценки, фото-рендер с grounding | MVP implemented · Integration pending (кредиты AI) |
+| 4 Catalog | PIM, фиды с защитой, Domus live, VLV индекс по расписанию, TTL, алерты, онбординг поставщиков, ассеты, поиск и аналоги | MVP implemented · Integration pending (официальные фиды, нейропоиск) |
+| 5 Spec & estimate | смета, альбом A3 hy/ru/en, DXF/XLSX/CSV/GLB/JSON/IFC, DWG через APS | MVP implemented · Real-world validation pending (вычитка) |
+| 6 Refinement | редактор, AI-команды, версии, уведомления | MVP implemented |
+| 7 Pilot N99 | workspace, отчёт пилота | Real-world validation pending |
+| 8 Commerce | корзина → заказ → ledger двойной записи, комиссии, выплаты, тарифы, выручка | MVP implemented · Integration pending (платёжный провайдер) |
+| 9 Custom furniture | конфигуратор модулей, раскрой, DXF/PDF, заказ на Production Ready | MVP implemented · Integration pending (производитель-партнёр) |
 
 ## Backlog
 
-Колонки: приоритет, задача, ответственный (owner type), от чего зависит.
-
 | P | Задача | Owner | Зависимость |
 |---|---|---|---|
-| P0 | Пройти пилот N99 end-to-end | product + дизайнер бюро + verifier | материалы владельца |
-| P0 | Cookies HttpOnly + CSRF, rate limit, отключение демо-аккаунтов на прод | backend/devops | — |
-| P0 | Официальный фид хотя бы одного магазина помимо Domus | бизнес | договор с магазином |
-| P1 | Пополнить OpenAI / paid tier Gemini → image-провайдер, фото-рендер по SKU-манифесту | владелец аккаунтов → AI dev | биллинг |
-| P1 | Eval-набор: 50 планов, команды, grounding | AI dev + дизайнеры | размеченные проекты |
-| P1 | Redis + RQ workers, S3/MinIO, CI (lint/types/tests/e2e/build/migrations), бэкапы | devops | — |
-| P1 | Полный тест tenant isolation, ClamAV, MFA, сброс пароля | backend/QA | — |
-| P1 | Вычитка армянской терминологии альбома архитектором | дизайнер бюро | — |
-| P2 | Ledger, комиссии, платёжный провайдер АМ | backend + бизнес | выбор провайдера |
-| P2 | IFC-экспорт (IfcOpenShell), Revit DA, Archicad-коннектор, BCF, OpenUSD | CAD/BIM dev | APS / лицензии |
-| P2 | LiDAR (RoomPlan), мобильный обмер | mobile dev | iOS-разработчик |
-| P2 | Параметрическая мебель на заказ, производственные чертежи кухонь и шкафов | CAD dev + производитель | партнёр-производитель |
-| P2 | SSE resume (`Last-Event-ID`), OpenTelemetry | backend | — |
+| P0 | Пилот N99 end-to-end (включая RoomPlan-скан) | product + бюро + verifier | материалы владельца |
+| P0 | Пополнить Gemini/OpenAI → повтор оценок, нейропоиск | владелец аккаунтов → AI dev | биллинг |
+| P0 | VPS + домен + SMTP → staging по тегу | devops | владелец |
+| P1 | Официальный фид второго магазина | бизнес | договор |
+| P1 | Договор с платёжным провайдером АМ → адаптер Idram/ArCa/Ameriabank | backend + бизнес | договор, документация API |
+| P1 | Вычитка армянской терминологии (комплект готов) | архитектор | — |
+| P1 | Производитель-партнёр: ставки, ограничения, проверка чертежей | CAD dev + производитель | партнёр |
+| P2 | pgvector на новом кластере, нейроэмбеддинги | backend | рост каталога, кредиты |
+| P2 | BCF-обмен замечаниями (после стабильного IFC с бюро) | CAD/BIM dev | бюро с BIM |
+| P2 | vite 8 / react-router 7 | frontend dev | — |
+| P2 | Внешний пентест | security owner | бюджет |
