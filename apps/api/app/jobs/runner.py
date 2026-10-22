@@ -202,10 +202,30 @@ def _run(job_id: str) -> str | None:
                 if s.status == "running":
                     s.status, s.detail = "failed", str(e)[:400]
         job.finished_at = datetime.now(timezone.utc)
+        _notify_job(db, job)
         db.commit()
         return job.status
     finally:
         db.close()
+
+
+NOTIFY_KINDS = {"pipeline", "album", "render", "render_edit", "recognize", "aps_dwg"}
+
+
+def _notify_job(db: Session, job: m.GenerationJob) -> None:
+    if job.kind not in NOTIFY_KINDS or not job.project_id or job.status not in ("succeeded", "failed"):
+        return
+    if job.status == "failed" and job.attempts < MAX_ATTEMPTS and _uses_rq(None):
+        return  # a retry is scheduled — notify only on the final outcome
+    try:
+        from ..notify import notify, project_people
+
+        project = db.get(m.Project, job.project_id)
+        if project:
+            notify(db, project_people(db, project), "job_done" if job.status == "succeeded" else "job_failed",
+                   params={"job": job.kind, "project": project.title}, link=f"/app/p/{project.id}", project_id=project.id)
+    except Exception:  # noqa: BLE001 - notifications never break a job
+        log.exception("job notification failed")
 
 
 def job_dict(job: m.GenerationJob) -> dict:

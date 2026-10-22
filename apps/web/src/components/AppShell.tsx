@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Building2, FolderKanban, Home, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
+import { Building2, FolderKanban, Home, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
+import NotificationBell from "./NotificationBell";
 
 /** Renovara mark: an «R» whose counter is a doorway into a room (brand board). `tile` = app-icon variant on charcoal. */
 export function Logo({ size = 28, tile = true }: { size?: number; tile?: boolean }) {
@@ -119,7 +120,7 @@ export default function AppShell() {
         <header className="topbar">
           <div className="crumbs grow hide-sm">{t("common.workspace")}{section ? <> / <b>{t(`nav.section.${section}`)}</b></> : null}</div>
           <LangSwitch compact />
-          <button className="icon-btn" aria-label={t("common.notifications")}><Bell size={18} /></button>
+          <NotificationBell />
           <NavLink to="/app/account" className="row gap-6" title={t("nav.account")} style={{ color: "inherit" }}>
             <div className="avatar">{me?.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}</div>
             <div className="hide-sm"><div style={{ fontWeight: 700, fontSize: 13 }}>{me?.name}</div><div className="tiny muted">{me?.memberships[0]?.org_name}</div></div>

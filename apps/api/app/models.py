@@ -54,6 +54,8 @@ class User(TimestampMixin, Base):
     mfa_backup_codes: Mapped[list] = mapped_column(JSON, default=list)
     # account deletion with a grace period (privacy): purged by the worker after this moment
     deletion_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # {"kinds": {"job": true, ...}, "email_digest": true, "digest_sent_at": iso}
+    notification_prefs: Mapped[dict] = mapped_column(JSON, default=dict)
     memberships: Mapped[list[Membership]] = relationship(back_populates="user", lazy="selectin")
 
 
@@ -511,3 +513,18 @@ class AuditEvent(TimestampMixin, Base):
     entity: Mapped[str] = mapped_column(String(50))
     entity_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     data: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class Notification(TimestampMixin, Base):
+    """In-app notification (bell) — localised on the client by `kind` + `params`; an e-mail digest
+    collects unread ones. Never carries secrets or full personal data."""
+    __tablename__ = "notifications"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))  # job_done | job_failed | client_comment | client_approved | client_changes | rfq_reply | price_stale | catalog_alert
+    params: Mapped[dict] = mapped_column(JSON, default=dict)
+    link: Mapped[str] = mapped_column(String(300), default="")
+    project_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+

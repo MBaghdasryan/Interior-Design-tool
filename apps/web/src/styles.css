@@ -243,3 +243,15 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
   h1 { font-size: 26px; }
   .hide-sm { display: none !important; }
 }
+
+/* notifications (bell) */
+.notif-wrap { position: relative; }
+.notif-btn { position: relative; }
+.notif-count { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.notif-panel { position: absolute; right: 0; top: 44px; width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; z-index: 50; padding: 0; box-shadow: 0 12px 32px rgba(0,0,0,.14); }
+.notif-head { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.notif-empty { padding: 18px 14px; }
+.notif-list { list-style: none; margin: 0; padding: 0; }
+.notif-item { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; }
+.notif-item:hover { background: var(--surface-2, rgba(0,0,0,.03)); }
+.notif-item.unread { box-shadow: inset 3px 0 0 var(--accent, #a8573a); font-weight: 600; }

@@ -63,6 +63,11 @@ def respond_rfq(rid: str, body: QuoteIn, p: Principal = Depends(require("rfq:res
         raise ApiError(404, "not_found")
     r.status = body.status
     r.quote = body.model_dump()
+    from ..notify import notify, project_people
+
+    proj = db.get(m.Project, r.project_id)
+    if proj:
+        notify(db, project_people(db, proj), "rfq_reply", params={"supplier": r.supplier_name, "project": proj.title}, link=f"/app/p/{proj.id}/procurement", project_id=proj.id)
     db.commit()
     return {"ok": True}
 
@@ -196,6 +201,9 @@ def client_comment(token: str, body: ClientComment, db: Session = Depends(get_db
     c = m.Comment(project_id=proj.id, variant_id=body.variant_id, author_name=f"{body.name} (клиент)", body=body.body, anchor=body.anchor)
     db.add(c)
     db.add(m.AuditEvent(project_id=proj.id, action="client.comment", entity="comment", data={"name": body.name}))
+    from ..notify import notify, project_people
+
+    notify(db, project_people(db, proj, with_admins=True), "client_comment", params={"name": body.name[:60], "project": proj.title}, link=f"/app/p/{proj.id}", project_id=proj.id)
     db.commit()
     return {"id": c.id}
 
@@ -213,10 +221,14 @@ def client_decision(token: str, body: ClientDecision, db: Session = Depends(get_
     (the AI and the share link never publish the construction package on their own)."""
     proj = _by_token(token, db)
     v = db.get(m.DesignVariant, body.variant_id)
-    if not v or v.project_id != proj.id:
+    if not v or v.project_id != proj.id or not v.current_version_id:  # nothing generated yet → nothing to approve
         raise ApiError(404, "not_found")
     db.add(m.Approval(project_id=proj.id, variant_id=v.id, version_id=v.current_version_id, actor_name=body.name, actor_role="client", decision=body.decision, note=body.note))
     db.add(m.AuditEvent(project_id=proj.id, action=f"client.{body.decision}", entity="variant", entity_id=v.id))
+    from ..notify import notify, project_people
+
+    notify(db, project_people(db, proj, with_admins=True), "client_approved" if body.decision == "approved" else "client_changes",
+           params={"name": body.name[:60], "project": proj.title}, link=f"/app/p/{proj.id}", project_id=proj.id)
     db.commit()
     return {"ok": True}
 

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Download, KeyRound, Laptop, LogOut, MailCheck, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Bell, Download, KeyRound, Laptop, LogOut, MailCheck, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { api } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
 import { useMe } from "../components/AppShell";
+import { NOTIF_KINDS } from "../components/NotificationBell";
 import { Badge, Switch, useToast } from "../components/ui";
 
 interface Sess { id: string; user_agent: string; ip: string; created_at: string; last_seen_at: string; current: boolean }
 interface Consent { granted: boolean; at: string }
+interface NotifPrefs { kinds: Record<string, boolean>; email_digest: boolean }
 interface Consents { terms?: { version: string; at: string }; marketing_emails?: Consent; product_analytics?: Consent }
 const OPTIONAL_CONSENTS = ["marketing_emails", "product_analytics"] as const;
 
@@ -22,8 +24,9 @@ export default function Account() {
   const [setup, setSetup] = useState<{ secret: string; qr_svg: string } | null>(null);
   const [code, setCode] = useState("");
   const [codes, setCodes] = useState<string[] | null>(null);
+  const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
   const [del, setDel] = useState({ open: false, password: "", code: "" });
-  const load = () => { api<Sess[]>("/auth/sessions").then(setSessions).catch(() => {}); api<Consents>("/auth/me/consents").then(setConsents).catch(() => {}); };
+  const load = () => { api<Sess[]>("/auth/sessions").then(setSessions).catch(() => {}); api<Consents>("/auth/me/consents").then(setConsents).catch(() => {}); api<NotifPrefs>("/auth/me/notification-prefs").then(setPrefs).catch(() => {}); };
   useEffect(() => { load(); }, []);
   const run = async (fn: () => Promise<unknown>, ok?: string) => { try { await fn(); if (ok) toast(ok); } catch (x) { toast((x as Error).message, true); } };
   const days = (cfg as unknown as { privacy_deletion_grace_days?: number })?.privacy_deletion_grace_days ?? 14;
@@ -79,6 +82,17 @@ export default function Account() {
           </div>
         ))}
       </section>
+
+      {prefs && <section id="notifications" className="card pad col gap-10" aria-labelledby="acc-notif">
+        <h3 id="acc-notif" className="row gap-6"><Bell size={18} /> {t("common.notifications")}</h3>
+        <p className="small muted">{t("notif.prefs_hint")}</p>
+        {NOTIF_KINDS.map((k) => (
+          <div key={k} className="row between small"><span>{t(`notif.pref.${k}`)}</span>
+            <Switch on={prefs.kinds[k] !== false} label={t(`notif.pref.${k}`)} onChange={(v) => run(async () => setPrefs(await api<NotifPrefs>("/auth/me/notification-prefs", { method: "PUT", json: { kinds: { [k]: v } } })))} /></div>
+        ))}
+        <div className="row between small" style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}><span>{t("notif.pref.email_digest")}</span>
+          <Switch on={prefs.email_digest} label={t("notif.pref.email_digest")} onChange={(v) => run(async () => setPrefs(await api<NotifPrefs>("/auth/me/notification-prefs", { method: "PUT", json: { email_digest: v } })))} /></div>
+      </section>}
 
       <section className="card pad col gap-12" aria-labelledby="acc-privacy">
         <h3 id="acc-privacy" className="row gap-6"><Download size={18} /> {t("priv.title")}</h3>
