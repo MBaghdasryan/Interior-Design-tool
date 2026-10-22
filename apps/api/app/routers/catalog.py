@@ -2,9 +2,6 @@
 preview and validation, external-records review queue."""
 from __future__ import annotations
 
-import csv
-import io
-
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
@@ -12,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from .. import models as m
 from ..catalog.candidates import candidate_from_record, candidate_from_variant
-from ..catalog.normalize import classify, parse_price
+from ..catalog.pricelist import PriceGuard, _read_table, apply_price_list, guess_mapping, validate_row
 from ..catalog.taxonomy import CATEGORIES, GROUPS, STYLES
 from ..db import get_db
 from ..errors import ApiError
@@ -75,61 +72,6 @@ def suppliers(p: Principal = Depends(current_principal), db: Session = Depends(g
 
 
 # ------------------------------------------------------------------ import
-FIELDS = ["sku", "name", "category", "brand", "price", "currency", "unit", "width_mm", "depth_mm", "height_mm", "color", "material", "stock", "lead_time_days",
-          "url", "image_url", "package_coverage_m2", "tier", "style"]
-SYNONYMS = {"sku": ["sku", "артикул", "код", "article", "կոդ"], "name": ["name", "название", "наименование", "անվանում"], "category": ["category", "категория", "կատեգորիա"],
-            "brand": ["brand", "бренд", "производитель"], "price": ["price", "цена", "գին"], "currency": ["currency", "валюта"], "unit": ["unit", "ед", "единица"],
-            "width_mm": ["width", "ширина", "w"], "depth_mm": ["depth", "глубина", "d"], "height_mm": ["height", "высота", "h"], "color": ["color", "цвет", "գույն"],
-            "material": ["material", "материал"], "stock": ["stock", "наличие", "остаток"], "lead_time_days": ["lead", "срок"], "url": ["url", "ссылка"],
-            "image_url": ["image", "фото", "изображение"], "package_coverage_m2": ["package", "упаковка", "м2 в упак"], "tier": ["tier", "сегмент"], "style": ["style", "стиль"]}
-
-
-def _read_table(data: bytes, filename: str) -> list[dict]:
-    if filename.lower().endswith((".xlsx", ".xlsm")):
-        from openpyxl import load_workbook
-
-        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
-        head = [str(h or "").strip() for h in rows[0]]
-        return [{head[i]: ("" if v is None else str(v)) for i, v in enumerate(r) if i < len(head)} for r in rows[1:] if any(r)]
-    text = data.decode("utf-8-sig", errors="replace")
-    dialect = csv.Sniffer().sniff(text[:2000], delimiters=",;\t")
-    return list(csv.DictReader(io.StringIO(text), dialect=dialect))
-
-
-def guess_mapping(headers: list[str]) -> dict[str, str | None]:
-    out = {}
-    for f in FIELDS:
-        out[f] = next((h for h in headers if any(s == h.strip().lower() or s in h.strip().lower() for s in SYNONYMS.get(f, [f]))), None)
-    return out
-
-
-def validate_row(r: dict, mapping: dict) -> tuple[dict, list[str]]:
-    g = {f: (r.get(mapping[f]) if mapping.get(f) else None) for f in FIELDS}
-    errs = []
-    if not g["sku"]:
-        errs.append("нет SKU")
-    if not g["name"]:
-        errs.append("нет названия")
-    price, cur = parse_price(g["price"]) if g["price"] else (None, None)
-    g["price"] = price
-    g["currency"] = (g["currency"] or cur or "AMD").upper()
-    cat = g["category"] if g["category"] in CATEGORIES else classify(g["name"], g["category"])
-    if not cat:
-        errs.append("категория не распознана")
-    g["category"] = cat
-    for k in ("width_mm", "depth_mm", "height_mm", "lead_time_days", "package_coverage_m2"):
-        try:
-            g[k] = float(str(g[k]).replace(",", ".")) if g[k] not in (None, "") else None
-        except ValueError:
-            errs.append(f"{k}: не число")
-            g[k] = None
-    if g["unit"] in ("m2", "м2", "м²") and not g["package_coverage_m2"] and cat in ("floor_tile", "wall_tile", "floor_parquet", "floor_laminate"):
-        errs.append("для материалов нужна площадь упаковки")
-    return g, errs
-
-
 @router.post("/import/preview")
 async def import_preview(file: UploadFile = File(...), p: Principal = Depends(require("catalog:write"))):
     data = await file.read()
@@ -155,7 +97,6 @@ async def import_commit(file: UploadFile = File(...), supplier_name: str = Form(
 
     data = await file.read()
     rows = _read_table(data, file.filename or "")
-    mp = json.loads(mapping)
     slug = "".join(ch if ch.isalnum() else "-" for ch in supplier_name.lower()).strip("-")[:60] or "supplier"
     sup = db.scalar(select(m.Supplier).where(m.Supplier.slug == slug))
     if not sup:
@@ -163,51 +104,13 @@ async def import_commit(file: UploadFile = File(...), supplier_name: str = Form(
         sup = m.Supplier(name=supplier_name, slug=slug, org_id=org_id, is_demo=False)
         db.add(sup)
         db.flush()
-    created = updated = rejected = big_changes = 0
-    errors = []
-    pending = []
-    for i, r in enumerate(rows, start=2):
-        g, errs = validate_row(r, mp)
-        if errs:
-            rejected += 1
-            errors.append({"row": i, "errors": errs})
-            continue
-        pending.append(g)
-    existing = {v.sku: v for v in db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id))}
-    for g in pending:
-        v = existing.get(g["sku"])
-        if v and v.price and g["price"] and abs(g["price"] - v.price) / v.price * 100 > max_price_change_pct:
-            big_changes += 1
-    if existing and big_changes > 0.2 * max(1, len(pending)):
-        raise ApiError(409, "catalog.import_price_guard", count=big_changes, pct=max_price_change_pct)
-    from datetime import datetime, timezone
-
-    now = datetime.now(timezone.utc)
-    for g in pending:
-        v = existing.get(g["sku"])
-        if v:
-            if g["price"] is not None and g["price"] != v.price:
-                db.add(m.PriceHistory(variant_id=v.id, price=g["price"], currency=g["currency"], source="import"))
-            v.price, v.currency = g["price"], g["currency"]
-            v.price_status = "confirmed" if g["price"] is not None else "quote_required"
-            v.stock_status = "in_stock" if str(g["stock"] or "").lower() in ("1", "yes", "да", "в наличии", "in_stock", "true") else (v.stock_status or "unknown")
-            v.price_checked_at = now
-            updated += 1
-            continue
-        prod = m.Product(supplier_id=sup.id, brand=g["brand"] or "", category=g["category"], name_ru=g["name"], tier=g["tier"] or "comfort",
-                         styles=[g["style"]] if g["style"] in STYLES else [], unit={"м2": "m2", "м²": "m2"}.get(g["unit"] or "", g["unit"] or "pcs"),
-                         package_coverage_m2=g["package_coverage_m2"], item_type="material" if g["category"] in ("floor_tile", "wall_tile", "floor_parquet", "floor_laminate", "wall_paint") else "serial")
-        db.add(prod)
-        db.flush()
-        db.add(m.ProductVariant(product_id=prod.id, sku=g["sku"], color=g["color"] or "", material=g["material"] or "", width_mm=g["width_mm"] or 0, depth_mm=g["depth_mm"] or 0,
-                                height_mm=g["height_mm"] or 0, price=g["price"], currency=g["currency"], price_status="confirmed" if g["price"] is not None else "quote_required",
-                                stock_status="in_stock" if str(g["stock"] or "").lower() in ("1", "yes", "да", "в наличии", "in_stock", "true") else "unknown",
-                                lead_time_days=int(g["lead_time_days"]) if g["lead_time_days"] else None, url=g["url"] or "", image_url=g["image_url"] or "",
-                                price_checked_at=now, availability_checked_at=now))
-        created += 1
-    audit(db, p, "catalog.import", "supplier", sup.id, data={"created": created, "updated": updated, "rejected": rejected})
+    try:
+        r = apply_price_list(db, sup, rows, json.loads(mapping), max_price_change_pct)
+    except PriceGuard as e:
+        raise ApiError(409, "catalog.import_price_guard", count=e.count, pct=e.pct) from None
+    audit(db, p, "catalog.import", "supplier", sup.id, data={k: r[k] for k in ("created", "updated", "rejected")})
     db.commit()
-    return {"supplier_id": sup.id, "created": created, "updated": updated, "rejected": rejected, "errors": errors[:100]}
+    return {"supplier_id": sup.id, **r, "errors": r["errors"][:100]}
 
 
 # ------------------------------------------------------------------ external review queue

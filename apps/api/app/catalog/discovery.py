@@ -61,9 +61,10 @@ def _cache_lookup_factory(db: Session) -> Callable[[str, str], list[NormalizedEx
     return lookup
 
 
-def upsert_record(db: Session, p: NormalizedExternalProduct) -> m.ExternalProductRecord:
+def upsert_record(db: Session, p: NormalizedExternalProduct, existing: m.ExternalProductRecord | None = None) -> m.ExternalProductRecord:
+    """`existing` = the record being refreshed (updated in place even if its key was derived differently)."""
     key = p.sku or p.external_product_id or fingerprint(p.source_key, p.brand, p.name, p.color)
-    rec = db.scalar(select(m.ExternalProductRecord).where(m.ExternalProductRecord.source_id == p.external_source_id, m.ExternalProductRecord.external_key == key))
+    rec = existing or db.scalar(select(m.ExternalProductRecord).where(m.ExternalProductRecord.source_id == p.external_source_id, m.ExternalProductRecord.external_key == key))
     data = p.model_dump(mode="json")
     if rec:
         prev = rec.data
@@ -156,8 +157,13 @@ def run_discovery(db: Session, project: m.Project, scene: Scene, brief: dict, *,
                 counters["quote_required"] += p.quote_required
                 counters["stale_or_doubtful"] += bool(p.disputed_fields) or p.confidence < 0.5
                 found_any = True
-            db.add(m.ExternalConnectorRun(source_id=by_key[k].id, project_id=project.id, kind="discovery", status=status, found=len(items),
-                                          validated=sum(1 for p in items if p.confidence >= 0.6), latency_ms=int((time.time() - t) * 1000), errors=errs))
+            run = m.ExternalConnectorRun(source_id=by_key[k].id, project_id=project.id, kind="discovery", status=status, found=len(items),
+                                         validated=sum(1 for p in items if p.confidence >= 0.6), latency_ms=int((time.time() - t) * 1000), errors=errs)
+            db.add(run)
+            db.flush()
+            from .maintenance import evaluate_run
+
+            evaluate_run(db, by_key[k], run)
         counters["needs_covered"] += found_any
         counters["sources_checked"] = len(checked)
         if progress:

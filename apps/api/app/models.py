@@ -263,6 +263,8 @@ class Supplier(TimestampMixin, Base):
     installation: Mapped[dict] = mapped_column(JSON, default=dict)
     commission_pct: Mapped[float] = mapped_column(Float, default=0.0)
     external_source_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # scheduled price feed: {enabled, url, interval_h, max_price_change_pct, mapping, last_sync_at, last_status, history, alerts}
+    feed: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Product(TimestampMixin, Base):

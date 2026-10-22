@@ -79,6 +79,20 @@ def test_source(sid: str, p: Principal = Depends(require("sources:manage")), db:
     return {"status": h.status, "message": h.message, "latency_ms": h.latency_ms, "policy": conn.get_policy_status()}
 
 
+@router.get("/sources/{sid}/history")
+def source_history(sid: str, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+    """Connector health history: the last 50 runs and the alert log."""
+    s = db.get(m.ExternalSource, sid)
+    if not s:
+        raise ApiError(404, "not_found")
+    runs = db.scalars(select(m.ExternalConnectorRun).where(m.ExternalConnectorRun.source_id == sid).order_by(m.ExternalConnectorRun.created_at.desc()).limit(50)).all()
+    return {"runs": [{"at": r.created_at.isoformat(), "kind": r.kind, "status": r.status, "found": r.found, "validated": r.validated, "latency_ms": r.latency_ms,
+                      "errors": (r.errors or [])[:2]} for r in runs],
+            "alerts": (s.stats or {}).get("alert_log", []), "index": (s.stats or {}).get("index", {}),
+            "schedule": {"index_interval_min": (s.policy or {}).get("index_interval_min", 30) if s.connector_type == "jsonld_index" else None,
+                         "price_ttl_h": (s.ttl_h or {}).get("price")}}
+
+
 class IndexIn(BaseModel):
     batch: int = Field(default=60, ge=1, le=300)
 

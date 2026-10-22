@@ -24,7 +24,7 @@ export default function NotificationBell() {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const text = (n: Notif) => t(`notif.kind.${n.kind}`, { ...n.params, job: n.params.job ? t(`notif.job.${n.params.job}`) : "" });
+  const text = (n: Notif) => t(`notif.kind.${n.kind}`, { ...n.params, job: n.params.job ? t(`notif.job.${n.params.job}`) : "", reason: n.params.reason ? t(`notif.reason.${n.params.reason}`) : "" });
   const go = async (n: Notif) => {
     if (!n.read) await api(`/notifications/${n.id}/read`, { method: "POST" }).catch(() => {});
     setOpen(false);

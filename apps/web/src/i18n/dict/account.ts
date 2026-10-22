@@ -179,4 +179,10 @@ export const account: Dict = {
   "notif.pref.price_stale": e("Հնացած գներ", "Устаревшие цены", "Out-of-date prices"),
   "notif.pref.catalog_alert": e("Կատալոգի ահազանգեր (ադմինիստրատորներ)", "Сигналы каталога (администраторы)", "Catalogue alerts (administrators)"),
   "notif.pref.email_digest": e("Օրական ամփոփում էլ. փոստով", "Ежедневный дайджест на почту", "Daily e-mail digest"),
+  "notif.reason.result_drop": e("արդյունքները կրճատվել են ավելի քան 50%-ով", "результатов стало меньше более чем на 50%", "results dropped by more than 50%"),
+  "notif.reason.parser": e("քարտերի նշագրումը փոխվել է (JSON-LD չկա)", "изменилась разметка карточек (нет JSON-LD)", "product page markup changed (no JSON-LD)"),
+  "notif.reason.circuit": e("կայքը հասանելի չէ (circuit breaker)", "сайт недоступен (circuit breaker)", "site unavailable (circuit breaker)"),
+  "notif.reason.blocked": e("հարցումն արգելափակված է", "запрос заблокирован", "request blocked"),
+  "notif.reason.feed_guard": e("ֆիդը պահված է՝ գների զանգվածային փոփոխություն", "фид задержан: массовое изменение цен", "feed held: mass price change"),
+  "notif.reason.feed_error": e("ֆիդը չհաջողվեց կարդալ", "фид не удалось прочитать", "feed could not be read"),
 };

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Box, Boxes, Image, Ruler, Tag } from "lucide-react";
+import { BarChart3, Box, Boxes, Image, RefreshCw, Rss, Ruler, Tag } from "lucide-react";
 import { api, ApiError } from "../lib/api";
 import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
-import { Badge, Empty, Loading, PriceStatus, useToast } from "../components/ui";
+import { Badge, Empty, Loading, PriceStatus, Switch, useToast } from "../components/ui";
 
 interface Ov { supplier: { name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
 interface P { id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
@@ -51,10 +51,50 @@ export default function SupplierCabinet() {
             {r.status === "sent" && <div className="row mt-8"><button className="btn sm primary" onClick={() => respond(r.id, "quoted")}>{t("supc.send_quote")}</button><button className="btn sm" onClick={() => respond(r.id, "declined")}>{t("supc.decline")}</button></div>}</div>)}
         </div>
       </div>
+      <FeedCard />
       <div className="card" style={{ overflow: "auto", maxHeight: 520 }}>
         <table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("supc.col.name")}</th><th>{t("common.category")}</th><th className="right">{t("common.price")}</th><th>{t("common.status")}</th><th>{t("common.in_stock")}</th><th>{t("common.dims")}</th><th>{t("supc.col.3d")}</th></tr></thead>
           <tbody>{items.map((p) => <tr key={p.id}><td><span className="dot" style={{ background: p.color_hex, width: 14, height: 14 }} /></td><td className="small mono">{p.sku}</td><td className="small">{p.name}</td><td className="small">{catName(p.category)}</td><td className="right mono small">{amd(p.price, "")}</td><td><PriceStatus s={p.price_status} /></td><td className="small">{p.stock === "in_stock" ? t("common.yes") : t("common.no")}</td><td className="small">{p.dims.join("×")}</td><td>{p.has_3d ? "✓" : "—"}</td></tr>)}</tbody></table>
       </div>
     </div>
+  );
+}
+
+interface Feed { enabled: boolean; url: string; interval_h: number; max_price_change_pct: number; last_sync_at: string | null; last_status: string | null; history: { at: string; status: string; created?: number; updated?: number; rejected?: number; count?: number; error?: string }[] }
+
+/** Scheduled price feed: an official CSV/XLSX URL synced every N hours through the same guarded import as a manual upload. */
+function FeedCard() {
+  const { t } = useT();
+  const toast = useToast();
+  const [f, setF] = useState<Feed | null>(null);
+  useEffect(() => { api<Feed>("/supplier/feed").then(setF).catch(() => {}); }, []);
+  if (!f) return null;
+  const save = async (next: Partial<Feed>) => {
+    try { setF(await api<Feed>("/supplier/feed", { method: "PUT", json: { enabled: f.enabled, url: f.url, interval_h: f.interval_h, max_price_change_pct: f.max_price_change_pct, ...next } })); toast(t("supc.feed.saved")); }
+    catch (x) { toast((x as Error).message, true); }
+  };
+  const sync = async () => {
+    try { await api("/supplier/feed/sync", { method: "POST" }); setF(await api<Feed>("/supplier/feed")); toast(t("supc.feed.sync_started")); } catch (x) { toast((x as Error).message, true); }
+  };
+  const tone = (s: string) => (s === "ok" ? "sage" : s === "guard_blocked" || s === "error" ? "danger" : "warn");
+  return (
+    <section className="card pad col gap-10" aria-labelledby="feed-h">
+      <div className="row between wrap"><h3 id="feed-h" className="row gap-6"><Rss size={18} /> {t("supc.feed.title")}</h3>
+        <div className="row gap-6"><span className="small">{t("supc.feed.enabled")}</span><Switch on={f.enabled} label={t("supc.feed.enabled")} onChange={(v) => save({ enabled: v })} /></div></div>
+      <p className="small muted">{t("supc.feed.lead")}</p>
+      <div className="row gap-8 wrap">
+        <label className="col gap-4 grow" style={{ minWidth: 260 }}><span className="tiny muted">{t("supc.feed.url")}</span>
+          <input className="input" type="url" placeholder="https://…/price.csv" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} /></label>
+        <label className="col gap-4"><span className="tiny muted">{t("supc.feed.interval")}</span>
+          <select className="input" value={f.interval_h} onChange={(e) => setF({ ...f, interval_h: Number(e.target.value) })}>
+            {[6, 12, 24, 48, 168].map((h) => <option key={h} value={h}>{t("supc.feed.every_h", { n: h })}</option>)}</select></label>
+        <label className="col gap-4"><span className="tiny muted">{t("supc.feed.guard")}</span>
+          <input className="input" type="number" min={5} max={500} style={{ width: 110 }} value={f.max_price_change_pct} onChange={(e) => setF({ ...f, max_price_change_pct: Number(e.target.value) })} /></label>
+      </div>
+      <div className="row gap-6"><button className="btn primary" onClick={() => save({})}>{t("common.save")}</button>
+        <button className="btn" disabled={!f.url} onClick={sync}><RefreshCw size={15} /> {t("supc.feed.sync_now")}</button></div>
+      {f.last_sync_at && <div className="small">{t("supc.feed.last", { at: dt(f.last_sync_at) })} <Badge tone={tone(f.last_status || "")}>{t(`supc.feed.status.${f.last_status}`)}</Badge></div>}
+      {f.history.map((h) => <div key={h.at} className="tiny muted">{dt(h.at)} · {t(`supc.feed.status.${h.status}`)}{h.status === "ok" ? ` · ${t("supc.feed.counts", { created: h.created ?? 0, updated: h.updated ?? 0, rejected: h.rejected ?? 0 })}` : h.count ? ` · ${t("supc.feed.guard_count", { n: h.count })}` : h.error ? ` · ${h.error}` : ""}</div>)}
+    </section>
   );
 }

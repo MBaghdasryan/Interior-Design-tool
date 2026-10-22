@@ -60,6 +60,9 @@ def crawl_batch(db: Session, source: m.ExternalSource, *, batch: int = 60, fetch
     except FetchBlocked as e:
         run.status, run.errors = "blocked", [str(e)[:300]]
         source.health_status = "blocked"
+        from .maintenance import evaluate_run
+
+        evaluate_run(db, source, run)
         db.commit()
         return {**counters, "status": "blocked", "error": str(e)[:300]}
     stats = dict(source.stats or {})

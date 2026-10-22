@@ -21,6 +21,7 @@ log = logging.getLogger("forma.worker")
 def maintenance_loop(q, interval_s: int = 60) -> None:
     """Every minute: re-submit orphaned jobs (a killed worker), then run due periodic tasks."""
     from . import notify, retention  # noqa: F401  (register the digest and daily retention tasks)
+    from .catalog import maintenance  # noqa: F401  (catalogue index / TTL / feed schedules)
     from .scheduler import run_due
 
     while True:

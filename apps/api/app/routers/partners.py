@@ -48,6 +48,54 @@ def supplier_overview(p: Principal = Depends(require("catalog:read")), db: Sessi
             "rfqs": [{"id": r.id, "status": r.status, "items": len(r.items), "created_at": r.created_at.isoformat(), "message": r.message} for r in rfqs]}
 
 
+class FeedIn(BaseModel):
+    enabled: bool = False
+    url: str = Field(default="", max_length=500)
+    interval_h: int = Field(default=24, ge=6, le=168)
+    max_price_change_pct: float = Field(default=60.0, ge=5, le=500)
+
+
+def _feed_out(sup: m.Supplier) -> dict:
+    from ..catalog.maintenance import feed_cfg
+
+    f = feed_cfg(sup)
+    return {k: f.get(k) for k in ("enabled", "url", "interval_h", "max_price_change_pct", "last_sync_at", "last_status")} | {"history": (f.get("history") or [])[:10]}
+
+
+@router.get("/api/v1/supplier/feed")
+def get_feed(p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    return _feed_out(_supplier_for(p, db))
+
+
+@router.put("/api/v1/supplier/feed")
+def put_feed(body: FeedIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    from urllib.parse import urlparse
+
+    sup = _supplier_for(p, db)
+    u = urlparse(body.url)
+    if body.url and (u.scheme != "https" or not u.hostname):
+        raise ApiError(422, "validation", fields=["url"])
+    if body.enabled and not body.url:
+        raise ApiError(422, "validation", fields=["url"])
+    sup.feed = {**(sup.feed or {}), **body.model_dump()}
+    audit(db, p, "supplier.feed_update", "supplier", sup.id, data={"enabled": body.enabled, "host": u.hostname, "interval_h": body.interval_h})
+    db.commit()
+    return _feed_out(sup)
+
+
+@router.post("/api/v1/supplier/feed/sync")
+def sync_feed_now(p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    from ..jobs.runner import enqueue, job_dict
+
+    sup = _supplier_for(p, db)
+    if not (sup.feed or {}).get("url"):
+        raise ApiError(422, "validation", fields=["url"])
+    job = enqueue(db, "supplier_feed", project_id=None, params={"supplier_id": sup.id})
+    audit(db, p, "supplier.feed_sync", "supplier", sup.id)
+    db.commit()
+    return job_dict(job)
+
+
 class QuoteIn(BaseModel):
     status: str = Field(pattern="^(quoted|declined)$")
     total_amd: float | None = None

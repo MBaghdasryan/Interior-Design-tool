@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Workflow } from "lucide-react";
 import { api, type Job } from "../lib/api";
 import { dt } from "../lib/format";
@@ -6,6 +6,7 @@ import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; last_errors: string[] }
+interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
 type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
@@ -20,6 +21,7 @@ export default function PlatformAdmin() {
   const [ai, setAi] = useState<Ai | null>(null);
   const [aps, setAps] = useState<Record<string, any> | null>(null);
   const [quar, setQuar] = useState<Quarantined[]>([]);
+  const [hist, setHist] = useState<{ sid: string; data: Hist } | null>(null);
   const [audit, setAudit] = useState<{ action: string; entity: string; data: Record<string, unknown>; created_at: string }[]>([]);
   const load = useCallback(() => {
     api("/admin/stats").then(setStats);
@@ -37,6 +39,7 @@ export default function PlatformAdmin() {
     catch (x) { toast((x as Error).message, true); }
   };
   const test = async (s: Src) => { const r = await api<{ status: string; message: string }>(`/admin/sources/${s.id}/test`, { method: "POST" }); toast(`${s.name}: ${t(`enum.source_status.${r.status}`)}`); load(); };
+  const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
   const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert]];
@@ -56,8 +59,8 @@ export default function PlatformAdmin() {
           <div className="card" style={{ overflow: "auto" }}>
             <table className="table compact">
               <thead><tr><th>{t("adm.col.on")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.connector")}</th><th>{t("common.status")}</th><th>{t("adm.col.policy")}</th><th>{t("adm.col.rate")}</th><th className="right">{t("adm.col.records")}</th><th className="right">{t("adm.col.review")}</th><th>{t("adm.col.success")}</th><th>{t("adm.col.check")}</th><th /></tr></thead>
-              <tbody>{src.map((s) => (
-                <tr key={s.id}>
+              <tbody>{src.map((s) => (<Fragment key={s.id}>
+                <tr>
                   <td><Switch on={s.enabled} onChange={(v) => patch(s, { enabled: v })} label={s.name} /></td>
                   <td><b>{s.name}</b><div className="tiny muted">{s.domain}</div></td>
                   <td><Badge tone="info">{s.connector_type || s.method}</Badge>{s.live_enabled && <Badge tone="sage">live</Badge>}</td>
@@ -68,8 +71,11 @@ export default function PlatformAdmin() {
                   <td className="small">{s.success_rate === null ? "—" : `${Math.round(s.success_rate * 100)}%`}{s.avg_latency_ms ? <div className="tiny muted">{s.avg_latency_ms} ms</div> : null}</td>
                   <td className="tiny muted">{dt(s.last_check_at)}{s.last_errors[0] && <div style={{ color: "var(--danger)" }}>{s.last_errors[0]}</div>}</td>
                   <td className="row gap-4"><button className="btn sm" onClick={() => test(s)}>{t("adm.test")}</button>
-                    {s.connector_type === "jsonld_index" && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}</td>
-                </tr>))}</tbody>
+                    {s.connector_type === "jsonld_index" && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}
+                    <button className="btn sm ghost" aria-expanded={hist?.sid === s.id} onClick={() => history(s)}>{t("adm.history")}</button></td>
+                </tr>
+                {hist?.sid === s.id && <tr><td colSpan={11}><SourceHistory h={hist.data} /></td></tr>}
+              </Fragment>))}</tbody>
             </table>
           </div>
         </div>
@@ -94,6 +100,27 @@ export default function PlatformAdmin() {
       {tab === "quarantine" && <div className="card" style={{ overflow: "auto" }}>{quar.length === 0 ? <p className="pad muted">{t("adm.quarantine_empty")}</p> :
         <table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.signature")}</th><th>SHA-256</th></tr></thead>
           <tbody>{quar.map((q) => <tr key={q.sha256 + q.at}><td className="small nowrap">{dt(q.at)}</td><td className="small">{q.filename}</td><td><b className="small">{q.signature}</b></td><td className="tiny mono">{q.sha256.slice(0, 16)}…</td></tr>)}</tbody></table>}</div>}
+    </div>
+  );
+}
+
+function SourceHistory({ h }: { h: Hist }) {
+  const { t } = useT();
+  return (
+    <div className="col gap-8" style={{ padding: "6px 4px 12px" }}>
+      <div className="row gap-12 wrap tiny muted">
+        {h.schedule.index_interval_min && <span>{t("adm.hist.schedule", { n: h.schedule.index_interval_min })}</span>}
+        {h.schedule.price_ttl_h && <span>{t("adm.hist.ttl", { n: h.schedule.price_ttl_h })}</span>}
+        {h.index.total ? <span>{t("adm.hist.cursor", { cursor: h.index.cursor ?? 0, total: h.index.total, passes: h.index.passes ?? 0 })}</span> : null}
+      </div>
+      <b className="small">{t("adm.hist.alerts")}</b>
+      {h.alerts.length ? h.alerts.map((a) => <div key={a.at + a.reason} className="small"><Badge tone="danger">{t(`notif.reason.${a.reason}`)}</Badge> <span className="tiny muted">{dt(a.at)} · {a.detail}</span></div>)
+        : <div className="small muted">{t("adm.hist.no_alerts")}</div>}
+      <table className="table compact">
+        <thead><tr><th>{t("adm.hist.at")}</th><th>{t("adm.hist.kind")}</th><th>{t("common.status")}</th><th className="right">{t("adm.hist.found")}</th><th className="right">{t("adm.hist.validated")}</th><th className="right">ms</th><th>{t("adm.col.error")}</th></tr></thead>
+        <tbody>{h.runs.map((r, i) => <tr key={i}><td className="tiny">{dt(r.at)}</td><td className="small">{r.kind}</td><td><Badge tone={r.status === "ok" ? "sage" : r.status === "error" || r.status === "blocked" ? "danger" : ""}>{r.status}</Badge></td>
+          <td className="right">{r.found}</td><td className="right">{r.validated}</td><td className="right tiny">{r.latency_ms}</td><td className="tiny" style={{ color: "var(--danger)" }}>{r.errors[0]}</td></tr>)}</tbody>
+      </table>
     </div>
   );
 }

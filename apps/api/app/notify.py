@@ -33,6 +33,15 @@ DIGEST_LINE = {
     "catalog_alert": {"hy": "Կատալոգի ահազանգ՝ {source} ({reason})", "ru": "Сигнал каталога: {source} ({reason})", "en": "Catalogue alert: {source} ({reason})"},
 }
 
+ALERT_REASON = {
+    "result_drop": {"hy": "արդյունքները կրճատվել են >50%", "ru": "результатов меньше на >50%", "en": "results dropped by >50%"},
+    "parser": {"hy": "քարտերի կառուցվածքը փոխվել է", "ru": "изменилась разметка карточек", "en": "product page markup changed"},
+    "circuit": {"hy": "կայքը հասանելի չէ (circuit breaker)", "ru": "сайт недоступен (circuit breaker)", "en": "site unavailable (circuit breaker)"},
+    "blocked": {"hy": "հարցումն արգելափակված է", "ru": "запрос заблокирован", "en": "request blocked"},
+    "feed_guard": {"hy": "ֆիդը պահված է՝ գների զանգվածային փոփոխություն", "ru": "фид задержан: массовое изменение цен", "en": "feed held: mass price change"},
+    "feed_error": {"hy": "ֆիդը չհաջողվեց կարդալ", "ru": "фид не прочитан", "en": "feed could not be read"},
+}
+
 
 def _wants(u: m.User, kind: str) -> bool:
     return (u.notification_prefs or {}).get("kinds", {}).get(kind, True) and u.status == "active"
@@ -83,7 +92,10 @@ def send_digests(db: Session, now: datetime | None = None) -> int:
         for it in items[:30]:
             tpl = DIGEST_LINE.get(it.kind, {}).get(lang, it.kind)
             try:
-                lines.append("• " + tpl.format(**{k: v for k, v in (it.params or {}).items()}))
+                params = dict(it.params or {})
+                if "reason" in params:
+                    params["reason"] = ALERT_REASON.get(params["reason"], {}).get(lang, params["reason"])
+                lines.append("• " + tpl.format(**params))
             except (KeyError, IndexError):
                 lines.append("• " + it.kind)
         body = "\n".join(lines) + f"\n\n{s.public_base_url.rstrip('/')}/app\n— {s.brand_name}"
