@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BarChart3, Box, Boxes, Image, RefreshCw, Rss, Ruler, Tag } from "lucide-react";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, type Schemas } from "../lib/api";
 import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Empty, Loading, PriceStatus, Switch, useToast } from "../components/ui";
@@ -70,7 +70,8 @@ function FeedCard() {
   useEffect(() => { api<Feed>("/supplier/feed").then(setF).catch(() => {}); }, []);
   if (!f) return null;
   const save = async (next: Partial<Feed>) => {
-    try { setF(await api<Feed>("/supplier/feed", { method: "PUT", json: { enabled: f.enabled, url: f.url, interval_h: f.interval_h, max_price_change_pct: f.max_price_change_pct, ...next } })); toast(t("supc.feed.saved")); }
+    const body: Schemas["FeedIn"] = { enabled: f.enabled, url: f.url, interval_h: f.interval_h, max_price_change_pct: f.max_price_change_pct, ...next };
+    try { setF(await api<Feed>("/supplier/feed", { method: "PUT", json: body })); toast(t("supc.feed.saved")); }
     catch (x) { toast((x as Error).message, true); }
   };
   const sync = async () => {

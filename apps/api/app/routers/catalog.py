@@ -130,7 +130,7 @@ class ReviewIn(BaseModel):
 
 
 @router.post("/external/review/{rid}")
-def review(rid: str, body: ReviewIn, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+def review(rid: str, body: ReviewIn, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
     r = db.get(m.ExternalProductRecord, rid)
     if not r:
         raise ApiError(404, "not_found")

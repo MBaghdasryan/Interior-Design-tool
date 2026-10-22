@@ -111,20 +111,20 @@ export default function Geometry() {
           {wall && <div className="card pad col gap-10">
             <h3>{t("geo.wall", { id: wall.id })}</h3><div className="small muted">{t("geo.wall_meta", { len: mm(len(wall)), src: wall.source, conf: pct(wall.confidence) })}</div>
             <div className="grid g2">
-              <div className="field"><label>{t("geo.thickness")}</label><input className="input" value={wall.thickness} onChange={(e) => updWall({ thickness: Number(e.target.value) || wall.thickness })} /></div>
-              <div className="field"><label>{t("geo.material")}</label><select className="select input" value={wall.material} onChange={(e) => updWall({ material: e.target.value })}>{["concrete", "brick", "block", "drywall", "glass"].map((x) => <option key={x} value={x}>{t(`enum.material.${x}`)}</option>)}</select></div>
-              <div className="field"><label>{t("geo.status")}</label><select className="select input" value={wall.status} onChange={(e) => updWall({ status: e.target.value as Wall["status"] })}>{["existing", "demolish", "new"].map((x) => <option key={x} value={x}>{t(`enum.wall_status.${x}`)}</option>)}</select></div>
-              <div className="field"><label>{t("geo.kind")}</label><select className="select input" value={wall.kind} onChange={(e) => updWall({ kind: e.target.value })}>{["exterior", "interior", "partition", "balcony"].map((x) => <option key={x} value={x}>{t(`enum.wall_kind.${x}`)}</option>)}</select></div>
+              <div className="field"><label>{t("geo.thickness")}</label><input aria-label={t("geo.thickness")} className="input" value={wall.thickness} onChange={(e) => updWall({ thickness: Number(e.target.value) || wall.thickness })} /></div>
+              <div className="field"><label>{t("geo.material")}</label><select aria-label={t("geo.material")} className="select input" value={wall.material} onChange={(e) => updWall({ material: e.target.value })}>{["concrete", "brick", "block", "drywall", "glass"].map((x) => <option key={x} value={x}>{t(`enum.material.${x}`)}</option>)}</select></div>
+              <div className="field"><label>{t("geo.status")}</label><select aria-label={t("geo.status")} className="select input" value={wall.status} onChange={(e) => updWall({ status: e.target.value as Wall["status"] })}>{["existing", "demolish", "new"].map((x) => <option key={x} value={x}>{t(`enum.wall_status.${x}`)}</option>)}</select></div>
+              <div className="field"><label>{t("geo.kind")}</label><select aria-label={t("geo.kind")} className="select input" value={wall.kind} onChange={(e) => updWall({ kind: e.target.value })}>{["exterior", "interior", "partition", "balcony"].map((x) => <option key={x} value={x}>{t(`enum.wall_kind.${x}`)}</option>)}</select></div>
             </div>
             <label className="check"><input type="checkbox" checked={wall.load_bearing} onChange={(e) => updWall({ load_bearing: e.target.checked })} /> {t("geo.bearing")}</label>
             {wall.load_bearing && wall.status === "demolish" && <div className="alert danger small">{t("geo.bearing_warn")}</div>}
           </div>}
           {room && <div className="card pad col gap-10">
             <h3>{t("geo.room", { n: room.number })}</h3><div className="small muted">{geo.rooms.find((r) => r.id === room.id)?.area_m2} {t("common.m2")} · {pct(room.confidence)}</div>
-            <div className="field"><label>{t("geo.room_name")}</label><input className="input" value={room.source === "manual" ? room.name : t(`enum.room.${room.type}`)} onChange={(e) => updRoom({ name: e.target.value })} /></div>
+            <div className="field"><label>{t("geo.room_name")}</label><input aria-label={t("geo.room_name")} className="input" value={room.source === "manual" ? room.name : t(`enum.room.${room.type}`)} onChange={(e) => updRoom({ name: e.target.value })} /></div>
             <div className="grid g2">
-              <div className="field"><label>{t("geo.room_type")}</label><select className="select input" value={room.type} onChange={(e) => updRoom({ type: e.target.value, zone: ZONES[e.target.value] })}>{ROOM_TYPES.map((k) => <option key={k} value={k}>{t(`enum.room.${k}`)}</option>)}</select></div>
-              <div className="field"><label>{t("geo.ceiling")}</label><input className="input" value={room.ceiling_height} onChange={(e) => updRoom({ ceiling_height: Number(e.target.value) || room.ceiling_height })} /></div>
+              <div className="field"><label>{t("geo.room_type")}</label><select aria-label={t("geo.room_type")} className="select input" value={room.type} onChange={(e) => updRoom({ type: e.target.value, zone: ZONES[e.target.value] })}>{ROOM_TYPES.map((k) => <option key={k} value={k}>{t(`enum.room.${k}`)}</option>)}</select></div>
+              <div className="field"><label>{t("geo.ceiling")}</label><input aria-label={t("geo.ceiling")} className="input" value={room.ceiling_height} onChange={(e) => updRoom({ ceiling_height: Number(e.target.value) || room.ceiling_height })} /></div>
             </div>
           </div>}
           <TrustPanel pid={pid!} onChange={load} />

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, Armchair, CloudUpload, Database, FileText, Globe2, Info, Palette, Plus, ScanLine, ShoppingCart, Sparkles, Users, Wallet, X } from "lucide-react";
-import { api, fileUrl, uploadAsset, type Project } from "../lib/api";
+import { api, fileUrl, uploadAsset, type Project, type Schemas } from "../lib/api";
 import { kb, styleName, tierName } from "../lib/format";
 import { LANGS, useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
@@ -27,7 +27,8 @@ function CreateForm() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const p = await api<Project>("/projects", { method: "POST", json: { ...f, area_m2: f.area_m2 ? Number(f.area_m2) : null } });
+      const body: Schemas["ProjectIn"] = { ...f, area_m2: f.area_m2 ? Number(f.area_m2) : null };
+      const p = await api<Project>("/projects", { method: "POST", json: body });
       nav(`/app/p/${p.id}/upload`);
     } catch (x) { toast((x as Error).message, true); }
   };
@@ -36,12 +37,12 @@ function CreateForm() {
       <h1>{t("np.title")}</h1>
       <p className="muted">{t("np.lead")}</p>
       <div className="grid g2">
-        <div className="field"><label>{t("np.f.title")}</label><input className="input" required minLength={2} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder={t("np.f.title_ph")} /></div>
-        <div className="field"><label>{t("np.f.address")}</label><input className="input" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder={t("np.f.address_ph")} /></div>
-        <div className="field"><label>{t("np.f.area")}</label><input className="input" inputMode="decimal" value={f.area_m2} onChange={(e) => setF({ ...f, area_m2: e.target.value })} /></div>
-        <div className="field"><label>{t("np.f.stage")}</label><select className="select input" value={f.renovation_stage} onChange={(e) => setF({ ...f, renovation_stage: e.target.value })}>{["shell", "white_box", "lived_in"].map((k) => <option key={k} value={k}>{t(`np.stage.${k}`)}</option>)}</select></div>
-        <div className="field"><label>{t("np.f.client")}</label><input className="input" value={f.client_name} onChange={(e) => setF({ ...f, client_name: e.target.value })} /></div>
-        <div className="field"><label>{t("np.f.doc_lang")}</label><select className="select input" value={f.doc_lang} onChange={(e) => setF({ ...f, doc_lang: e.target.value })}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></div>
+        <div className="field"><label>{t("np.f.title")}</label><input aria-label={t("np.f.title")} className="input" required minLength={2} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder={t("np.f.title_ph")} /></div>
+        <div className="field"><label>{t("np.f.address")}</label><input aria-label={t("np.f.address")} className="input" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder={t("np.f.address_ph")} /></div>
+        <div className="field"><label>{t("np.f.area")}</label><input aria-label={t("np.f.area")} className="input" inputMode="decimal" value={f.area_m2} onChange={(e) => setF({ ...f, area_m2: e.target.value })} /></div>
+        <div className="field"><label>{t("np.f.stage")}</label><select aria-label={t("np.f.stage")} className="select input" value={f.renovation_stage} onChange={(e) => setF({ ...f, renovation_stage: e.target.value })}>{["shell", "white_box", "lived_in"].map((k) => <option key={k} value={k}>{t(`np.stage.${k}`)}</option>)}</select></div>
+        <div className="field"><label>{t("np.f.client")}</label><input aria-label={t("np.f.client")} className="input" value={f.client_name} onChange={(e) => setF({ ...f, client_name: e.target.value })} /></div>
+        <div className="field"><label>{t("np.f.doc_lang")}</label><select aria-label={t("np.f.doc_lang")} className="select input" value={f.doc_lang} onChange={(e) => setF({ ...f, doc_lang: e.target.value })}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></div>
       </div>
       <div className="row"><button className="btn primary lg">{t("np.create")} <ArrowRight size={18} /></button></div>
     </form>

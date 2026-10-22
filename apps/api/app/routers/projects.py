@@ -26,6 +26,7 @@ from ..design.engine import candidate_pools, rank
 from ..errors import ApiError
 from ..jobs.pipeline import latest_base
 from ..jobs.runner import enqueue, job_dict
+from ..pagination import page
 from ..ratelimit import check as rate_check
 from ..scene.geometry import footprint, room_area_m2, scale_scene, wall_length
 from ..scene.model import ControlDimension, Scene, SceneObject
@@ -62,12 +63,14 @@ class ProjectPatch(BaseModel):
 
 
 @router.get("")
-def list_projects(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    q = select(m.Project).order_by(m.Project.updated_at.desc())
+def list_projects(response: Response, cursor: str | None = None, limit: int = Query(200, ge=1, le=500),
+                  p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    q = select(m.Project)
     if not p.is_platform:
         q = q.where(m.Project.org_id.in_(p.org_ids))
+    rows, _ = page(db, q, m.Project.updated_at, m.Project.id, cursor=cursor, limit=limit, response=response)
     out = []
-    for proj in db.scalars(q):
+    for proj in rows:
         d = project_dict(proj)
         vs = db.scalars(select(m.DesignVariant).where(m.DesignVariant.project_id == proj.id, m.DesignVariant.status != "archived")).all()
         d["variants"] = len(vs)
@@ -463,6 +466,9 @@ async def job_events(pid: str, jid: str, request: Request, authorization: str | 
     db = SessionLocal()
     try:
         project_access(pid, "project:read", principal_from_token(bearer or request.cookies.get(SESSION_COOKIE), db), db)
+        job = db.get(m.GenerationJob, jid)
+        if not job or job.project_id != pid:  # a job of another project is never streamed
+            raise ApiError(404, "not_found")
     finally:
         db.close()
 
@@ -553,6 +559,7 @@ def list_versions(pid: str, vid: str, p: Principal = Depends(current_principal),
 @router.get("/{pid}/variants/{vid}/versions/{ver_id}")
 def get_version(pid: str, vid: str, ver_id: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     project_access(pid, "project:read", p, db)
+    _variant(db, pid, vid)  # the variant must belong to this project (tenant isolation)
     ver = db.get(m.DesignVersion, ver_id)
     if not ver or ver.variant_id != vid:
         raise ApiError(404, "not_found")
@@ -562,6 +569,7 @@ def get_version(pid: str, vid: str, ver_id: str, p: Principal = Depends(current_
 @router.get("/{pid}/variants/{vid}/compare")
 def compare_versions(pid: str, vid: str, a: str, b: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     project_access(pid, "project:read", p, db)
+    _variant(db, pid, vid)
     va, vb = db.get(m.DesignVersion, a), db.get(m.DesignVersion, b)
     if not va or not vb or va.variant_id != vid or vb.variant_id != vid:
         raise ApiError(404, "not_found")
@@ -799,10 +807,11 @@ def resolve_comment(pid: str, cid: str, p: Principal = Depends(current_principal
 
 
 @router.get("/{pid}/audit")
-def project_audit(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+def project_audit(pid: str, response: Response, cursor: str | None = None, limit: int = Query(200, ge=1, le=500),
+                  p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     project_access(pid, "project:read", p, db)
-    return [{"action": a.action, "entity": a.entity, "data": a.data, "created_at": a.created_at.isoformat(), "user_id": a.user_id}
-            for a in db.scalars(select(m.AuditEvent).where(m.AuditEvent.project_id == pid).order_by(m.AuditEvent.created_at.desc()).limit(200))]
+    rows, _ = page(db, select(m.AuditEvent).where(m.AuditEvent.project_id == pid), m.AuditEvent.created_at, m.AuditEvent.id, cursor=cursor, limit=limit, response=response)
+    return [{"action": a.action, "entity": a.entity, "data": a.data, "created_at": a.created_at.isoformat(), "user_id": a.user_id} for a in rows]
 
 
 # ------------------------------------------------------------------ reliability levels (Concept / Verified / Production)

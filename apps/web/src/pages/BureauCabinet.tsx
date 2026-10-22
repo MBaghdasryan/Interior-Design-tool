@@ -34,7 +34,7 @@ export default function BureauCabinet() {
           <h3>{t("bur.titleblock")}</h3>
           <p className="small muted">{t("bur.titleblock_lead")}</p>
           {["company", "tagline", "phone", "address", "email"].map((k) => (
-            <div key={k} className="field"><label>{t(`bur.f.${k}`)}</label><input className="input" value={tb[k] || ""} onChange={(e) => setTb({ ...tb, [k]: e.target.value })} /></div>
+            <div key={k} className="field"><label>{t(`bur.f.${k}`)}</label><input className="input" aria-label={t(`bur.f.${k}`)} value={tb[k] || ""} onChange={(e) => setTb({ ...tb, [k]: e.target.value })} /></div>
           ))}
           <button className="btn primary" onClick={save}><Save size={16} /> {t("common.save")}</button>
         </div>

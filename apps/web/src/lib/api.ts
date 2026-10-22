@@ -1,5 +1,6 @@
 // Thin typed client for the Renovara API. The session lives in an HttpOnly cookie set by
 // the server (JS never sees it); unsafe requests echo the readable CSRF cookie in X-CSRF-Token.
+import type { components } from "./api-types";
 
 export type Pt = [number, number];
 export interface Wall { id: string; a: Pt; b: Pt; thickness: number; kind: string; status: "existing" | "demolish" | "new"; material: string; load_bearing: boolean; confidence: number; source: string }
@@ -31,6 +32,9 @@ export interface Doc { id: string; kind: string; filename: string; size: number;
 export interface Me { id: string; email: string; name: string; locale?: string; email_verified: boolean; onboarded: boolean; mfa_enabled: boolean; mfa_required: boolean; mfa_enrollment_required: boolean; deletion_due_at: string | null; roles: string[]; memberships: { org_id: string; org_name: string; org_kind: string; role: string }[] }
 
 /** Session state known to the UI. The token itself is HttpOnly and never readable from JS. */
+/** Request-body schemas generated from the backend's OpenAPI (`npm run api:types`). */
+export type Schemas = components["schemas"];
+
 export const auth = { signedIn: false };
 
 function cookie(name: string): string {
@@ -50,6 +54,17 @@ export class ApiError extends Error {
 }
 
 export async function api<T = any>(path: string, opts: RequestInit & { json?: unknown } = {}): Promise<T> {
+  return (await request<T>(path, opts)).data;
+}
+
+/** One page of a cursor-paginated list: the body is the array, the next cursor comes in `X-Next-Cursor`. */
+export async function apiPage<T>(path: string, cursor?: string | null): Promise<{ items: T[]; next: string | null }> {
+  const sep = path.includes("?") ? "&" : "?";
+  const r = await request<T[]>(cursor ? `${path}${sep}cursor=${encodeURIComponent(cursor)}` : path);
+  return { items: r.data, next: r.headers.get("X-Next-Cursor") };
+}
+
+async function request<T>(path: string, opts: RequestInit & { json?: unknown } = {}): Promise<{ data: T; headers: Headers }> {
   const headers: Record<string, string> = { ...(opts.headers as Record<string, string>) };
   const method = (opts.method || "GET").toUpperCase();
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) { const c = cookie("forma_csrf"); if (c) headers["X-CSRF-Token"] = c; }
@@ -69,7 +84,7 @@ export async function api<T = any>(path: string, opts: RequestInit & { json?: un
     throw new ApiError(r.status, code, params, fallback);
   }
   const ct = r.headers.get("content-type") || "";
-  return (ct.includes("json") ? r.json() : r.text()) as Promise<T>;
+  return { data: (await (ct.includes("json") ? r.json() : r.text())) as T, headers: r.headers };
 }
 
 /** Uploads a project file: straight to object storage when the server hands out a presigned

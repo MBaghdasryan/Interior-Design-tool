@@ -36,6 +36,7 @@ export const common: Dict = {
   "common.variant": { hy: "Տարբերակ", ru: "Вариант", en: "Variant" },
   "common.language": { hy: "Ինտերֆեյսի լեզու", ru: "Язык интерфейса", en: "Interface language" },
   "common.notifications": { hy: "Ծանուցումներ", ru: "Уведомления", en: "Notifications" },
+  "common.load_more": { hy: "Բեռնել ավելին", ru: "Загрузить ещё", en: "Load more" },
   "common.in_stock": { hy: "Առկա է", ru: "В наличии", en: "In stock" },
   "common.to_order": { hy: "Պատվերով", ru: "Под заказ", en: "Made to order" },
   "common.to_order_days": { hy: "Պատվերով, {n} օր", ru: "Под заказ, {n} дн.", en: "To order, {n} d" },

@@ -28,6 +28,9 @@ jobs:
         run: ruff check app tests evals
       - name: Tests (unit + integration, SQLite, fakeredis, moto)
         run: python -m pytest -q -p no:cacheprovider
+      - name: OpenAPI document is in sync (frontend contract source)
+        run: python -m app.openapi_export ../web/openapi.json --check
+        env: { SECRET_KEY: ci-openapi, DATABASE_URL: "sqlite:////tmp/openapi.db" }
       - name: Artifact validation (A3 PDF, DXF, GLB, XLSX, CSV, JSON)
         run: python -m pytest -q -p no:cacheprovider tests/test_artifacts.py
 
@@ -67,6 +70,10 @@ jobs:
         run: node scripts/i18n-check.mjs
       - name: Server dictionary is in sync
         run: node --experimental-strip-types --no-warnings scripts/export-server-dict.mjs --check
+      - name: OpenAPI → TypeScript types are in sync
+        run: npm run -s api:types && git diff --exit-code src/lib/api-types.ts
+      - name: API contract (every frontend call exists in OpenAPI)
+        run: npm run -s api:check
       - name: Typecheck
         run: npx tsc --noEmit -p .
       - name: Production build
@@ -96,7 +103,7 @@ jobs:
           done
 
   e2e:
-    name: E2E — compose stack, auth / i18n / routes (Playwright)
+    name: E2E — compose stack, visual regression, a11y (axe), auth / i18n / routes (Playwright)
     runs-on: ubuntu-latest
     needs: [backend, frontend]
     steps:
@@ -114,7 +121,7 @@ jobs:
           docker run --rm --network host -e BASE=http://localhost:8085 -e OUT=/out \
             -v renovara-ci_storage:/apidata:ro -v "$PWD/apps/web/e2e:/e2e" -v "$PWD/e2e-out:/out" \
             mcr.microsoft.com/playwright/python:v1.49.0-jammy sh -c \
-            "pip install -q playwright==1.49.0 && python /e2e/auth_e2e.py && python /e2e/i18n_e2e.py && python /e2e/routes_smoke.py && python /e2e/notifications_e2e.py && python /e2e/catalog_ops_e2e.py"
+            "pip install -q playwright==1.49.0 axe-playwright-python==0.1.4 pillow==11.0.0 && python /e2e/visual_a11y_e2e.py && python /e2e/auth_e2e.py && python /e2e/i18n_e2e.py && python /e2e/routes_smoke.py && python /e2e/notifications_e2e.py && python /e2e/catalog_ops_e2e.py"
       - name: Logs on failure
         if: failure()
         run: docker compose -p renovara-ci logs --tail 200 > e2e-out/compose.log 2>&1 || true

@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Workflow } from "lucide-react";
-import { api, type Job } from "../lib/api";
+import { api, apiPage, type Job } from "../lib/api";
 import { dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
@@ -22,14 +22,21 @@ export default function PlatformAdmin() {
   const [aps, setAps] = useState<Record<string, any> | null>(null);
   const [quar, setQuar] = useState<Quarantined[]>([]);
   const [hist, setHist] = useState<{ sid: string; data: Hist } | null>(null);
-  const [audit, setAudit] = useState<{ action: string; entity: string; data: Record<string, unknown>; created_at: string }[]>([]);
+  type AuditRow = { action: string; entity: string; data: Record<string, unknown>; created_at: string };
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [auditNext, setAuditNext] = useState<string | null>(null);
+  const moreAudit = async (cursor: string | null) => {
+    const r = await apiPage<AuditRow>("/admin/audit?limit=100", cursor);
+    setAudit((prev) => (cursor ? [...prev, ...r.items] : r.items));
+    setAuditNext(r.next);
+  };
   const load = useCallback(() => {
     api("/admin/stats").then(setStats);
     api<Src[]>("/admin/sources").then(setSrc);
     api<Job[]>("/admin/jobs").then(setJobs);
     api<Ai>("/admin/ai").then(setAi);
     api("/aps/status").then(setAps);
-    api("/admin/audit").then(setAudit);
+    moreAudit(null).catch(() => {});
     api<Quarantined[]>("/admin/quarantine").then(setQuar).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -96,7 +103,8 @@ export default function PlatformAdmin() {
         {!aps.enabled && <div className="alert warn small">{t("adm.aps_hint")}</div>}
       </div>}
       {tab === "audit" && <div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.action")}</th><th>{t("adm.col.entity")}</th><th>{t("adm.col.data")}</th></tr></thead>
-        <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table></div>}
+        <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table>
+        {auditNext && <div className="row" style={{ justifyContent: "center", padding: 10 }}><button className="btn sm" onClick={() => moreAudit(auditNext)}>{t("common.load_more")}</button></div>}</div>}
       {tab === "quarantine" && <div className="card" style={{ overflow: "auto" }}>{quar.length === 0 ? <p className="pad muted">{t("adm.quarantine_empty")}</p> :
         <table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.signature")}</th><th>SHA-256</th></tr></thead>
           <tbody>{quar.map((q) => <tr key={q.sha256 + q.at}><td className="small nowrap">{dt(q.at)}</td><td className="small">{q.filename}</td><td><b className="small">{q.signature}</b></td><td className="tiny mono">{q.sha256.slice(0, 16)}…</td></tr>)}</tbody></table>}</div>}

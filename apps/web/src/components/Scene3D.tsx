@@ -145,13 +145,22 @@ export default function Scene3D({ scene, mode = "dollhouse", roomId, cameraIndex
     const compAfter = hq ? makeComposer(after) : null;
     const compBefore = hq && before ? makeComposer(before) : null;
     const draw = (world: THREE.Scene, comp: EffectComposer | null) => { if (comp) comp.render(); else renderer.render(world, camera); };
-    const sizeComposers = () => { const w = el.clientWidth, h = el.clientHeight; compAfter?.setSize(w, h); compBefore?.setSize(w, h); };
+    // render on demand: the scene is static (textures are procedural and synchronous), so frames are drawn only
+    // after a camera move, resize or split change — an idle viewer costs no GPU time (laptops, phones)
+    let dirty = true;
+    let lastSplit = splitRef.current;
+    const invalidate = () => { dirty = true; };
+    controls?.addEventListener("change", invalidate);
+    const sizeComposers = () => { const w = el.clientWidth, h = el.clientHeight; compAfter?.setSize(w, h); compBefore?.setSize(w, h); invalidate(); };
     const ro2 = new ResizeObserver(sizeComposers);
     ro2.observe(el);
     let raf = 0;
     const loop = () => {
       raf = requestAnimationFrame(loop);
-      controls?.update();
+      controls?.update();  // damping / auto-rotate emit "change" while the camera moves
+      if (splitRef.current !== lastSplit) { lastSplit = splitRef.current; dirty = true; }
+      if (!dirty) return;
+      dirty = false;
       const w = el.clientWidth, h = el.clientHeight;
       if (before && splitRef.current !== null) {
         const sx = Math.round(w * (splitRef.current ?? 0.5));
@@ -167,6 +176,7 @@ export default function Scene3D({ scene, mode = "dollhouse", roomId, cameraIndex
     loop();
     return () => {
       cancelAnimationFrame(raf);
+      controls?.removeEventListener("change", invalidate);
       ro.disconnect();
       ro2.disconnect();
       compAfter?.dispose(); compBefore?.dispose(); pmrem?.dispose();

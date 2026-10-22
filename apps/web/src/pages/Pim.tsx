@@ -36,12 +36,12 @@ export default function Pim() {
       <div><h1>{t("pim.title")}</h1><p className="muted">{t("pim.lead")}</p></div>
       <div className="card pad col gap-10">
         <h3><FileUp size={18} /> {t("pim.import")}</h3>
-        <div className="row wrap"><input className="input" style={{ maxWidth: 320 }} placeholder={t("pim.supplier_ph")} value={supplier} onChange={(e) => setSupplier(e.target.value)} />
-          <input type="file" accept=".csv,.xlsx" onChange={(e) => e.target.files?.[0] && preview(e.target.files[0])} /></div>
+        <div className="row wrap"><input className="input" style={{ maxWidth: 320 }} aria-label={t("pim.supplier_ph")} placeholder={t("pim.supplier_ph")} value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+          <input type="file" accept=".csv,.xlsx" aria-label={t("pim.import")} onChange={(e) => e.target.files?.[0] && preview(e.target.files[0])} /></div>
         {pv && <>
           <div className="small">{t("pim.rows", { total: pv.rows_total, valid: pv.valid_in_preview, shown: Math.min(200, pv.rows_total) })}</div>
           <div className="grid g4">{FIELDS.map((f) => (
-            <div key={f} className="field"><label>{f}</label><select className="select input" value={mapping[f] || ""} onChange={(e) => setMapping({ ...mapping, [f]: e.target.value || null })}><option value="">—</option>{pv.headers.map((h) => <option key={h}>{h}</option>)}</select></div>
+            <div key={f} className="field"><label>{f}</label><select className="select input" aria-label={f} value={mapping[f] || ""} onChange={(e) => setMapping({ ...mapping, [f]: e.target.value || null })}><option value="">—</option>{pv.headers.map((h) => <option key={h}>{h}</option>)}</select></div>
           ))}</div>
           <div className="card flat" style={{ overflow: "auto", maxHeight: 320 }}><table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("common.name")}</th><th>{t("common.category")}</th><th>{t("common.price")}</th><th>{t("common.dims")}</th><th>{t("pim.errors")}</th></tr></thead>
             <tbody>{pv.preview.map((r, i) => <tr key={i}><td>{r.errors.length ? <XCircle size={15} color="var(--danger)" /> : <CheckCircle2 size={15} color="var(--sage-ink)" />}</td><td className="small">{r.row.sku}</td><td className="small">{r.row.name}</td><td className="small">{r.row.category ? catName(r.row.category) : "—"}</td><td className="small mono">{amd(r.row.price, "")} {r.row.currency}</td><td className="small">{[r.row.width_mm, r.row.depth_mm, r.row.height_mm].filter(Boolean).join("×")}</td><td className="tiny" style={{ color: "var(--danger)" }}>{r.errors.join(", ")}</td></tr>)}</tbody></table></div>

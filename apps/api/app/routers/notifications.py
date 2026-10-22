@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from .. import models as m
 from ..db import get_db
 from ..errors import ApiError
 from ..notify import KINDS
+from ..pagination import page
 from ..security import Principal, current_principal
 
 router = APIRouter(prefix="/api/v1", tags=["notifications"])
@@ -23,13 +24,14 @@ def n_dict(n: m.Notification) -> dict:
 
 
 @router.get("/notifications")
-def list_notifications(unread_only: bool = False, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+def list_notifications(unread_only: bool = False, cursor: str | None = None, limit: int = Query(50, ge=1, le=200),
+                       p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     q = select(m.Notification).where(m.Notification.user_id == p.user.id)
     if unread_only:
         q = q.where(m.Notification.read_at.is_(None))
-    rows = db.scalars(q.order_by(m.Notification.created_at.desc()).limit(50)).all()
+    rows, nxt = page(db, q, m.Notification.created_at, m.Notification.id, cursor=cursor, limit=limit)
     unread = db.scalar(select(func.count()).select_from(m.Notification).where(m.Notification.user_id == p.user.id, m.Notification.read_at.is_(None)))
-    return {"items": [n_dict(n) for n in rows], "unread": unread or 0}
+    return {"items": [n_dict(n) for n in rows], "unread": unread or 0, "next_cursor": nxt}
 
 
 @router.post("/notifications/{nid}/read")

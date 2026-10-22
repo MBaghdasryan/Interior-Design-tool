@@ -10,7 +10,7 @@ import urllib.request
 
 from playwright.sync_api import sync_playwright
 
-BASE = os.environ.get("BASE", "http://host.docker.internal:8085")
+BASE = os.environ.get("BASE", "http://localhost:8085")
 OUT = os.environ.get("OUT", "docs/screenshots")
 # UI vocabulary that must not leak into hy/en (user content such as project/product names is excluded)
 RU_UI = ["Проекты", "Каталог товаров", "Поставщики", "Утвердить", "Смета", "Загрузка", "Сохранить", "Изменить с ИИ", "Редактировать", "Главная", "Выйти", "В наличии", "Помещение", "Согласовать"]

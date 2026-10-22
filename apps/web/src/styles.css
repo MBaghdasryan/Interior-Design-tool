@@ -10,19 +10,19 @@
   --line-2: #d8ccbd;
   --ink: #2e2e2e;
   --ink-2: #57514b;
-  --ink-3: #8a8178;
+  --ink-3: #6f675f; /* WCAG AA (≥4.5:1) on all surfaces */
   --sand: #d9c9b7;
   --terra: #c97f63;
-  --terra-ink: #a8573a; /* AA on ivory for text/buttons */
+  --terra-ink: #93492f; /* AA on ivory and terra-soft for text/buttons */
   --terra-soft: #f6e6dd;
   --sage: #8f9f7e;
   --sage-ink: #5d6e4d;
   --sage-soft: #e7ecdf;
   --warn: #c48a12;
   --warn-soft: #fbf0d6;
-  --danger: #b4443c;
+  --danger: #9c3a33;
   --danger-soft: #f8e1de;
-  --info: #4f7da3;
+  --info: #3a6588;
   --info-soft: #e1ebf4;
   --radius: 14px;
   --radius-sm: 10px;

@@ -55,8 +55,8 @@ export default function Documents() {
         <div className="card pad col gap-16">
           <h3>{t("doc.make")}</h3>
           <div className="grid g3">
-            <div className="field"><label>{t("common.variant")}</label><select className="select input" value={vid} onChange={(e) => setVid(e.target.value)}>{variants.map((v) => <option key={v.id} value={v.id}>{variantTitle(v)}{v.status === "approved" ? t("doc.approved_suffix") : ""}</option>)}</select></div>
-            <div className="field"><label>{t("doc.album_lang")}</label><select className="select input" value={lang} onChange={(e) => setLang(e.target.value)}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></div>
+            <div className="field"><label>{t("common.variant")}</label><select aria-label={t("common.variant")} className="select input" value={vid} onChange={(e) => setVid(e.target.value)}>{variants.map((v) => <option key={v.id} value={v.id}>{variantTitle(v)}{v.status === "approved" ? t("doc.approved_suffix") : ""}</option>)}</select></div>
+            <div className="field"><label>{t("doc.album_lang")}</label><select aria-label={t("doc.album_lang")} className="select input" value={lang} onChange={(e) => setLang(e.target.value)}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></div>
             <div className="field"><label>{t("doc.sections")}</label><div className="row wrap">{SECTIONS.map((n) => <button key={n} className={`chip ${sections.length === 0 || sections.includes(n) ? "on" : ""}`} title={t(`doc.sec.${n}`)}
               onClick={() => setSections((s) => (s.length === 0 ? SECTIONS.filter((x) => x !== n) : s.includes(n) ? s.filter((x) => x !== n) : [...s, n]))}>{t(`doc.sec.${n}`).split(" ")[0]}</button>)}</div></div>
           </div>

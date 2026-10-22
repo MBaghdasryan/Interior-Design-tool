@@ -100,8 +100,8 @@ export default function Editor() {
               <div className="small">{o.name}</div>
               <div className="small muted">{t("ed.obj_meta", { dims: `${Math.round(o.w)}×${Math.round(o.d)}×${Math.round(o.h)}`, r: o.rotation, mode: o.mode === "concept" ? t("ed.mode_concept") : t("ed.mode_real") })}</div>
               <div className="grid g2">
-                <div className="field"><label>X, {t("common.mm")}</label><input className="input" value={Math.round(o.x)} onChange={(e) => update(o.id, { x: Number(e.target.value) || o.x })} /></div>
-                <div className="field"><label>Y, {t("common.mm")}</label><input className="input" value={Math.round(o.y)} onChange={(e) => update(o.id, { y: Number(e.target.value) || o.y })} /></div>
+                <div className="field"><label>X, {t("common.mm")}</label><input className="input" aria-label={`X, ${t("common.mm")}`} value={Math.round(o.x)} onChange={(e) => update(o.id, { x: Number(e.target.value) || o.x })} /></div>
+                <div className="field"><label>Y, {t("common.mm")}</label><input className="input" aria-label={`Y, ${t("common.mm")}`} value={Math.round(o.y)} onChange={(e) => update(o.id, { y: Number(e.target.value) || o.y })} /></div>
               </div>
               <div className="row wrap">
                 <button className="btn sm" onClick={() => update(o.id, { rotation: (o.rotation + 90) % 360 })} disabled={o.locked}><RotateCw size={14} /> {t("ed.rotate")}</button>

@@ -1,6 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+// fonts are self-hosted (no request to Google from visitors' browsers; deterministic rendering for visual tests)
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/manrope/800.css";
+import "@fontsource/noto-sans-armenian/400.css";
+import "@fontsource/noto-sans-armenian/600.css";
+import "@fontsource/noto-sans-armenian/700.css";
 import "./styles.css";
 import AppShell, { Protected } from "./components/AppShell";
 import { ToastProvider } from "./components/ui";

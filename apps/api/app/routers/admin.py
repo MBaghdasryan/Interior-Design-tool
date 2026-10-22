@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
 from ..jobs.runner import enqueue, job_dict
+from ..pagination import page
 from ..security import Principal, audit, require
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -121,8 +122,10 @@ def quarantine(p: Principal = Depends(require("audit:read")), db: Session = Depe
 
 
 @router.get("/jobs")
-def jobs(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
-    return [job_dict(j) for j in db.scalars(select(m.GenerationJob).order_by(m.GenerationJob.created_at.desc()).limit(100))]
+def jobs(response: Response, cursor: str | None = None, limit: int = Query(100, ge=1, le=500),
+         p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
+    rows, _ = page(db, select(m.GenerationJob), m.GenerationJob.created_at, m.GenerationJob.id, cursor=cursor, limit=limit, response=response)
+    return [job_dict(j) for j in rows]
 
 
 @router.get("/ai")
@@ -136,9 +139,11 @@ def ai(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_d
 
 
 @router.get("/audit")
-def audit_log(p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):
+def audit_log(response: Response, cursor: str | None = None, limit: int = Query(300, ge=1, le=1000),
+              p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):
+    rows, _ = page(db, select(m.AuditEvent), m.AuditEvent.created_at, m.AuditEvent.id, cursor=cursor, limit=limit, response=response)
     return [{"action": a.action, "entity": a.entity, "entity_id": a.entity_id, "project_id": a.project_id, "user_id": a.user_id, "data": a.data, "created_at": a.created_at.isoformat()}
-            for a in db.scalars(select(m.AuditEvent).order_by(m.AuditEvent.created_at.desc()).limit(300))]
+            for a in rows]
 
 
 @router.get("/stats")
