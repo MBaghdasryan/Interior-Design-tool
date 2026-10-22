@@ -209,11 +209,19 @@ class GeminiProvider(LLMProvider):
             raise ProviderError(f"gemini {r.status_code}: {r.text[:300]}")
         j = r.json()
         try:
-            text = j["candidates"][0]["content"]["parts"][0]["text"]
+            cand = j["candidates"][0]
+            # Gemini 3 may stream the JSON over several parts (and thought-summary parts first): join the answer parts
+            text = "".join(p.get("text", "") for p in cand["content"]["parts"] if not p.get("thought"))
         except (KeyError, IndexError) as e:
             raise ProviderError("gemini: empty candidate") from e
+        if cand.get("finishReason") == "MAX_TOKENS":
+            raise ProviderError(f"gemini: output truncated at maxOutputTokens={req.max_tokens}")
         u = j.get("usageMetadata", {})
-        return LLMResponse(json.loads(text), self.name, model, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0), int((time.time() - t) * 1000))
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise ProviderError(f"gemini: invalid JSON ({e.msg} at {e.pos}; finishReason={cand.get('finishReason')})") from e
+        return LLMResponse(data, self.name, model, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0), int((time.time() - t) * 1000))
 
 
 class StubProvider(LLMProvider):

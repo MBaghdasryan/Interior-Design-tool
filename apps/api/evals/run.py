@@ -132,7 +132,8 @@ def eval_plans(provider, limit: int | None, plans_dir: Path | None = None) -> di
         from .plans import build
 
         build(d)
-    truths = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(d.glob("plan_*.json"))][:limit]
+    # synthetic sheets are plan_XX.json, real album sheets real_XX_<name>.json — both carry the ground truth
+    truths = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(d.glob("*.json")) if p.stem.startswith(("plan_", "real_"))][:limit]
     rows = []
     for t in truths:
         img = (d / f"{t['id']}.{'jpg' if t['mime'] == 'image/jpeg' else 'png'}").read_bytes()
