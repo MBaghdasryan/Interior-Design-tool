@@ -13,7 +13,7 @@ from ..db import get_db
 from ..errors import ApiError
 from ..scene.model import Scene
 from ..scene.svg import render_svg
-from ..security import Principal, current_principal, require
+from ..security import Principal, audit, current_principal, require
 from ..services import project_dict, variant_dict, version_dict
 
 router = APIRouter(tags=["partners"])
@@ -92,6 +92,37 @@ def bureau_overview(p: Principal = Depends(current_principal), db: Session = Dep
             "status_counts": dict(Counter(x.status for x in projects)),
             "pipeline_value": sum((v.metrics or {}).get("total", 0) for v in db.scalars(select(m.DesignVariant).where(
                 m.DesignVariant.project_id.in_([x.id for x in projects]), m.DesignVariant.status.in_(["selected", "approved"]))))}
+
+
+def _bureau_org(p: Principal, db: Session) -> m.Organization:
+    org = next((o for o in (db.get(m.Organization, oid) for oid in p.org_ids) if o and o.kind == "bureau"), None)
+    if not org:
+        raise ApiError(404, "bureau.not_found")
+    return org
+
+
+@router.get("/api/v1/bureau/ai-usage")
+def bureau_ai_usage(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """AI spend of the organisation (today / month, by task and provider) against its budget."""
+    from ..ai.budget import summary
+
+    return summary(db, _bureau_org(p, db).id)
+
+
+class AiBudgetIn(BaseModel):
+    daily_usd: float = Field(ge=0, le=10_000)
+    monthly_usd: float = Field(ge=0, le=100_000)
+
+
+@router.put("/api/v1/bureau/ai-budget")
+def bureau_ai_budget(body: AiBudgetIn, p: Principal = Depends(require("team:manage")), db: Session = Depends(get_db)):
+    from ..ai.budget import summary
+
+    org = _bureau_org(p, db)
+    org.settings = {**(org.settings or {}), "ai_budget": body.model_dump()}
+    audit(db, p, "bureau.ai_budget", "organization", org.id, org_id=org.id, data=body.model_dump())
+    db.commit()
+    return summary(db, org.id)
 
 
 class OrgSettingsIn(BaseModel):

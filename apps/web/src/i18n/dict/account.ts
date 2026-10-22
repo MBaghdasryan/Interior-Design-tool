@@ -118,4 +118,13 @@ export const account: Dict = {
   "adm.tab.quarantine": e("Կարանտին", "Карантин", "Quarantine"),
   "adm.quarantine_empty": e("Վարակված ֆայլեր չկան", "Заражённых файлов нет", "No infected uploads"),
   "adm.col.signature": e("Ստորագրություն", "Сигнатура", "Signature"),
+  "ai.usage_title": e("AI ծախսեր", "Расходы на AI", "AI spend"),
+  "ai.today": e("Այսօր", "Сегодня", "Today"),
+  "ai.month": e("Այս ամիս", "Этот месяц", "This month"),
+  "ai.task": e("Առաջադրանք", "Задача", "Task"),
+  "ai.provider": e("Մատակարար", "Провайдер", "Provider"),
+  "ai.calls": e("Կանչեր", "Вызовы", "Calls"),
+  "ai.limit_day": e("Օրական սահման, $", "Лимит в день, $", "Daily limit, $"),
+  "ai.limit_month": e("Ամսական սահման, $", "Лимит в месяц, $", "Monthly limit, $"),
+  "ai.estimate_note": e("Գնահատում՝ տոկենների և պատկերների քանակով × գնային աղյուսակ, ոչ մատակարարի հաշիվ։ Սահմանը սպառվելիս ֆոնային առաջադրանքներն անցնում են դետերմինիստական կանոնների, ինտերակտիվ հրամանները մերժվում են։", "Оценка по числу токенов и изображений × таблица цен, а не счёт провайдера. При исчерпании лимита фоновые задачи переходят на детерминированные правила, интерактивные команды отклоняются.", "Estimate from token and image counts × the price table, not a provider invoice. When the limit is reached, background jobs switch to deterministic rules and interactive commands are refused."),
 };

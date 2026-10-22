@@ -136,3 +136,13 @@ def test_retention_policy(tmp_path, monkeypatch):
         out = apply_retention(db)
     assert out["incoming"] == 1 and out["orphans"] == 1 and out["mail"] >= 1
     assert st.exists("projects/p/assets/kept.png") and st.exists("incoming/p/fresh.png") and not st.exists("projects/p/assets/orphan.png")
+
+
+def test_empty_env_values_fall_back_to_defaults(monkeypatch):
+    """`.env.example` leaves optional values empty; the API must still start (regression found by CI)."""
+    from app.config import Settings
+
+    for k in ("MFA_ENFORCE", "CLAMAV_REQUIRED", "CLAMAV_HOST", "REDIS_URL", "S3_ENDPOINT", "OTEL_EXPORTER_OTLP_ENDPOINT"):
+        monkeypatch.setenv(k, "")
+    s = Settings()
+    assert s.mfa_enforce is None and s.clamav_required is None and s.clamav_host is None and s.redis_url is None

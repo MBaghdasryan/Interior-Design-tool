@@ -231,6 +231,8 @@ class AIUsage(TimestampMixin, Base):
     __tablename__ = "ai_usage"
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     project_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    org_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)  # budget accounting
+    trace_id: Mapped[str | None] = mapped_column(String(16), nullable=True)
     task: Mapped[str] = mapped_column(String(50))
     provider: Mapped[str] = mapped_column(String(30))
     model: Mapped[str] = mapped_column(String(80))

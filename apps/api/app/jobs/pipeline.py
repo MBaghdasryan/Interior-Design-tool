@@ -60,7 +60,7 @@ def pipeline(ctx: JobContext) -> dict:
     brief_payload = {"preferences": project.preferences or {}, "interview": (project.preferences or {}).get("interview", ""),
                      "rooms": [{"type": r.type, "name": r.name} for r in base.rooms]}
     try:
-        brief_model, brief_provider = orch.run("design_brief", brief_payload, db=db, project_id=project.id)
+        brief_model, brief_provider = orch.run("design_brief", brief_payload, db=db, project_id=project.id, stub_on_quota=True)
         brief = brief_model.model_dump()
     except ProviderError as e:
         brief, brief_provider = {"budget_tier": (project.preferences or {}).get("budget_tier", "comfort"), "styles": [], "assumptions": [str(e)[:200]]}, "fallback"
@@ -158,7 +158,7 @@ def pipeline(ctx: JobContext) -> dict:
     for i, r in enumerate(results):
         copy_payload = {"style_title": STYLES[r.plan.style]["ru"], "style_subtitle": STYLES[r.plan.style]["subtitle"], "tier_title": TIER_TITLES[r.plan.tier]}
         try:
-            copy, _ = orch.run("variant_copy", copy_payload, db=db, project_id=project.id)
+            copy, _ = orch.run("variant_copy", copy_payload, db=db, project_id=project.id, stub_on_quota=True)
             desc = copy.description
         except ProviderError:
             desc = ""

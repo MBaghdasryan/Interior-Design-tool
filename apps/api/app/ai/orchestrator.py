@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from .. import models as m
 from ..config import get_settings
-from . import stub
+from . import budget, stub
 from .providers import AnthropicProvider, GeminiProvider, ImageInput, LLMProvider, LLMRequest, OpenAIProvider, ProviderError, StubProvider
 from .schemas import ChangePlan, DesignBrief, FloorplanRecognition, VariantCopy
 
@@ -69,8 +69,10 @@ class Orchestrator:
         return {name: {"available": p.available(), "model": p.model} for name, p in self.providers.items()}
 
     def run(self, task: str, payload: dict, *, db: Session | None = None, project_id: str | None = None,
-            images: list[ImageInput] | None = None, retries: int = 1) -> tuple[BaseModel, str]:
-        """Returns (validated model, provider name)."""
+            images: list[ImageInput] | None = None, retries: int = 1, stub_on_quota: bool = False) -> tuple[BaseModel, str]:
+        """Returns (validated model, provider name). Paid providers are skipped when the
+        organisation's AI budget is exhausted: background jobs fall back to the deterministic
+        rules (`stub_on_quota=True`), interactive calls raise QuotaExceeded."""
         schema_model, version = TASKS[task]
         system = load_prompt(task, version)
         user = json.dumps(payload, ensure_ascii=False)
@@ -81,7 +83,15 @@ class Orchestrator:
         req = LLMRequest(task=task, system=system, user=user, schema_name=schema_model.__name__, json_schema=schema_model.model_json_schema(), images=images or [])
         errors: list[str] = []
         trace_id = uuid.uuid4().hex[:12]
-        for provider in self.chain(task):
+        org_id = budget.org_of_project(db, project_id) if db is not None else None
+        providers = self.chain(task)
+        try:
+            budget.check(db, org_id) if db is not None else None
+        except budget.QuotaExceeded:
+            if not stub_on_quota:
+                raise
+            providers = [self.providers["stub"]]
+        for provider in providers:
             for attempt in range(retries + 1):
                 if attempt:
                     self.sleep(min(8.0, 1.5 * 2 ** (attempt - 1)))  # exponential backoff for 429/503
@@ -89,7 +99,8 @@ class Orchestrator:
                     resp = provider.complete_json(req)
                     model = schema_model.model_validate(resp.data)
                     self._fails[provider.name] = 0
-                    self._log(db, project_id, task, version, provider, resp.input_tokens, resp.output_tokens, resp.latency_ms, provider.cost(resp), True, None)
+                    self._log(db, project_id, task, version, provider, resp.input_tokens, resp.output_tokens, resp.latency_ms, provider.cost(resp), True, None,
+                              org_id=org_id, trace_id=trace_id, model=resp.model)
                     self._cache[key] = (model.model_dump(), provider.name)
                     while len(self._cache) > self.cache_size:
                         self._cache.popitem(last=False)
@@ -101,17 +112,17 @@ class Orchestrator:
                         self._fails[provider.name] = self._fails.get(provider.name, 0) + 1
                         if self._fails[provider.name] >= 3:
                             self._open_until[provider.name] = time.time() + 300
-                    self._log(db, project_id, task, version, provider, 0, 0, 0, 0.0, False, str(e)[:500])
+                    self._log(db, project_id, task, version, provider, 0, 0, 0, 0.0, False, str(e)[:500], org_id=org_id, trace_id=trace_id)
                 except Exception as e:  # network errors etc.
                     errors.append(f"{provider.name}#{attempt}: {e}")
-                    self._log(db, project_id, task, version, provider, 0, 0, 0, 0.0, False, str(e)[:500])
+                    self._log(db, project_id, task, version, provider, 0, 0, 0, 0.0, False, str(e)[:500], org_id=org_id, trace_id=trace_id)
                     break
         raise ProviderError("; ".join(errors))
 
-    def _log(self, db, project_id, task, version, provider, tin, tout, lat, cost, ok, err):
+    def _log(self, db, project_id, task, version, provider, tin, tout, lat, cost, ok, err, *, org_id=None, trace_id=None, model=None):
         if db is None:
             return
-        db.add(m.AIUsage(project_id=project_id, task=task, provider=provider.name, model=provider.model, prompt_version=version,
+        db.add(m.AIUsage(project_id=project_id, org_id=org_id, trace_id=trace_id, task=task, provider=provider.name, model=model or provider.model, prompt_version=version,
                          input_tokens=tin, output_tokens=tout, latency_ms=lat, cost_usd=cost, ok=ok, error=err))
         db.flush()
 

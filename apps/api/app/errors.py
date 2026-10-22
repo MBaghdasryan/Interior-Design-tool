@@ -56,6 +56,7 @@ MESSAGES: dict[str, str] = {
     "auth.demo_disabled": "Демо-доступ отключён",
     "auth.account_disabled": "Учётная запись отключена",
     "rate_limited": "Слишком много запросов — повторите позже",
+    "ai.quota_exceeded": "Исчерпан бюджет AI организации",
     "auth.mfa_invalid": "Неверный код подтверждения",
     "auth.mfa_required": "Нужен код из приложения-аутентификатора",
     "auth.mfa_enrollment_required": "Для вашей роли нужно включить двухфакторную аутентификацию",

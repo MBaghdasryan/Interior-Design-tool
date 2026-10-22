@@ -62,7 +62,8 @@ class LLMProvider(ABC):
     def complete_json(self, req: LLMRequest) -> LLMResponse: ...
 
     def cost(self, r: LLMResponse) -> float:
-        return round(r.input_tokens / 1e6 * self.price[0] + r.output_tokens / 1e6 * self.price[1], 6)
+        p = get_settings().price(r.model) if r.model else {"in": self.price[0], "out": self.price[1]}
+        return round(r.input_tokens / 1e6 * p["in"] + r.output_tokens / 1e6 * p["out"], 6)
 
 
 def _strictify(schema: dict) -> dict:
@@ -180,10 +181,15 @@ class GeminiProvider(LLMProvider):
     def model(self) -> str:
         return self.s.gemini_model
 
+    def model_for(self, req: LLMRequest) -> str:
+        """Vision tasks (plans, photos) use the stronger model; text tasks the fast one."""
+        return self.s.gemini_vision_model if req.images and self.s.gemini_vision_model else self.s.gemini_model
+
     def available(self) -> bool:
         return bool(self.s.gemini_api_key)
 
     def complete_json(self, req: LLMRequest) -> LLMResponse:
+        model = self.model_for(req)
         parts: list[dict] = [{"text": req.user}]
         for im in req.images:
             parts.append({"inline_data": {"mime_type": im.mime, "data": im.b64()}})
@@ -193,7 +199,7 @@ class GeminiProvider(LLMProvider):
             "generationConfig": {"responseMimeType": "application/json", "responseJsonSchema": req.json_schema, "maxOutputTokens": req.max_tokens},
         }
         t = time.time()
-        r = self.client.post(f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
+        r = self.client.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                              json=body, headers={"x-goog-api-key": self.s.gemini_api_key or ""})
         if r.status_code >= 400:
             raise ProviderError(f"gemini {r.status_code}: {r.text[:300]}")
@@ -203,7 +209,7 @@ class GeminiProvider(LLMProvider):
         except (KeyError, IndexError) as e:
             raise ProviderError("gemini: empty candidate") from e
         u = j.get("usageMetadata", {})
-        return LLMResponse(json.loads(text), self.name, self.model, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0), int((time.time() - t) * 1000))
+        return LLMResponse(json.loads(text), self.name, model, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0), int((time.time() - t) * 1000))
 
 
 class StubProvider(LLMProvider):

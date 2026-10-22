@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # empty variables (e.g. `MFA_ENFORCE=` copied from .env.example) mean "use the default"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True)
 
     # Brand (never hard-code the product name in UI or documents)
     brand_name: str = "Renovara"
@@ -35,6 +36,13 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3-flash-preview"
     ai_timeout_s: float = 120.0
+    gemini_vision_model: str = "gemini-3.1-pro-preview"  # plan / photo understanding
+    render_model: str = "gemini-3-pro-image"  # photoreal renders (Gemini image generation)
+    render_image_size: str = "2K"
+    ai_org_daily_usd: float = 5.0  # per-organisation AI budget (0 = unlimited)
+    ai_org_monthly_usd: float = 50.0
+    # USD per 1M input/output tokens per model, and per generated image — ESTIMATES, override with AI_PRICES (JSON)
+    ai_prices: str = ""
 
     # Autodesk Platform Services
     aps_client_id: str | None = None
@@ -136,6 +144,18 @@ class Settings(BaseSettings):
         if self.aps_bucket_key:
             return self.aps_bucket_key
         return f"{(self.aps_client_id or 'forma').lower()[:24]}-forma-projects"
+
+    def price(self, model: str) -> dict:
+        import json
+
+        table = {
+            "gemini-3-flash-preview": {"in": 0.5, "out": 3.0}, "gemini-3.1-pro-preview": {"in": 2.0, "out": 12.0},
+            "gemini-3-pro-image": {"in": 2.0, "out": 12.0, "image": 0.134}, "gemini-3.1-flash-image": {"in": 0.5, "out": 3.0, "image": 0.039},
+            "gpt-5.5": {"in": 1.25, "out": 10.0}, "claude-opus-5-5": {"in": 5.0, "out": 25.0},
+        }
+        if self.ai_prices:
+            table.update(json.loads(self.ai_prices))
+        return table.get(model, {"in": 1.25, "out": 10.0})
 
     @property
     def is_production(self) -> bool:

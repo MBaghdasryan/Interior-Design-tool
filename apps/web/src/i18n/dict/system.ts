@@ -19,6 +19,7 @@ export const errors: Dict = {
   "errors.auth.mfa_not_started": { hy: "Նախ սկսեք երկփուլ նույնականացման կարգավորումը", ru: "Сначала начните настройку двухфакторной аутентификации", en: "Start the two-factor setup first" },
   "errors.auth.deletion_pending": { hy: "Հաշիվը նշված է ջնջման համար", ru: "Аккаунт помечен на удаление", en: "This account is scheduled for deletion" },
   "errors.file.scan_unavailable": { hy: "Հակավիրուսային ստուգումն անհասանելի է — կրկնեք ավելի ուշ", ru: "Антивирусная проверка недоступна — повторите позже", en: "Virus scanning is unavailable — please try again later" },
+  "errors.ai.quota_exceeded": { hy: "Կազմակերպության AI բյուջեն սպառված է ({period})", ru: "Исчерпан бюджет AI организации ({period})", en: "The organisation's AI budget is used up ({period})" },
   "errors.rate_limited": { hy: "Չափազանց շատ հարցումներ — կրկնեք {retry_after} վ հետո", ru: "Слишком много запросов — повторите через {retry_after} с", en: "Too many requests — try again in {retry_after} s" },
   "errors.auth.bad_credentials": { hy: "Սխալ էլ. փոստ կամ գաղտնաբառ", ru: "Неверный email или пароль", en: "Wrong email or password" },
   "errors.auth.forbidden": { hy: "Բավարար իրավունքներ չկան", ru: "Недостаточно прав", en: "You don't have permission" },

@@ -6,6 +6,8 @@ import { amd, roleName } from "../lib/format";
 import { useT } from "../i18n";
 import { AccuracyBadge, Badge, Loading, useToast } from "../components/ui";
 import { projectLink } from "./Dashboard";
+import AiUsageCard from "../components/AiUsageCard";
+import { useMe } from "../components/AppShell";
 
 interface Ov { org: { name: string; settings: { title_block?: Record<string, string> } }; members: { name: string; email: string; role: string }[]; projects: Project[]; status_counts: Record<string, number>; pipeline_value: number }
 
@@ -26,6 +28,7 @@ export default function BureauCabinet() {
         <div className="card kpi"><div><div className="v">{ov.status_counts.approved || 0}</div><div className="muted small">{t("bur.approved")}</div></div></div>
         <div className="card kpi"><div><div className="v">{amd(ov.pipeline_value)}</div><div className="muted small">{t("bur.pipeline")}</div></div></div>
       </div>
+      <AiUsageCardForRole />
       <div className="grid g2" style={{ alignItems: "start" }}>
         <div className="card pad col gap-10">
           <h3>{t("bur.titleblock")}</h3>
@@ -42,4 +45,9 @@ export default function BureauCabinet() {
       </div>
     </div>
   );
+}
+
+function AiUsageCardForRole() {
+  const { me } = useMe();
+  return <AiUsageCard canEdit={!!me?.roles.includes("bureau_admin") || !!me?.roles.includes("platform_admin")} />;
 }

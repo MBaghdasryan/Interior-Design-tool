@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 
 from .. import models as m
+from ..ai.budget import QuotaExceeded
 from ..ai.orchestrator import get_orchestrator
 from ..ai.providers import ProviderError
 from ..ai.schemas import ChangePlan
@@ -605,6 +606,8 @@ def change_command(pid: str, vid: str, body: CommandIn, p: Principal = Depends(c
                "categories": sorted({o.category for o in sc.objects}), "locked": [o.id for o in sc.objects if o.locked]}
         try:
             plan, provider = get_orchestrator().run("change_command", ctx, db=db, project_id=pid)
+        except QuotaExceeded as e:
+            raise ApiError(429, "ai.quota_exceeded", period=e.period, spent=round(e.spent, 2), limit=e.limit) from e
         except ProviderError as e:
             raise ApiError(502, "ai.unavailable", info=str(e)[:300]) from e
     res = apply_plan(db, proj, v, ver, base, plan)
