@@ -86,8 +86,8 @@ with sync_playwright() as p:
 
     # sign out → forgot password → reset → sign in with the new password
     pg.get_by_role("button", name="Sign out").click()
-    pg.wait_for_url("**/login", timeout=10000)
-    check(pg.goto(BASE + "/api/v1/auth/me").status == 401, "logout revokes the session")
+    pg.wait_for_url("**/login*", timeout=10000)
+    check(ctx.request.get(BASE + "/api/v1/auth/me").status == 401, "logout revokes the session")
     pg.goto(BASE + "/forgot-password")
     pg.fill("#f-email", EMAIL)
     pg.click("button.primary")

@@ -39,7 +39,7 @@ Owner — роль ответственного; срок — целевая д�
 | S7 | CSP только Report-Only; нужна проверка APS Viewer под enforce | средний | frontend dev | 2026-11-30 | P1 |
 | S8 | Нет полного автотеста tenant isolation по всем эндпоинтам и jobs | средний | QA | 2026-11-30 | P1 |
 | S9 | Нет экспорта/удаления данных клиента, записей согласий, политики хранения фото (закон РА о ПД) | средний | product + legal | 2026-12-31 | P1 |
-| S10 | Нет скана зависимостей и контейнеров (pip-audit, npm audit, trivy) — CI отсутствует | средний | devops | 2026-11-30 | P1 |
+| S10 | Скан зависимостей и образов — **сделано**: CI (pip-audit, npm audit prod/high, trivy critical). Найдено и исправлено: pillow 11.1→13.0 (39 CVE), python-multipart →0.0.31 (6), starlette 0.41→1.5.1 через FastAPI 0.158 (7), OpenSSL в образе web (nginx 1.27→1.28 + apk upgrade), react-router-dom 6.30.6. **Осталось:** vite (уязвимость только dev-сервера, в production-сборку не попадает) и умеренные уязвимости react-router 6 — нужны мажорные обновления vite 8 и react-router 7 (P2) | низкий | frontend dev | 2026-12-31 | PARTIAL |
 | S11 | Хранилище: **сделано** — драйвер S3 (presigned GET/PUT, приватный бакет, карантин `incoming/`), prod-профиль на SeaweedFS с шифрованием томов (проверено: исходных байтов на диске нет); на AWS S3 — SSE AES256 | — | devops | закрыто | ✔ VERIFIED (prod-стенд) |
 | S12 | Нет политики retention для журнала аудита, нет чек-листа pentest | низкий | security owner | 2027-01-31 | P2 |
 | S13 | Демо-аккаунты: при `ENV=production` вход `@forma.local` и `/auth/demo-accounts` запрещены; старт с шаблонным `SECRET_KEY`, `SEED_DEMO=true` или `COOKIE_SECURE=false` блокируется (`production_guard`) | — | devops | закрыто | ✔ VERIFIED |

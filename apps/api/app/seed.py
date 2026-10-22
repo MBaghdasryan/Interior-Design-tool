@@ -51,6 +51,9 @@ def seed(db: Session) -> None:
             db.add(u)
             db.flush()
             db.add(m.Membership(user_id=u.id, org_id=orgs[org_kind].id, role=role))
+        # demo accounts are ready to use: no e-mail confirmation or onboarding wizard
+        u.email_verified_at = u.email_verified_at or m.utcnow()
+        u.onboarded_at = u.onboarded_at or m.utcnow()
     seed_external_sources(db)
     # demo catalogue
     if not db.scalar(select(m.Supplier).limit(1)):

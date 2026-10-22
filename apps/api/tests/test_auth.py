@@ -204,3 +204,11 @@ def test_production_guard_and_demo_lockout(monkeypatch):
     assert c.get("/api/v1/auth/demo-accounts").status_code == 404
     r = c.post("/api/v1/auth/login", json={"email": "designer@forma.local", "password": "demo1234"})
     assert r.status_code == 403 and r.json()["code"] == "auth.demo_disabled"
+
+
+def test_seeded_demo_accounts_skip_onboarding(client):
+    """Fresh databases (seed after migrations) must not send demo users into the sign-up wizard."""
+    c = browser()
+    c.post("/api/v1/auth/login", json={"email": "designer@forma.local", "password": "demo1234"})
+    me = c.get("/api/v1/auth/me").json()
+    assert me["onboarded"] is True and me["email_verified"] is True

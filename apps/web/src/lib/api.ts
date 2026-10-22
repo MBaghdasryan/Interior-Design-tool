@@ -57,7 +57,7 @@ export async function api<T = any>(path: string, opts: RequestInit & { json?: un
   let r: Response;
   try { r = await fetch(path.startsWith("/api") ? path : `/api/v1${path}`, { credentials: "same-origin", ...opts, headers, body }); }
   catch { throw new ApiError(0, "network"); }
-  if (r.status === 401 && !path.startsWith("/auth/")) {
+  if (r.status === 401 && !path.startsWith("/auth/") && auth.signedIn) {  // after an intentional logout there is nothing to redirect
     auth.signedIn = false;
     const here = location.pathname;
     if (here !== "/" && !PUBLIC_PATHS.some((p) => here.startsWith(p))) location.href = `/login?next=${encodeURIComponent(here)}`;

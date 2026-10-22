@@ -1,5 +1,7 @@
 # Renovara — AI renovation & sourcing tool (Armenia)
 
+[![CI](https://github.com/MBaghdasryan/Interior-Design-tool/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MBaghdasryan/Interior-Design-tool/actions/workflows/ci.yml)
+
 Платформа превращает фото/видео/план пустой квартиры в реализуемый дизайн-проект из **реальных товаров**
 с детерминированной сметой, поставщиками, RFQ и **рабочим альбомом A3** (по образцу
 `Պարույր_Սևակ_5_Բնակարանի_դիզայն_նախագիծ.pdf`) + DXF/DWG (Autodesk APS), XLSX, GLB, JSON.
@@ -47,6 +49,20 @@ docker compose exec api alembic current            # миграции (прим�
 docker compose exec api python -m app.seed_sources # идемпотентный seed 8 внешних источников
 docker compose exec api python -m app.pilot_n99    # workspace и чек-лист пилота N99
 ```
+
+## CI/CD
+
+`.github/workflows/ci.yml` запускается на каждый push и PR:
+
+| Задача | Что делает |
+|---|---|
+| backend | ruff; pytest (unit + integration, SQLite / fakeredis / moto); валидация артефактов (PDF, DXF, GLB, XLSX, CSV, JSON) |
+| migrations | upgrade → downgrade → upgrade на Postgres |
+| frontend | i18n-check; синхронность словаря для сервера; tsc; vite build; `npm audit` (prod, high) |
+| security | pip-audit; trivy по образам api и web (critical, для которых есть исправление) |
+| e2e | `docker compose` с нуля → seed → Playwright: регистрация, локализация, 22 маршрута |
+| images | публикация образов в GHCR при push в main и по тегам |
+| deploy-staging | по тегу `v*`; нужны секреты `STAGING_HOST` / `STAGING_SSH_KEY`, пока не заданы |
 
 ## Честный статус
 
