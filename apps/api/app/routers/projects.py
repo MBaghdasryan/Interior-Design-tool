@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import json
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -150,7 +150,8 @@ def assess_quality(kind: str, data: bytes) -> dict:
 
 
 @router.post("/{pid}/assets")
-async def upload_asset(pid: str, file: UploadFile = File(...), room_hint: str | None = Form(None), p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+async def upload_asset(pid: str, file: UploadFile = File(...), room_hint: str | None = Form(None), manifest_item: str | None = Form(None),
+                       p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     proj = project_access(pid, "project:write", p, db)
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
@@ -163,12 +164,16 @@ async def upload_asset(pid: str, file: UploadFile = File(...), room_hint: str | 
     sha = hashlib.sha256(data).hexdigest()
     dup = db.scalar(select(m.SourceAsset).where(m.SourceAsset.project_id == pid, m.SourceAsset.sha256 == sha))
     if dup:
+        _attach_to_pilot(proj, manifest_item, dup.id)
+        db.commit()
         return asset_dict(dup)
     key = f"projects/{pid}/assets/{sha[:16]}_{(file.filename or 'file').replace('/', '_')[-80:]}"
     get_storage().put(key, data)
     a = m.SourceAsset(project_id=pid, kind=kind, filename=file.filename or "file", mime=file.content_type or "application/octet-stream", size=len(data), sha256=sha,
                       storage_key=key, room_hint=room_hint, quality=assess_quality(kind, data))
     db.add(a)
+    db.flush()
+    _attach_to_pilot(proj, manifest_item, a.id)
     if proj.status == "draft":
         proj.status = "intake"
     audit(db, p, "asset.upload", "asset", None, project_id=pid, data={"filename": a.filename, "kind": kind, "size": len(data)})
@@ -179,6 +184,17 @@ async def upload_asset(pid: str, file: UploadFile = File(...), room_hint: str | 
         if get_settings().aps_enabled:
             enqueue(db, "aps_translate", project_id=pid, params={"asset_id": a.id}, idempotency_key=f"aps_translate:{a.id}")
     return asset_dict(a)
+
+
+def _attach_to_pilot(proj: m.Project, manifest_item: str | None, asset_id: str) -> None:
+    """Pilot projects (N99) file uploads under a manifest item; ordinary projects ignore the field."""
+    if not manifest_item or not (proj.preferences or {}).get("pilot"):
+        return
+    from ..pilot import MANIFEST, attach
+
+    if manifest_item not in {c for c, _ in MANIFEST}:
+        raise ApiError(422, "validation", fields=["manifest_item"])
+    attach(proj, manifest_item, asset_id)
 
 
 @router.delete("/{pid}/assets/{aid}")
@@ -781,4 +797,24 @@ def pilot_mark(pid: str, body: PilotMarkIn, p: Principal = Depends(current_princ
     audit(db, p, "pilot.mark", "project", pid, project_id=pid, org_id=proj.org_id, data={"code": body.code, "ok": body.ok})
     db.commit()
     return status(db, proj)
+
+
+@router.get("/{pid}/pilot/report")
+def pilot_report(pid: str, format: str = Query("json", pattern="^(json|pdf)$"), lang: str = Query("hy", pattern="^(hy|ru|en)$"),
+                 p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Pilot validation report (status, inputs with files, flow, assumptions, risks, approvals, history) as JSON or PDF."""
+    from fastapi.responses import Response
+
+    from ..pilot import report, report_pdf
+
+    proj = project_access(pid, "project:read", p, db)
+    if not (proj.preferences or {}).get("pilot"):
+        raise ApiError(404, "not_found")
+    data = report(db, proj)
+    audit(db, p, "pilot.report", "project", pid, project_id=pid, org_id=proj.org_id, data={"format": format})
+    db.commit()
+    if format == "json":
+        return data
+    name = f"{proj.title}_pilot_report_{lang}.pdf".replace(" ", "_")
+    return Response(report_pdf(data, lang), media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}"'})
 

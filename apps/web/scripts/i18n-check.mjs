@@ -43,6 +43,10 @@ for (const f of files.filter((f) => !f.includes("/i18n/dict/"))) {
 const isGenerated = (k) => generated.some((p) => k.startsWith(p));
 // any string literal equal to a dictionary key counts as a use (keys kept in arrays/ternaries)
 for (const f of codeFiles) for (const m of readFileSync(f, "utf8").matchAll(/"([a-z0-9_]+(?:\.[a-z0-9_?]+)+)"/g)) if (keys.has(m[1])) used.add(m[1]);
+// keys rendered by the server (album, pilot report) through apps/api/app/i18n_shared.json also count as used
+const apiDir = new URL("../../api/app/", import.meta.url).pathname;
+const walkPy = (d) => { try { return readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walkPy(join(d, e.name)) : e.name.endsWith(".py") ? [join(d, e.name)] : []); } catch { return []; } };
+for (const f of walkPy(apiDir)) for (const m of readFileSync(f, "utf8").matchAll(/["']([a-z0-9_]+(?:\.[a-z0-9_]+)+)["']/g)) if (keys.has(m[1])) used.add(m[1]);
 const missing = [...used].filter((k) => !keys.has(k) && !isGenerated(k));
 const orphans = [...keys].filter((k) => !used.has(k) && ![...dynamicPrefixes].some((p) => k.startsWith(p)));
 

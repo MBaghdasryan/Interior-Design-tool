@@ -116,3 +116,34 @@ def test_n99_pilot_workspace(client, designer):
     # a non-pilot project has no pilot endpoint
     demo = next(p for p in client.get("/api/v1/projects", headers=designer).json() if p["title"].startswith("Демо"))
     assert client.get(f"/api/v1/projects/{demo['id']}/pilot", headers=designer).status_code == 404
+
+
+def test_n99_manifest_upload_and_report(client, designer):
+    """Files are filed under manifest items; the report (JSON/PDF in 3 languages) states the honest status."""
+    import io
+
+    import pymupdf
+
+    from app.db import SessionLocal
+    from app.pilot import ensure_workspace
+
+    with SessionLocal() as db:
+        proj, _ = ensure_workspace(db)
+    pid = proj.id
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 4000
+    r = client.post(f"/api/v1/projects/{pid}/assets", headers=designer, files={"file": ("living.png", io.BytesIO(png), "image/png")}, data={"manifest_item": "photos_video"})
+    assert r.status_code == 200, r.text
+    bad = client.post(f"/api/v1/projects/{pid}/assets", headers=designer, files={"file": ("x.png", io.BytesIO(png + b"1"), "image/png")}, data={"manifest_item": "nonsense"})
+    assert bad.status_code == 422
+    st = client.get(f"/api/v1/projects/{pid}/pilot", headers=designer).json()
+    item = next(i for i in st["manifest"] if i["code"] == "photos_video")
+    assert item["files"] == 1 and item["ok"]  # auto item: a photo exists now
+    rep = client.get(f"/api/v1/projects/{pid}/pilot/report", headers=designer).json()
+    assert rep["validated"] is False and rep["statement"] == "real_world_validation_pending"
+    assert next(i for i in rep["manifest"] if i["code"] == "photos_video")["file_names"] == ["living.png"]
+    for lang, word in (("hy", "Պիլոտի"), ("ru", "Отчёт о валидации"), ("en", "Pilot validation report")):
+        pdf = client.get(f"/api/v1/projects/{pid}/pilot/report?format=pdf&lang={lang}", headers=designer)
+        assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+        doc = pymupdf.open(stream=pdf.content, filetype="pdf")
+        assert word in doc[0].get_text()
+        assert all(f[1] != "n/a" for page in doc for f in page.get_fonts())  # fonts embedded

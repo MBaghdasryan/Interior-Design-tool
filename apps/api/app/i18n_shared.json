@@ -239,6 +239,191 @@
   "ru": "{n} позиций «по запросу» не включены в сумму; верхняя граница диапазона — оценка по типовым ценам.",
   "en": "{n} on-request items are excluded from the total; the upper bound uses typical category prices."
  },
+ "pilot.approvals": {
+  "hy": "Հաստատումներ",
+  "ru": "Согласования",
+  "en": "Approvals"
+ },
+ "pilot.assumptions": {
+  "hy": "Ենթադրություններ և ռիսկեր",
+  "ru": "Допущения и риски",
+  "en": "Assumptions and risks"
+ },
+ "pilot.auto": {
+  "hy": "ավտոմատ",
+  "ru": "авто",
+  "en": "auto"
+ },
+ "pilot.export_json": {
+  "hy": "Հաշվետվություն JSON",
+  "ru": "Отчёт JSON",
+  "en": "Report JSON"
+ },
+ "pilot.export_pdf": {
+  "hy": "Հաշվետվություն PDF",
+  "ru": "Отчёт PDF",
+  "en": "Report PDF"
+ },
+ "pilot.files": {
+  "hy": "{n} ֆայլ",
+  "ru": "файлов: {n}",
+  "en": "{n} files"
+ },
+ "pilot.flow": {
+  "hy": "Ամբողջական անցում",
+  "ru": "Полный проход",
+  "en": "End-to-end flow"
+ },
+ "pilot.hint": {
+  "hy": "Իրական վավերացում․ նշվում է միայն իրական տվյալներով",
+  "ru": "Реальная валидация: отмечается только по фактическим данным",
+  "en": "Real-world validation: ticked only from actual data"
+ },
+ "pilot.item.ceiling_height": {
+  "hy": "Առաստաղների բարձրություն",
+  "ru": "Высота потолков",
+  "en": "Ceiling heights"
+ },
+ "pilot.item.engineering": {
+  "hy": "Ինժեներական հաղորդակցություններ",
+  "ru": "Инженерные коммуникации",
+  "en": "Building services"
+ },
+ "pilot.item.family_scenarios": {
+  "hy": "Ընտանիք և օգտագործման սցենարներ",
+  "ru": "Семья и сценарии",
+  "en": "Household and scenarios"
+ },
+ "pilot.item.kept_items": {
+  "hy": "Պահպանվող առկա իրեր",
+  "ru": "Сохраняемые существующие товары",
+  "en": "Existing items to keep"
+ },
+ "pilot.item.openings": {
+  "hy": "Պատուհաններ և դռներ",
+  "ru": "Окна и двери",
+  "en": "Windows and doors"
+ },
+ "pilot.item.photos_video": {
+  "hy": "Բոլոր սենյակների լուսանկարներ/տեսանյութ",
+  "ru": "Фото/видео всех помещений",
+  "en": "Photos/video of every room"
+ },
+ "pilot.item.plan_and_dims": {
+  "hy": "Ճարտարապետական հատակագիծ և ստուգիչ չափեր",
+  "ru": "Архитектурный план и контрольные размеры",
+  "en": "Architectural plan and control dimensions"
+ },
+ "pilot.item.room_list": {
+  "hy": "Սենյակների ցանկ",
+  "ru": "Список помещений",
+  "en": "Room list"
+ },
+ "pilot.item.styles_budget": {
+  "hy": "Ոճեր և բյուջե",
+  "ru": "Стили и бюджет",
+  "en": "Styles and budget"
+ },
+ "pilot.item.variant4_materials": {
+  "hy": "Variant 4 և նախագծի նախորդ նյութերը",
+  "ru": "Variant 4 и прежние материалы проекта",
+  "en": "Variant 4 and earlier project materials"
+ },
+ "pilot.manifest": {
+  "hy": "Մուտքային նյութեր",
+  "ru": "Исходные материалы",
+  "en": "Input manifest"
+ },
+ "pilot.not_validated": {
+  "hy": "Վավերացված չէ",
+  "ru": "Не валидирован",
+  "en": "Not validated"
+ },
+ "pilot.progress": {
+  "hy": "Առաջընթաց՝ {pct}%",
+  "ru": "Прогресс: {pct}%",
+  "en": "Progress: {pct}%"
+ },
+ "pilot.report_disclaimer": {
+  "hy": "Հաշվետվությունը կազմված է միայն պահպանված փաստերից․ «վավերացված» կարգավիճակը տրվում է միայն բոլոր 20 կետերի կատարման դեպքում։",
+  "ru": "Отчёт собран только из сохранённых фактов; статус «валидирован» присваивается только при выполнении всех 20 пунктов.",
+  "en": "The report is built from stored facts only; «validated» requires all 20 items to be green."
+ },
+ "pilot.report_title": {
+  "hy": "Պիլոտի վավերացման հաշվետվություն",
+  "ru": "Отчёт о валидации пилота",
+  "en": "Pilot validation report"
+ },
+ "pilot.stage.album": {
+  "hy": "Ալբոմ",
+  "ru": "Альбом",
+  "en": "Album"
+ },
+ "pilot.stage.client_approval": {
+  "hy": "Հաճախորդի հաստատում",
+  "ru": "Согласование клиентом",
+  "en": "Client approval"
+ },
+ "pilot.stage.confidence_review": {
+  "hy": "Վստահության ստուգում",
+  "ru": "Проверка уверенности",
+  "en": "Confidence review"
+ },
+ "pilot.stage.estimate": {
+  "hy": "Նախահաշիվ",
+  "ru": "Смета",
+  "en": "Estimate"
+ },
+ "pilot.stage.manual_edit": {
+  "hy": "Ձեռքով խմբագրում",
+  "ru": "Ручная правка",
+  "en": "Manual edit"
+ },
+ "pilot.stage.real_products": {
+  "hy": "Իրական ապրանքներ (հաստատված գին)",
+  "ru": "Реальные товары (подтверждённая цена)",
+  "en": "Real products (confirmed price)"
+ },
+ "pilot.stage.recognition": {
+  "hy": "Ճանաչում",
+  "ru": "Распознавание",
+  "en": "Recognition"
+ },
+ "pilot.stage.specialist_qa": {
+  "hy": "Մասնագետի ստուգում",
+  "ru": "Проверка специалистом",
+  "en": "Specialist QA"
+ },
+ "pilot.stage.upload": {
+  "hy": "Վերբեռնում",
+  "ru": "Загрузка",
+  "en": "Upload"
+ },
+ "pilot.stage.variants": {
+  "hy": "Տարբերակներ",
+  "ru": "Варианты",
+  "en": "Variants"
+ },
+ "pilot.title": {
+  "hy": "Պիլոտ {code}",
+  "ru": "Пилот {code}",
+  "en": "Pilot {code}"
+ },
+ "pilot.upload": {
+  "hy": "Վերբեռնել",
+  "ru": "Загрузить",
+  "en": "Upload"
+ },
+ "pilot.uploaded": {
+  "hy": "Ֆայլը կցված է «{item}» կետին",
+  "ru": "Файл прикреплён к пункту «{item}»",
+  "en": "File attached to «{item}»"
+ },
+ "pilot.validated": {
+  "hy": "Վավերացված է",
+  "ru": "Валидирован",
+  "en": "Validated"
+ },
  "rules.balcony_door_blocked": {
   "hy": "{code}-ը փակում է {opening} պատշգամբի դուռը",
   "ru": "{code} перекрывает балконную дверь {opening}",

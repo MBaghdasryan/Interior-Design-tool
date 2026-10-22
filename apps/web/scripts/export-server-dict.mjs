@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const PREFIXES = ["works.", "notice.", "rules.", "enum.group.", "enum.price.", "enum.style.", "enum.tier.", "enum.room.", "unit.", "estimate.line_"];
+const PREFIXES = ["works.", "notice.", "rules.", "enum.group.", "enum.price.", "enum.style.", "enum.tier.", "enum.room.", "unit.", "estimate.line_", "pilot."];
 const src = new URL("../src/i18n/dict/", import.meta.url).pathname;
 const tmp = mkdtempSync(join(tmpdir(), "dict-"));
 for (const f of readdirSync(src).filter((x) => x.endsWith(".ts"))) {
