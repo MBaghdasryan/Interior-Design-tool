@@ -130,3 +130,23 @@ def test_album_has_no_russian_ui_text(designed, lang):  # noqa: F811
     words = {w for page in pymupdf.open(stream=pdf, filetype="pdf") for w in re.findall(r"[А-Яа-яЁё]{2,}", page.get_text())}
     leaked = sorted(w for w in words if w not in corpus)
     assert not leaked, leaked[:30]
+
+
+def test_album_glossary_export_and_review_diff(tmp_path):
+    """P1-10 proofreading kit: every album term goes to the reviewer; corrections come back as a diff."""
+    from openpyxl import load_workbook
+
+    from app.album import glossary
+
+    p = tmp_path / "terms.xlsx"
+    n = glossary.export(p)
+    assert n > 150
+    wb = load_workbook(p)
+    ws = wb.active
+    assert [c.value for c in ws[1]] == glossary.HEAD
+    keys = {(r[0].value, r[1].value): r for r in ws.iter_rows(min_row=2)}
+    assert keys[("ROOM_NAMES", "bathroom")][2].value == "Սանհանգույց"
+    keys[("ROOM_NAMES", "bathroom")][5].value = "Լոգասենյակ"
+    keys[("ROOM_NAMES", "bathroom")][6].value = "test"
+    wb.save(p)
+    assert glossary.diff(p) == [{"table": "ROOM_NAMES", "key": "bathroom", "hy": "Սանհանգույց", "hy_corrected": "Լոգասենյակ", "comment": "test"}]

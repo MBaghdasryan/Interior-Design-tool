@@ -101,8 +101,22 @@ def aps_status(p: Principal = Depends(current_principal)):
     s = get_settings()
     out = {"enabled": s.aps_enabled, "bucket": s.aps_bucket if s.aps_enabled else None, "region": s.aps_region,
            "design_automation_activity": get_aps().da_activity_id if s.aps_enabled else None,
-           "features": {"oss_upload": s.aps_enabled, "model_derivative": s.aps_enabled, "viewer": s.aps_enabled, "design_automation_dwg": s.aps_enabled}}
+           "features": {"oss_upload": s.aps_enabled, "model_derivative": s.aps_enabled, "viewer": s.aps_enabled, "design_automation_dwg": s.aps_enabled},
+           "capabilities": aps_capabilities(s.aps_enabled)}
     return out
+
+
+def aps_capabilities(enabled: bool) -> list[dict]:
+    """Honest capability labels for RVT/IFC/DWG files shown in the import and documents UI.
+    `live_verified` stays false until a real bureau RVT/IFC has been run through (P1-10)."""
+    ready = "supported" if enabled else "needs_keys"
+    return [
+        {"key": "view", "status": ready, "formats": ["rvt", "ifc", "dwg"], "live_verified": False},
+        {"key": "metadata", "status": ready, "formats": ["rvt", "ifc"], "live_verified": False},
+        {"key": "editable_import", "status": "in_development", "formats": ["rvt", "ifc"], "live_verified": False},
+        {"key": "ifc_export", "status": "in_development", "formats": ["ifc"], "live_verified": False},
+        {"key": "dwg_export", "status": ready, "formats": ["dwg"], "live_verified": False},
+    ]
 
 
 @router.get("/api/v1/aps/viewer-token")

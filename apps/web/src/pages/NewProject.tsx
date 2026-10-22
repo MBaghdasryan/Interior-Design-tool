@@ -6,6 +6,7 @@ import { api, fileUrl, uploadAsset, type Project, type Schemas } from "../lib/ap
 import { kb, styleName, tierName } from "../lib/format";
 import { LANGS, useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
+import ApsCapabilities from "../components/ApsCapabilities";
 import PilotPanel from "../components/PilotPanel";
 
 const STYLE_PALETTES: Record<string, string[]> = {
@@ -119,6 +120,7 @@ function Intake({ pid }: { pid: string }) {
           <p className="muted">{t("up.or_click")}</p>
           <p className="muted small mt-16">{t("up.formats")}</p>
           {busy && <div className="mt-8"><span className="spinner" /></div>}
+          <ApsCapabilities compact />
           <input ref={fileRef} type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.pdf,.dwg,.dxf,.ifc,.rvt" onChange={(e) => e.target.files && upload(e.target.files)} />
         </div>
         <div className="row between wrap"><h3>{t("up.files")} <span className="muted">{p.assets?.length || 0}</span></h3>

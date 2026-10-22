@@ -84,3 +84,11 @@ def test_activity_definition_shape():
     a = c.activity_definition()
     assert "accoreconsole.exe" in a["commandLine"][0]
     assert set(a["parameters"]) == {"inputFile", "outputDwg"}
+
+
+def test_capability_labels_are_honest(client, designer):
+    caps = {c["key"]: c for c in client.get("/api/v1/aps/status", headers=designer).json()["capabilities"]}
+    assert set(caps) == {"view", "metadata", "editable_import", "ifc_export", "dwg_export"}
+    assert caps["editable_import"]["status"] == caps["ifc_export"]["status"] == "in_development"
+    assert caps["view"]["status"] in ("supported", "needs_keys")  # never "supported" without APS keys
+    assert not any(c["live_verified"] for c in caps.values())  # no real bureau RVT/IFC has been run yet

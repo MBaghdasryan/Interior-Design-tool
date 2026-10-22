@@ -7,6 +7,7 @@ import { stepDetail, stepTitle } from "../lib/messages";
 import { LANGS, useT } from "../i18n";
 import ApsViewer from "../components/ApsViewer";
 import { Badge, Empty, Loading, Progress, StepStatus, useToast } from "../components/ui";
+import ApsCapabilities from "../components/ApsCapabilities";
 import { useMe } from "../components/AppShell";
 
 const ICON: Record<string, typeof FileText> = { album_pdf: FileText, dwg: PenTool, dxf: PenTool, xlsx: FileSpreadsheet, csv: FileSpreadsheet, glb: Box, json: FileArchive };
@@ -64,6 +65,7 @@ export default function Documents() {
             <button className="btn primary lg" disabled={!vid || job?.status === "running"} onClick={() => run("album")}><Layers size={18} /> {t("doc.album_btn")}</button>
             <button className="btn lg" disabled={!vid || !cfg?.aps_enabled} onClick={() => run("dwg")} title={cfg?.aps_enabled ? "" : t("adm.aps_hint")}><PenTool size={18} /> {t("doc.dwg_btn")}</button>
             {!cfg?.aps_enabled && <Badge tone="warn">{t("doc.aps_off")}</Badge>}
+            <ApsCapabilities />
           </div>
           {job && (
             <div className="card flat pad col gap-6">

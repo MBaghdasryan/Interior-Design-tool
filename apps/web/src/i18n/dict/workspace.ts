@@ -135,4 +135,15 @@ export const workspace: Dict = {
   "pilot.stage.client_approval": e("Հաճախորդի հաստատում", "Согласование клиентом", "Client approval"),
   "pilot.stage.album": e("Ալբոմ", "Альбом", "Album"),
   "pilot.stage.specialist_qa": e("Մասնագետի ստուգում", "Проверка специалистом", "Specialist QA"),
+  // Autodesk APS capability labels (import, documents)
+  "aps.cap.title": e("RVT / IFC / DWG ֆայլեր՝ ինչ է աջակցվում", "Файлы RVT / IFC / DWG: что поддерживается", "RVT / IFC / DWG files: what is supported"),
+  "aps.cap.view": e("Դիտում", "Просмотр", "Viewing"),
+  "aps.cap.metadata": e("Մետատվյալների արդյունահանում", "Извлечение метаданных", "Metadata extraction"),
+  "aps.cap.editable_import": e("Խմբագրելի ներմուծում", "Редактируемый импорт", "Editable import"),
+  "aps.cap.ifc_export": e("IFC արտահանում", "Экспорт IFC", "IFC export"),
+  "aps.cap.dwg_export": e("DWG արտահանում", "Экспорт DWG", "DWG export"),
+  "aps.cap.status.supported": e("աջակցվում է", "поддерживается", "supported"),
+  "aps.cap.status.needs_keys": e("անհրաժեշտ են APS բանալիներ", "нужны ключи APS", "needs APS keys"),
+  "aps.cap.status.in_development": e("մշակման փուլում", "в разработке", "in development"),
+  "aps.cap.not_live_verified": e("Բյուրոյի իրական RVT/IFC ֆայլի վրա դեռ չի ստուգվել", "Ещё не проверено на реальном RVT/IFC-файле бюро", "Not yet verified on a real bureau RVT/IFC file"),
 };
