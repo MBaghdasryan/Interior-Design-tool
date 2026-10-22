@@ -125,6 +125,8 @@ CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("pendant_light", ["կախովի", "подвес", "pendant"]),
     ("led_strip", ["led ժապավեն", "лента", "led strip"]),
     ("wall_light", ["բրա", "бра", "wall lamp", "настенный светильник"]),
+    # before tiles / laminate: stores file skirting boards under «laminate & skirting» (Domus, 2026-10-23)
+    ("skirting", ["плинтус", "skirting", "baseboard", "շրիշակ"]),
     ("floor_tile", ["керамогранит", "porcelain", "կերամոգրանիտ", "напольная плитка", "հատակի սալիկ"]),
     ("wall_tile", ["настенная плитка", "wall tile", "պատի սալիկ", "мозаик", "mosaic", "խճանկար"]),
     ("floor_parquet", ["паркет", "инженерная доска", "parquet", "մանրահատակ"]),

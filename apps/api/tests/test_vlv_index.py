@@ -146,3 +146,11 @@ def test_sitemap_index_is_expanded_for_full_catalogue_sources(monkeypatch):
     assert product_urls(src, f) == ["https://domus.am/product/teka", "https://domus.am/product/x-y"]
     assert "https://domus.am/sitemap-blog.xml" not in f.calls
     _sitemap_cache("domus_t").unlink(missing_ok=True)
+
+
+@pytest.mark.parametrize("name,category", [("22 Վենգե Շրիշակ K85", "Լամինատ"), ("Плинтус напольный дуб", "Ламинат и плинтус"), ("Skirting board oak", "Laminate")])
+def test_skirting_is_not_laminate(name, category):
+    """Found on the live Domus index: skirting boards filed under the laminate category."""
+    from app.catalog.normalize import classify
+
+    assert classify(name, category) == "skirting"

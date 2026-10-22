@@ -18,7 +18,7 @@ const cats: Record<string, Entry> = {
   track_light: e("Թրեքային համակարգ", "Трековая система", "Track light"), led_strip: e("LED ժապավեն", "LED-лента", "LED strip"), wall_light: e("Պատի լուսատու", "Бра", "Wall light"),
   floor_lamp: e("Հատակի լամպ", "Торшер", "Floor lamp"), door_interior: e("Միջսենյակային դուռ", "Межкомнатная дверь", "Interior door"), door_sliding: e("Սահող դուռ", "Раздвижная дверь", "Sliding door"),
   door_entrance: e("Մուտքի դուռ", "Входная дверь", "Entrance door"), floor_parquet: e("Մանրահատակ / ինժեներական տախտակ", "Паркет / инженерная доска", "Engineered wood"),
-  floor_laminate: e("Լամինատ", "Ламинат", "Laminate"), floor_tile: e("Հատակի կերամոգրանիտ", "Керамогранит пол", "Floor porcelain"), wall_tile: e("Պատի սալիկ", "Плитка настенная", "Wall tile"),
+  floor_laminate: e("Լամինատ", "Ламинат", "Laminate"), skirting: e("Շրիշակ", "Плинтус", "Skirting board"), floor_tile: e("Հատակի կերամոգրանիտ", "Керамогранит пол", "Floor porcelain"), wall_tile: e("Պատի սալիկ", "Плитка настенная", "Wall tile"),
   wall_paint: e("Ինտերիերի ներկ", "Краска интерьерная", "Interior paint"), wall_panel: e("Դեկորատիվ պանելներ", "Декоративные панели", "Wall panels"), putty: e("Ծեփամածիկ", "Шпаклёвка", "Putty"),
   tile_adhesive: e("Սալիկի սոսինձ", "Плиточный клей", "Tile adhesive"), drywall: e("Գիպսաստվարաթուղթ", "Гипсокартон", "Drywall"), rug: e("Գորգ", "Ковёр", "Rug"),
   curtains: e("Վարագույրներ", "Шторы", "Curtains"), artwork: e("Դեկոր / նկարներ", "Декор / картины", "Artwork"), mirror: e("Հայելի", "Зеркало", "Mirror"), plant: e("Բույսեր", "Растения", "Plants"),

@@ -46,6 +46,7 @@ CATEGORIES: dict[str, tuple[str, str, str, str]] = {
     "door_entrance": ("doors", "Входная дверь", "Մուտքի դուռ", "Entrance door"),
     "floor_parquet": ("finishing", "Паркет / инженерная доска", "Մանրահատակ", "Engineered wood"),
     "floor_laminate": ("finishing", "Ламинат", "Լամինատ", "Laminate"),
+    "skirting": ("finishing", "Плинтус", "Շրիշակ", "Skirting board"),
     "floor_tile": ("finishing", "Керамогранит пол", "Հատակի սալիկ", "Floor porcelain tile"),
     "wall_tile": ("finishing", "Плитка настенная", "Պատի սալիկ", "Wall tile"),
     "wall_paint": ("finishing", "Краска интерьерная", "Ներկ", "Interior paint"),
