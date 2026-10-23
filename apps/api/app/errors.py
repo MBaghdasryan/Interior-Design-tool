@@ -38,6 +38,7 @@ MESSAGES: dict[str, str] = {
     "cart.requires_approval": "Корзина формируется из утверждённого варианта",
     "order.made_to_measure_requires_production": "Изделия по размерам: требуется верификация обмеров (Production Ready)",
     "order.demo_supplier": "DEMO-поставщик: заказ не может быть отправлен",
+    "catalog.live_disabled": "Внешняя загрузка выключена (EXTERNAL_FETCH_LIVE=false)",
     "bim.ifc_unreadable": "IFC-файл не удалось прочитать",
     "bim.no_walls": "В файле не найдено стен",
     "roomplan.not_json": "Это не JSON-экспорт RoomPlan",

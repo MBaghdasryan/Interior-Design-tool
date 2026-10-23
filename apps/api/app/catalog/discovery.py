@@ -56,7 +56,9 @@ def _cache_lookup_factory(db: Session) -> Callable[[str, str], list[NormalizedEx
         rows = db.scalars(select(m.ExternalProductRecord).where(m.ExternalProductRecord.source_id == source_id,
                                                                 m.ExternalProductRecord.normalized_category == category,
                                                                 m.ExternalProductRecord.review_status != "rejected"))
-        return [NormalizedExternalProduct.model_validate(r.data) for r in rows]
+        # products found without JSON-LD (microdata / OpenGraph / HTML heuristics) are used only once approved
+        return [NormalizedExternalProduct.model_validate(r.data) for r in rows
+                if r.review_status == "approved" or not str((r.data or {}).get("parser_version", "")).startswith("layered-")]
 
     return lookup
 

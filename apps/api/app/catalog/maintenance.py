@@ -70,8 +70,9 @@ def evaluate_run(db: Session, source: m.ExternalSource, run: m.ExternalConnector
         if base >= 4 and run.found < 0.5 * base:
             reasons.append(("result_drop", f"{run.found} vs median {base:g}"))
     c = counters or {}
-    if c.get("fetched", 0) >= 5 and c.get("no_jsonld", 0) / c["fetched"] > 0.5:
-        reasons.append(("parser", f"{c['no_jsonld']}/{c['fetched']} pages without Product JSON-LD"))
+    missing = c.get("no_product", c.get("no_jsonld", 0))  # nothing extracted by any method (older runs: no JSON-LD)
+    if c.get("fetched", 0) >= 5 and missing / c["fetched"] > 0.5:
+        reasons.append(("parser", f"{missing}/{c['fetched']} pages without a recognisable product"))
     if any("circuit open" in str(e) for e in run.errors or []):
         reasons.append(("circuit", str(run.errors[0])[:200]))
     if run.status == "blocked":
@@ -178,9 +179,10 @@ def refresh_records(db: Session, source: m.ExternalSource, record_ids: list[str]
     """Re-fetch individual product pages (allowlist, robots, crawl-delay and breaker of SafeFetcher apply)."""
     import time
 
-    from .connectors.jsonld import parse_product_page
     from .connectors.others import build_connector
     from .discovery import source_dict, upsert_record
+    from .extract import extract_product
+    from .indexer import is_indexed
     from .net import FetchBlocked, SafeFetcher
 
     src = source_dict(source)
@@ -198,9 +200,9 @@ def refresh_records(db: Session, source: m.ExternalSource, record_ids: list[str]
             if not rec or rec.source_id != source.id:
                 continue
             try:
-                if source.connector_type == "jsonld_index":
+                if is_indexed(source):
                     html = fetcher.fetch(rec.canonical_url, src["allowed_hosts"], rate_limit_s=src.get("rate_limit_s", 3.0)).text
-                    p = parse_product_page(html, rec.canonical_url, src, "jsonld-refresh-1.0")
+                    p, _ = extract_product(html, rec.canonical_url, src)
                 else:
                     p = conn.refresh_product(rec.canonical_url)
             except FetchBlocked as e:

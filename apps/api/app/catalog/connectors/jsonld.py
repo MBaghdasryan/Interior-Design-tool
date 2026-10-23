@@ -94,7 +94,10 @@ def parse_product_page(html: str, url: str, source: dict, parser_version: str, n
     dims = parse_dimensions(" ".join([name, desc]))
     avail_raw = offers.get("availability")
     images = product.get("image") or []
-    images = [images] if isinstance(images, str) else list(images)
+    images = [images] if isinstance(images, (str, dict)) else list(images)
+    # schema.org allows ImageObject ({"@type": "ImageObject", "url": …}) as well as plain URLs (Wix / Ideal System)
+    images = [i if isinstance(i, str) else (i.get("url") or i.get("contentUrl") or "") for i in images if isinstance(i, (str, dict))]
+    images = [i for i in images if i]
     warnings: list[str] = []
     # Template artefacts seen during audit: logo used as product image
     real_images = [i for i in images if not re.search(r"/logo\.(png|svg|jpg)$", i, re.I)]

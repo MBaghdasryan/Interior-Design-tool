@@ -1,12 +1,14 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Store, Wallet, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
-import { dt } from "../lib/format";
+import { amd as amdFmt, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import FinanceTab from "../components/FinanceTab";
 
-interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; indexed?: boolean; last_errors: string[] }
+interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; indexed?: boolean; index?: { cursor?: number; total?: number; indexed?: number; last_run_at?: string }; last_errors: string[] }
+interface Scan { urls_found: number; methods: Record<string, number>; restricted: string | null; error: string | null;
+  sample: { name: string; price_amd: number | null; currency: string | null; image: string | null; category: string | null; url: string; method: string; confidence: number; warnings: string[] }[] }
 interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
 type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
@@ -23,6 +25,12 @@ export default function PlatformAdmin() {
   const [aps, setAps] = useState<Record<string, any> | null>(null);
   const [quar, setQuar] = useState<Quarantined[]>([]);
   const [hist, setHist] = useState<{ sid: string; data: Hist } | null>(null);
+  const [scan, setScan] = useState<{ name: string; busy: boolean; data: Scan | null } | null>(null);
+  const testScan = async (s: Src) => {
+    setScan({ name: s.name, busy: true, data: null });
+    try { setScan({ name: s.name, busy: false, data: await api<Scan>(`/admin/sources/${s.id}/test-scan`, { method: "POST" }) }); }
+    catch (x) { setScan(null); toast((x as Error).message, true); }
+  };
   type AuditRow = { action: string; entity: string; data: Record<string, unknown>; created_at: string };
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [auditNext, setAuditNext] = useState<string | null>(null);
@@ -66,10 +74,12 @@ export default function PlatformAdmin() {
           <div className="alert info small">{stats.integrations.external_fetch_live ? t("adm.live_on") : t("adm.live_off")}</div>
           <div className="card" style={{ overflow: "auto" }}>
             <table className="table compact">
-              <thead><tr><th>{t("adm.col.on")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.connector")}</th><th>{t("common.status")}</th><th>{t("adm.col.policy")}</th><th>{t("adm.col.rate")}</th><th className="right">{t("adm.col.records")}</th><th className="right">{t("adm.col.review")}</th><th>{t("adm.col.success")}</th><th>{t("adm.col.check")}</th><th /></tr></thead>
+              <thead><tr><th>{t("adm.col.on")}</th><th>{t("adm.col.parse")}</th><th>{t("adm.col.source")}</th><th>{t("adm.col.connector")}</th><th>{t("common.status")}</th><th>{t("adm.col.policy")}</th><th>{t("adm.col.rate")}</th><th className="right">{t("adm.col.records")}</th><th className="right">{t("adm.col.review")}</th><th>{t("adm.col.success")}</th><th>{t("adm.col.check")}</th><th /></tr></thead>
               <tbody>{src.map((s) => (<Fragment key={s.id}>
                 <tr>
                   <td><Switch on={s.enabled} onChange={(v) => patch(s, { enabled: v })} label={s.name} /></td>
+                  <td>{s.connector_type !== "rfq" && <Switch on={!!s.indexed} onChange={(v) => patch(s, { catalog_index: v } as Partial<Src>)} label={t("adm.col.parse")} />}
+                    {s.indexed && s.index?.total ? <div className="tiny muted">{t("adm.parse_progress", { cursor: s.index.cursor ?? 0, total: s.index.total, n: s.index.indexed ?? 0 })}</div> : null}</td>
                   <td><b>{s.name}</b><div className="tiny muted">{s.domain}</div></td>
                   <td><Badge tone="info">{s.connector_type || s.method}</Badge>{s.live_enabled && <Badge tone="sage">live</Badge>}</td>
                   <td><Badge tone={s.connector_status === "ok" ? "sage" : s.connector_status === "unreachable" ? "danger" : "warn"}>{t(`enum.source_status.${s.connector_status}`)}</Badge></td>
@@ -79,15 +89,32 @@ export default function PlatformAdmin() {
                   <td className="small">{s.success_rate === null ? "—" : `${Math.round(s.success_rate * 100)}%`}{s.avg_latency_ms ? <div className="tiny muted">{s.avg_latency_ms} ms</div> : null}</td>
                   <td className="tiny muted">{dt(s.last_check_at)}{s.last_errors[0] && <div style={{ color: "var(--danger)" }}>{s.last_errors[0]}</div>}</td>
                   <td className="row gap-4"><button className="btn sm" onClick={() => test(s)}>{t("adm.test")}</button>
+                    {s.connector_type !== "rfq" && <button className="btn sm" title={t("adm.scan_hint")} onClick={() => testScan(s)}>{t("adm.scan")}</button>}
                     {s.indexed && <button className="btn sm" title={t("adm.index_hint")} onClick={() => index(s)}>{t("adm.index")}</button>}
                     <button className="btn sm ghost" aria-expanded={hist?.sid === s.id} onClick={() => history(s)}>{t("adm.history")}</button></td>
                 </tr>
-                {hist?.sid === s.id && <tr><td colSpan={11}><SourceHistory h={hist.data} /></td></tr>}
+                {hist?.sid === s.id && <tr><td colSpan={12}><SourceHistory h={hist.data} /></td></tr>}
               </Fragment>))}</tbody>
             </table>
           </div>
         </div>
       )}
+      {scan && <div className="modal" role="dialog" aria-modal="true" aria-label={t("adm.scan_title", { name: scan.name })} onClick={() => !scan.busy && setScan(null)}>
+        <div className="col gap-8" style={{ padding: 20 }} onClick={(e) => e.stopPropagation()}>
+          <b>{t("adm.scan_title", { name: scan.name })}</b>
+          {scan.busy ? <div className="row gap-6"><span className="spinner" /> {t("adm.scan_busy")}</div> : scan.data && <>
+            <div className="small">{t("adm.scan_found", { n: scan.data.urls_found })}{Object.entries(scan.data.methods).map(([k, v]) => ` · ${t(`adm.method.${k}`)}: ${v}`).join("")}</div>
+            {scan.data.restricted && <div className="alert danger small">{t("adm.scan_restricted", { kind: scan.data.restricted })}</div>}
+            {scan.data.error && <div className="alert warn small">{scan.data.error}</div>}
+            {!scan.data.sample.length && !scan.data.restricted && <div className="small muted">{t("adm.scan_empty")}</div>}
+            {scan.data.sample.map((p) => <div key={p.url} className="card flat pad row gap-8">
+              <div className="grow"><b className="small">{p.name}</b>
+                <div className="tiny muted">{p.price_amd != null ? amdFmt(p.price_amd) : t("common.on_request")} · {p.category ? t(`enum.cat.${p.category}`) : t("adm.no_category")} · {t(`adm.method.${p.method}`)} · {Math.round(p.confidence * 100)}%</div>
+                <div className="row gap-8 tiny"><a href={p.url} target="_blank" rel="noreferrer">{t("adm.scan_page")}</a>
+                  {p.image ? <a href={p.image} target="_blank" rel="noreferrer">{t("adm.scan_photo")}</a> : <span className="muted">{t("adm.scan_no_photo")}</span>}</div></div></div>)}
+            <p className="tiny muted">{t("adm.scan_note")}</p>
+            <div><button className="btn sm" onClick={() => setScan(null)}>{t("common.close")}</button></div></>}
+        </div></div>}
       {tab === "jobs" && <div className="card" style={{ overflow: "auto" }}><table className="table compact"><thead><tr><th>{t("adm.col.job")}</th><th>{t("common.status")}</th><th>{t("adm.col.progress")}</th><th>{t("adm.col.attempts")}</th><th>{t("adm.col.error")}</th></tr></thead>
         <tbody>{jobs.map((j) => <tr key={j.id}><td><b>{j.kind}</b><div className="tiny muted">{j.id.slice(0, 8)}</div></td><td><Badge tone={j.status === "succeeded" ? "sage" : j.status === "failed" ? "danger" : "info"}>{t(`enum.job.${j.status}`)}</Badge></td><td>{Math.round(j.progress * 100)}%</td><td>{j.attempts}</td><td className="small" style={{ color: "var(--danger)" }}>{j.error}</td></tr>)}</tbody></table></div>}
       {tab === "ai" && ai && <div className="col gap-10">

@@ -417,6 +417,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/sources/{sid}/test-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Scan
+         * @description Dry run: find product links and extract up to 5 products — nothing is written to the catalogue.
+         *     Shows which method works for this site (JSON-LD / microdata / OpenGraph / HTML) before parsing is enabled.
+         */
+        post: operations["test_scan_api_v1_admin_sources__sid__test_scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/stats": {
         parameters: {
             query?: never;
@@ -3845,6 +3866,8 @@ export interface components {
         };
         /** SourcePatch */
         SourcePatch: {
+            /** Catalog Index */
+            catalog_index?: boolean | null;
             /** Connector Status */
             connector_status?: string | null;
             /** Enabled */
@@ -4694,6 +4717,39 @@ export interface operations {
         };
     };
     test_source_api_v1_admin_sources__sid__test_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_scan_api_v1_admin_sources__sid__test_scan_post: {
         parameters: {
             query?: never;
             header?: {

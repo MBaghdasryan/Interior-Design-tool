@@ -33,6 +33,7 @@ def src_dict(db: Session, s: m.ExternalSource) -> dict:
             "last_check_at": s.last_check_at.isoformat() if s.last_check_at else None, "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
             "runs": len(runs), "success_rate": round(ok / len(runs), 2) if runs else None, "avg_latency_ms": round(sum(r.latency_ms for r in runs) / len(runs)) if runs else None,
             "found": sum(r.found for r in runs), "validated": sum(r.validated for r in runs), "rejected": sum(r.rejected for r in runs), "records": recs, "pending_review": pend, "indexed": bool(s.connector_type == "jsonld_index" or (s.policy or {}).get("background_index")),
+            "index": (s.stats or {}).get("index", {}),
             "last_errors": [e for r in runs[:5] for e in r.errors][:5]}
 
 
@@ -42,6 +43,7 @@ def sources(p: Principal = Depends(require("sources:manage")), db: Session = Dep
 
 
 class SourcePatch(BaseModel):
+    catalog_index: bool | None = None  # «parse the whole catalogue» — background index on the catalogue worker
     enabled: bool | None = None
     live_enabled: bool | None = None
     policy_status: str | None = None
@@ -58,7 +60,21 @@ def patch_source(sid: str, body: SourcePatch, p: Principal = Depends(require("so
         raise ApiError(404, "not_found")
     if body.rate_limit_s is not None and body.rate_limit_s < 1:
         raise ApiError(422, "validation", fields=["rate_limit_s"])
-    for k, v in body.model_dump(exclude_none=True).items():
+    changes = body.model_dump(exclude_none=True)
+    if (ci := changes.pop("catalog_index", None)) is not None:
+        if ci and s.connector_type == "rfq":
+            raise ApiError(422, "validation", fields=["catalog_index"])  # RFQ-only sources publish no prices
+        pol = dict(s.policy or {})
+        if ci and not pol.get("background_index"):  # the admin's decision to parse this resource enables it for the catalogue worker
+            pol["pre_index"] = {"enabled": s.enabled, "live_enabled": s.live_enabled, "policy_status": s.policy_status}
+            s.enabled, s.live_enabled = True, True
+            s.policy_status = "approved" if s.policy_status == "pending" else s.policy_status
+        elif not ci and pol.get("pre_index"):  # switching parsing off restores the resource as it was
+            prev = pol.pop("pre_index")
+            s.enabled, s.live_enabled, s.policy_status = prev["enabled"], prev["live_enabled"], prev["policy_status"]
+        pol["background_index"] = ci
+        s.policy = pol
+    for k, v in changes.items():
         setattr(s, k, v)
     audit(db, p, "source.update", "external_source", sid, data=body.model_dump(exclude_none=True))
     db.commit()
@@ -102,6 +118,55 @@ def search_reindex(p: Principal = Depends(require("sources:manage")), db: Sessio
     audit(db, p, "search.reindex", "search", None)
     db.commit()
     return job_dict(job)
+
+
+@router.post("/sources/{sid}/test-scan")
+def test_scan(sid: str, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+    """Dry run: find product links and extract up to 5 products — nothing is written to the catalogue.
+    Shows which method works for this site (JSON-LD / microdata / OpenGraph / HTML) before parsing is enabled."""
+    from ..catalog.discovery import source_dict
+    from ..catalog.extract import detect_restriction, extract_product
+    from ..catalog.indexer import product_urls
+    from ..catalog.net import FetchBlocked, SafeFetcher
+
+    s = db.get(m.ExternalSource, sid)
+    if not s:
+        raise ApiError(404, "not_found")
+    if not get_settings().external_fetch_live:
+        raise ApiError(409, "catalog.live_disabled")
+    src = source_dict(s)
+    src["key"] = f"{s.key}__scan"  # own sitemap cache: a dry run never replaces the indexer's
+    fetcher = SafeFetcher()
+    fetcher.max_requests = 60
+    out = {"urls_found": 0, "sample": [], "methods": {}, "restricted": None, "error": None}
+    try:
+        urls = product_urls(src, fetcher)
+    except FetchBlocked as e:
+        out["error"] = str(e)[:300]
+        return out
+    out["urls_found"] = len(urls)
+    # sample evenly across the whole list (the first entries are often section / brand pages)
+    sample = [urls[round(i * (len(urls) - 1) / 7)] for i in range(8)] if len(urls) > 8 else urls
+    for url in dict.fromkeys(sample):
+        if len(out["sample"]) >= 5:
+            break
+        try:
+            html = fetcher.fetch(url, src["allowed_hosts"], rate_limit_s=src.get("rate_limit_s", 3.0)).text
+        except FetchBlocked as e:
+            out["error"] = str(e)[:300]
+            continue
+        if r := detect_restriction(html):
+            out["restricted"] = r
+            break
+        prod, method = extract_product(html, url, src)
+        out["methods"][method or "none"] = out["methods"].get(method or "none", 0) + 1
+        if prod:
+            out["sample"].append({"name": prod.name, "price_amd": prod.price_amd, "currency": prod.original_currency, "image": prod.main_image_url,
+                                  "category": prod.normalized_category, "url": prod.canonical_url, "method": method, "confidence": prod.confidence,
+                                  "warnings": prod.validation_warnings[:3]})
+    audit(db, p, "source.test_scan", "external_source", sid, data={k: v for k, v in out.items() if k != "sample"})
+    db.commit()
+    return out
 
 
 class IndexIn(BaseModel):

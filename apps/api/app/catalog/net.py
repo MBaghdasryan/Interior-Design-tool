@@ -80,6 +80,13 @@ class SafeFetcher:
         self.max_requests: int | None = None  # per-run budget (set by discovery)
 
     # -- robots ---------------------------------------------------------------
+    def robots_sitemaps(self, url: str) -> list[str]:
+        """`Sitemap:` lines of the host's robots.txt (read through the same cached parser)."""
+        self.robots_allows(url)
+        p = urlparse(url)
+        rp = self._robots.get(f"{p.scheme}://{p.hostname}", (None,))[0]
+        return list(rp.site_maps() or []) if rp else []
+
     def robots_allows(self, url: str) -> bool:
         p = urlparse(url)
         base = f"{p.scheme}://{p.hostname}"

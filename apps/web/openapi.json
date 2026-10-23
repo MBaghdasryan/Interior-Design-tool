@@ -1901,6 +1901,17 @@
    },
    "SourcePatch": {
     "properties": {
+     "catalog_index": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Catalog Index"
+     },
      "connector_status": {
       "anyOf": [
        {
@@ -3379,6 +3390,63 @@
      }
     },
     "summary": "Test Source",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/sources/{sid}/test-scan": {
+   "post": {
+    "description": "Dry run: find product links and extract up to 5 products — nothing is written to the catalogue.\nShows which method works for this site (JSON-LD / microdata / OpenGraph / HTML) before parsing is enabled.",
+    "operationId": "test_scan_api_v1_admin_sources__sid__test_scan_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Test Scan",
     "tags": [
      "admin"
     ]
