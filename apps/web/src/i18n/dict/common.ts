@@ -17,7 +17,6 @@ export const common: Dict = {
   "common.download": { hy: "Ներբեռնել", ru: "Скачать", en: "Download" },
   "common.send": { hy: "Ուղարկել", ru: "Отправить", en: "Send" },
   "common.back": { hy: "Հետ", ru: "Назад", en: "Back" },
-  "common.create": { hy: "Ստեղծել", ru: "Создать", en: "Create" },
   "common.search": { hy: "Որոնում", ru: "Поиск", en: "Search" },
   "common.none": { hy: "Չկա", ru: "Нет", en: "None" },
   "common.yes": { hy: "Այո", ru: "Да", en: "Yes" },

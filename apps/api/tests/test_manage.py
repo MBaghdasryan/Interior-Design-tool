@@ -69,7 +69,7 @@ def test_bureau_admin_manages_the_team(client, designer):
     assert mem["role"] == "designer" and "reset-password?token=" in _last_mail("intern@studio.am")
     assert client.post("/api/v1/team/invite", headers=boss, json={"email": "intern@studio.am", "name": "Intern", "role": "designer"}).json()["code"] == "team.already_member"
     assert client.post("/api/v1/team/invite", headers=boss, json={"email": "a@b.am", "name": "A", "role": "platform_admin"}).status_code == 422
-    assert client.patch(f"/api/v1/team/{mem['membership_id']}", headers=boss, json={"role": "verifier"}).json()["role"] == "verifier"
+    assert client.patch(f"/api/v1/team/{mem['membership_id']}", headers=boss, json={"role": "collaborator"}).json()["role"] == "collaborator"
     own = next(x for x in client.get("/api/v1/team", headers=boss).json()["members"] if x["email"] == "bureau@forma.local")
     assert client.delete(f"/api/v1/team/{own['membership_id']}", headers=boss).json()["code"] == "user.last_admin"
     assert client.delete(f"/api/v1/team/{mem['membership_id']}", headers=boss).json()["ok"]

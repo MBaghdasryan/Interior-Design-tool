@@ -30,10 +30,10 @@ def test_every_server_error_code_has_web_translations():
 
 
 def test_locale_is_persisted_in_profile(client):
-    h = login(client, "client@forma.local")
+    h = login(client, "designer@forma.local")
     assert client.patch("/api/v1/auth/me", headers=h, json={"locale": "hy"}).json()["locale"] == "hy"
     # a new session (new token) sees the saved language
-    assert client.get("/api/v1/auth/me", headers=login(client, "client@forma.local")).json()["locale"] == "hy"
+    assert client.get("/api/v1/auth/me", headers=login(client, "designer@forma.local")).json()["locale"] == "hy"
 
 
 def test_rules_and_steps_carry_codes(client, designer):
@@ -72,7 +72,7 @@ def test_trust_levels_checklist_and_gating(client, designer):
     assert tr["level"] == "verified" and tr["next"] == "production"
     # production needs a specialist sign-off: designers may not sign off
     assert client.post(f"/api/v1/projects/{pid}/trust/signoff", headers=h, json={}).status_code == 403
-    v = login(client, "verifier@forma.local")
+    v = login(client, "bureau@forma.local")  # the bureau head signs off
     assert client.post(f"/api/v1/projects/{pid}/trust/signoff", headers=v, json={"note": "site survey"}).status_code == 200
     tr = client.get(f"/api/v1/projects/{pid}/trust", headers=h).json()
     assert next(c for c in tr["checklist"] if c["code"] == "specialist_signoff")["ok"]

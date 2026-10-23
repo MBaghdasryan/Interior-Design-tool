@@ -28,6 +28,7 @@ export const errors: Dict = {
   "errors.not_found": { hy: "Չի գտնվել", ru: "Не найдено", en: "Not found" },
   "errors.project.not_found": { hy: "Նախագիծը չի գտնվել", ru: "Проект не найден", en: "Project not found" },
   "errors.variant.not_found": { hy: "Տարբերակը չի գտնվել", ru: "Вариант не найден", en: "Variant not found" },
+  "errors.project.has_orders": { hy: "Նախագծով կան ձևակերպված պատվերներ․ այն ջնջել հնարավոր չէ՝ պատվերների և հաշվարկների պատմությունը պահպանվում է", ru: "По проекту есть оформленные заказы — удалить его нельзя: история заказов и расчётов сохраняется", en: "The project has placed orders — it cannot be deleted: order and settlement history is kept" },
   "errors.product.not_found": { hy: "Ապրանքը կատալոգում չի գտնվել", ru: "Товар не найден в каталоге", en: "Product not found in the catalogue" },
   "errors.wall.not_found": { hy: "Պատը չի գտնվել", ru: "Стена не найдена", en: "Wall not found" },
   "errors.share.invalid": { hy: "Հղումն անվավեր է", ru: "Ссылка недействительна", en: "This link is invalid" },

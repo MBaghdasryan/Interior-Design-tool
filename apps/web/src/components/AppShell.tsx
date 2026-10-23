@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, FolderKanban, Home, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
+import { BookOpenCheck, Building2, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -91,23 +91,28 @@ export default function AppShell() {
   const loc = useLocation();
   const nav = useNavigate();
   const roles = new Set(me?.roles || []);
-  const isPlatform = roles.has("platform_admin") || roles.has("platform_ops");
-  const isSupplier = roles.has("supplier_admin") || roles.has("supplier_catalog");
-  const isBureau = roles.has("bureau_admin") || roles.has("designer");
-  const isLinguist = roles.has("linguist") || roles.has("platform_admin");
+  const isAdmin = roles.has("platform_admin");
+  const isOps = roles.has("platform_ops");
+  const isPlatform = isAdmin || isOps;
+  const isSupplier = roles.has("supplier_admin") || roles.has("supplier_catalog") || roles.has("manufacturer");
+  const isBureauHead = roles.has("bureau_admin");
+  const designs = !isSupplier && !(isOps && !isAdmin);  // works on projects
+  const isLinguist = roles.has("linguist") || isAdmin;
   const section = loc.pathname.split("/").filter(Boolean)[1];
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand"><BrandLockup tagline /></div>
         <nav className="nav col gap-4">
-          <NavLink to="/app" end><Home size={18} /> {t("nav.home")}</NavLink>
-          <NavLink to="/app/projects"><FolderKanban size={18} /> {t("nav.projects")}</NavLink>
-          {!isSupplier && <NavLink to="/app/new"><PlusCircle size={18} /> {t("nav.new")}</NavLink>}
+          {designs && <><NavLink to="/app" end><Home size={18} /> {t("nav.home")}</NavLink>
+            <NavLink to="/app/projects"><FolderKanban size={18} /> {t("nav.projects")}</NavLink>
+            <NavLink to="/app/new"><PlusCircle size={18} /> {t("nav.new")}</NavLink></>}
           <NavLink to="/app/catalog"><LayoutGrid size={18} /> {t("nav.catalog")}</NavLink>
-          <NavLink to="/app/suppliers"><Truck size={18} /> {t("nav.suppliers")}</NavLink>
-          {(isBureau || isPlatform) && <><div className="section">{t("nav.cabinets")}</div><NavLink to="/app/bureau"><Building2 size={18} /> {t("nav.bureau")}</NavLink></>}
-          {(isSupplier || isPlatform) && <NavLink to="/app/supplier"><Store size={18} /> {t("nav.supplier")}</NavLink>}
+          {!isSupplier && <NavLink to="/app/suppliers"><Truck size={18} /> {t("nav.suppliers")}</NavLink>}
+          {(isBureauHead || isAdmin || isSupplier || isOps) && <div className="section">{t("nav.cabinets")}</div>}
+          {(isBureauHead || isAdmin) && <NavLink to="/app/bureau"><Building2 size={18} /> {t("nav.bureau")}</NavLink>}
+          {(isSupplier || isPlatform) && <NavLink to="/app/supplier" end><Store size={18} /> {t("nav.supplier")}</NavLink>}
+          {isSupplier && <NavLink to="/app/supplier/demand"><Inbox size={18} /> {t("nav.demand")}</NavLink>}
           {isPlatform && <><div className="section">{t("nav.administration")}</div>
             <NavLink to="/app/admin"><ShieldCheck size={18} /> {t("nav.admin")}</NavLink>
             <NavLink to="/app/pim"><Settings2 size={18} /> {t("nav.pim")}</NavLink></>}

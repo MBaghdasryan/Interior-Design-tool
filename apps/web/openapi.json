@@ -9628,6 +9628,61 @@
    }
   },
   "/api/v1/projects/{pid}": {
+   "delete": {
+    "description": "Deletes a project with its files. Refused once an order left the cart: orders and the ledger keep their history.",
+    "operationId": "delete_project_api_v1_projects__pid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Project",
+    "tags": [
+     "projects"
+    ]
+   },
    "get": {
     "operationId": "get_project_api_v1_projects__pid__get",
     "parameters": [
@@ -14945,6 +15000,70 @@
     "summary": "Add Delivery",
     "tags": [
      "suppliers"
+    ]
+   }
+  },
+  "/api/v1/supplier/demand": {
+   "get": {
+    "description": "Where the supplier's products are used and who asked for them. Client data (name, address, project title) is not\ndisclosed: the supplier sees the bureau, city, area and items; contact comes through a request or an order.",
+    "operationId": "supplier_demand_api_v1_supplier_demand_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Demand",
+    "tags": [
+     "partners"
     ]
    }
   },

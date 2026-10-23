@@ -6,6 +6,7 @@ import { amd as amdFmt, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import FinanceTab from "../components/FinanceTab";
+import { useMe } from "../components/AppShell";
 import { OrgsAdmin, SuppliersAdmin, UsersAdmin } from "../components/Management";
 
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; indexed?: boolean; index?: { cursor?: number; total?: number; indexed?: number; last_run_at?: string }; last_errors: string[] }
@@ -18,11 +19,16 @@ interface Ai { providers: Record<string, { available: boolean; model: string }>;
 type Tab = "users" | "orgs" | "suppliers" | "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
+const OPS_TABS: Tab[] = ["sources", "jobs", "partners"];  // the catalogue operator works with the catalogue only
+
 export default function PlatformAdmin() {
   const { t } = useT();
+  const { me } = useMe();
+  const isAdmin = !!me?.roles.includes("platform_admin");
   const toast = useToast();
   const [sp, setSp] = useSearchParams();
-  const tab = (sp.get("tab") as Tab) || "users";
+  const wanted = (sp.get("tab") as Tab) || (isAdmin ? "users" : "sources");
+  const tab = isAdmin || OPS_TABS.includes(wanted) ? wanted : "sources";
   const setTab = (k: Tab) => setSp({ tab: k });
   const [stats, setStats] = useState<Record<string, any> | null>(null);
   const [src, setSrc] = useState<Src[]>([]);
@@ -50,12 +56,13 @@ export default function PlatformAdmin() {
     api("/admin/stats").then(setStats);
     api<Src[]>("/admin/sources").then(setSrc);
     api<Job[]>("/admin/jobs").then(setJobs);
-    api<Ai>("/admin/ai").then(setAi);
+    if (!isAdmin) return;  // AI spend, APS, audit and quarantine are for the platform admin
+    api<Ai>("/admin/ai").then(setAi).catch(() => {});
     api<Costs>("/admin/ai/costs").then(setCosts).catch(() => {});
-    api("/aps/status").then(setAps);
+    api("/aps/status").then(setAps).catch(() => {});
     moreAudit(null).catch(() => {});
     api<Quarantined[]>("/admin/quarantine").then(setQuar).catch(() => {});
-  }, []);
+  }, [isAdmin]);
   useEffect(() => { load(); }, [load]);
   const patch = async (s: Src, body: Partial<Src>) => { await api(`/admin/sources/${s.id}`, { method: "PATCH", json: body }); load(); };
   const index = async (s: Src) => {
@@ -76,7 +83,7 @@ export default function PlatformAdmin() {
         <div className="card kpi"><div className="ico"><Workflow size={22} /></div><div><div className="v">{stats.projects} / {stats.variants}</div><div className="small muted">{t("adm.projects_variants")}</div></div></div>
         <div className="card kpi"><div className="ico"><Activity size={22} /></div><div><div className="v">{stats.jobs_failed}</div><div className="small muted">{t("adm.failed_jobs")}</div></div></div>
       </div>
-      <div className="tabs">{tabs.map(([k, I]) => <button key={k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><I size={16} /> {t(`adm.tab.${k}`)}</button>)}</div>
+      <div className="tabs">{tabs.filter(([k]) => isAdmin || OPS_TABS.includes(k)).map(([k, I]) => <button key={k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><I size={16} /> {t(`adm.tab.${k}`)}</button>)}</div>
       {tab === "users" && <UsersAdmin />}
       {tab === "orgs" && <OrgsAdmin />}
       {tab === "suppliers" && <SuppliersAdmin />}

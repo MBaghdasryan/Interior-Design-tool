@@ -23,16 +23,16 @@ from .errors import ApiError
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {
     "platform_admin": {"*"},
-    "platform_ops": {"project:read", "catalog:read", "catalog:write", "sources:manage", "jobs:read", "audit:read"},
-    "bureau_admin": {"project:read", "project:write", "project:approve", "catalog:read", "team:manage", "rfq:send", "documents:write"},
+    # catalogue operator (platform staff): catalogue, sources, moderation and indexing only — no client projects, users, finance or audit
+    "platform_ops": {"catalog:read", "catalog:write", "sources:manage", "jobs:read"},
+    # the bureau head also signs off Production Ready (the separate surveyor role was retired in 0016)
+    "bureau_admin": {"project:read", "project:write", "project:approve", "project:verify", "catalog:read", "team:manage", "rfq:send", "documents:write"},
     "designer": {"project:read", "project:write", "project:approve", "catalog:read", "rfq:send", "documents:write"},
-    "client": {"project:read", "project:write", "project:approve", "comment:write"},
     "collaborator": {"project:read", "comment:write"},
     "supplier_admin": {"catalog:read", "catalog:write", "supplier:manage", "rfq:respond"},
     "supplier_catalog": {"catalog:read", "catalog:write"},
     "manufacturer": {"catalog:read", "catalog:write", "rfq:respond"},
     "installer": {"project:read"},
-    "verifier": {"project:read", "project:verify"},
     # Armenian terminology reviewer (native-speaking architect): proposes and approves album terms
     "linguist": {"glossary:review"},
 }
@@ -186,6 +186,10 @@ class Principal:
     @property
     def is_platform(self) -> bool:
         return bool(self.all_roles() & {"platform_admin", "platform_ops"})
+
+    @property
+    def is_platform_admin(self) -> bool:
+        return "platform_admin" in self.all_roles()
 
 
 def principal_from_token(token: str | None, db: Session) -> Principal:

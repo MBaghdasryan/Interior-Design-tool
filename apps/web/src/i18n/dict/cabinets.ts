@@ -1,0 +1,53 @@
+import type { Dict, Entry } from "../index";
+
+const e = (hy: string, ru: string, en: string): Entry => ({ hy, ru, en });
+
+// Project dashboard (mockup 20), supplier demand & orders.
+export const cabinets: Dict = {
+  "nav.demand": e("Պահանջարկ և պատվերներ", "Спрос и заказы", "Demand & orders"),
+
+  "dash.lead_n": e("Ակտիվ նախագծեր՝ {n}։ Շարունակենք ստեղծել գեղեցիկ և իրագործելի ինտերիերներ։", "Активных проектов: {n}. Продолжаем создавать красивые и реализуемые интерьеры.", "Active projects: {n}. Let's keep creating beautiful, buildable interiors."),
+  "dash.k.total": e("Նախագծեր ընդամենը", "Проектов всего", "Projects in total"),
+  "dash.k.active": e("Ակտիվ նախագծեր", "Активных проектов", "Active projects"),
+  "dash.k.budget": e("Ընտրված տարբերակների բյուջե", "Бюджет выбранных вариантов", "Budget of chosen variants"),
+  "dash.k.approved": e("Հաստատված և պատվիրված", "Утверждено и заказано", "Approved & ordered"),
+  "dash.k.by_month": e("ըստ ստեղծման ամսի, 6 ամիս", "по месяцу создания, 6 мес.", "by month created, 6 months"),
+  "dash.k.by_month_updated": e("ըստ վերջին փոփոխության ամսի", "по месяцу последнего изменения", "by month of last change"),
+  "dash.k.budget_hint": e("ընտրված կամ հաստատված տարբերակների գումար", "сумма выбранных или утверждённых вариантов", "sum of chosen or approved variants"),
+  "dash.recent": e("Վերջին նախագծերը", "Недавние проекты", "Recent projects"),
+  "dash.all_projects": e("Բոլոր նախագծերը", "Все проекты", "All projects"),
+  "dash.progress": e("Ընթացք", "Готовность", "Progress"),
+  "dash.client": e("Հաճախորդ", "Клиент", "Client"),
+  "dash.stages": e("Նախագծի փուլերը", "Этапы проекта", "Project stages"),
+  "dash.stage.intake": e("Նյութերի վերբեռնում", "Загрузка материалов", "Materials upload"),
+  "dash.stage.recognized": e("Երկրաչափության հաստատում", "Подтверждение геометрии", "Geometry confirmation"),
+  "dash.stage.generating": e("Տարբերակների ստեղծում", "Генерация вариантов", "Generating variants"),
+  "dash.stage.ready": e("Ընտրություն և համաձայնեցում", "Выбор и согласование", "Choice and approval"),
+  "dash.stage.approved": e("Հաստատված նախագիծ", "Утверждённый проект", "Approved design"),
+  "dash.stage.ordered": e("Գնումներ և իրականացում", "Закупки и реализация", "Procurement and delivery"),
+  "dash.open": e("Բացել նախագիծը", "Открыть проект", "Open project"),
+  "dash.delete": e("Ջնջել նախագիծը", "Удалить проект", "Delete project"),
+  "dash.confirm_delete": e("Ջնջե՞լ «{title}» նախագիծը բոլոր ֆայլերով։ Գործողությունն անդառնալի է։", "Удалить проект «{title}» со всеми файлами? Действие необратимо.", "Delete “{title}” with all its files? This cannot be undone."),
+  "dash.deleted": e("Նախագիծը ջնջված է", "Проект удалён", "Project deleted"),
+
+  "dem.title": e("Պահանջարկ և պատվերներ", "Спрос и заказы", "Demand & orders"),
+  "dem.lead": e("Նախագծեր, որտեղ օգտագործված են ձեր ապրանքները, դիզայներների հարցումները և պատվերները։", "Проекты, в которых использованы ваши товары, запросы дизайнеров и заказы.", "Projects that use your products, designers' requests and orders."),
+  "dem.k.requests": e("Պատասխանի սպասող հարցումներ", "Запросов ждут ответа", "Requests awaiting reply"),
+  "dem.k.projects": e("Նախագծեր ձեր ապրանքներով", "Проектов с вашими товарами", "Projects with your products"),
+  "dem.k.orders": e("Պատվերներ", "Заказов", "Orders"),
+  "dem.privacy": e("Հաճախորդի անունը, հասցեն և նախագծի անվանումը չեն ցուցադրվում։ Կոնտակտը հայտնվում է հարցման կամ պատվերի միջոցով։", "Имя клиента, адрес и название проекта не показываются. Контакт появляется через запрос или заказ.", "The client's name, address and project title are not shown. Contact comes through a request or an order."),
+  "dem.tab.requests": e("Հարցումներ", "Запросы", "Requests"),
+  "dem.tab.usage": e("Օգտագործումը նախագծերում", "Использование в проектах", "Use in projects"),
+  "dem.tab.orders": e("Պատվերներ", "Заказы", "Orders"),
+  "dem.no_requests": e("Հարցումներ դեռ չկան", "Запросов пока нет", "No requests yet"),
+  "dem.no_usage": e("Ձեր ապրանքները դեռ չեն օգտագործվել նախագծերում", "Ваши товары пока не использованы в проектах", "Your products have not been used in projects yet"),
+  "dem.qty": e("Քանակ", "Кол-во", "Qty"),
+  "dem.quote_total": e("Ընդհանուր գումար, AMD", "Итоговая сумма, AMD", "Total, AMD"),
+  "dem.col.project": e("Նախագիծ", "Проект", "Project"),
+  "dem.col.stage": e("Փուլ", "Этап", "Stage"),
+  "dem.col.items": e("Ձեր ապրանքները", "Ваши товары", "Your products"),
+  "dem.col.updated": e("Թարմացվել է", "Обновлён", "Updated"),
+  "dem.stage.design": e("Նախագծում", "В дизайне", "In design"),
+  "dem.stage.request": e("Հարցում", "Запрос", "Request"),
+  "dem.stage.order": e("Պատվեր", "Заказ", "Order"),
+};

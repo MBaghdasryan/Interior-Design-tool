@@ -1906,7 +1906,11 @@ export interface paths {
         get: operations["get_project_api_v1_projects__pid__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Project
+         * @description Deletes a project with its files. Refused once an order left the cart: orders and the ledger keep their history.
+         */
+        delete: operations["delete_project_api_v1_projects__pid__delete"];
         options?: never;
         head?: never;
         /** Patch Project */
@@ -3139,6 +3143,27 @@ export interface paths {
         put?: never;
         /** Add Delivery */
         post: operations["add_delivery_api_v1_supplier_delivery_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supplier/demand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Supplier Demand
+         * @description Where the supplier's products are used and who asked for them. Client data (name, address, project title) is not
+         *     disclosed: the supplier sees the bureau, city, area and items; contact comes through a request or an order.
+         */
+        get: operations["supplier_demand_api_v1_supplier_demand_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8652,6 +8677,39 @@ export interface operations {
             };
         };
     };
+    delete_project_api_v1_projects__pid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     patch_project_api_v1_projects__pid__patch: {
         parameters: {
             query?: never;
@@ -11427,6 +11485,39 @@ export interface operations {
                 "application/json": components["schemas"]["DeliveryIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    supplier_demand_api_v1_supplier_demand_get: {
+        parameters: {
+            query?: {
+                supplier_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

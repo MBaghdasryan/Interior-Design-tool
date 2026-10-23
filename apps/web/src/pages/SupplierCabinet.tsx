@@ -133,7 +133,7 @@ interface SOrder { id: string; supplier_name: string; status: string; payment_st
 const SUPPLIER_MOVES = ["in_production", "delivering", "installing", "cancelled"];
 
 /** Orders sent to this supplier: confirm with a binding total, then report production, delivery and installation. */
-function SupplierOrders() {
+export function SupplierOrders() {
   const { t } = useT();
   const toast = useToast();
   const [rows, setRows] = useState<SOrder[]>([]);

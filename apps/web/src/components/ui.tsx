@@ -66,3 +66,35 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return <ToastCtx.Provider value={show}>{children}{t && <div className={`toast ${t.err ? "err" : ""}`} role="status">{t.msg}</div>}</ToastCtx.Provider>;
 }
 export const useToast = () => useContext(ToastCtx);
+
+/** Mini bar chart for KPI cards; values come from real series only (never decorative). */
+export function Spark({ values, tone = "" }: { values: number[]; tone?: string }) {
+  const max = Math.max(1, ...values);
+  if (!values.some((v) => v > 0)) return null;
+  return <div className={`spark ${tone}`} aria-hidden>{values.map((v, i) => <i key={i} style={{ height: `${Math.max(8, (v / max) * 100)}%` }} />)}</div>;
+}
+
+export function Kpi({ icon, value, label, sub, series, tone }: { icon: ReactNode; value: ReactNode; label: ReactNode; sub?: ReactNode; series?: number[]; tone?: string }) {
+  return (
+    <div className="card kpi2">
+      <div className="ico">{icon}</div>
+      <div><div className="v">{value}</div><div className="l">{label}</div></div>
+      {series ? <Spark values={series} tone={tone} /> : <span />}
+      {sub && <div className="sub">{sub}</div>}
+    </div>
+  );
+}
+
+/** Counts per calendar month for the last `n` months (oldest first) — the series behind KPI mini charts. */
+export function monthly<T>(rows: T[], date: (r: T) => string | null | undefined, n = 6, weight: (r: T) => number = () => 1): number[] {
+  const now = new Date();
+  const out = Array(n).fill(0);
+  for (const r of rows) {
+    const d = date(r);
+    if (!d) continue;
+    const x = new Date(d);
+    const k = (now.getFullYear() - x.getFullYear()) * 12 + now.getMonth() - x.getMonth();
+    if (k >= 0 && k < n) out[n - 1 - k] += weight(r);
+  }
+  return out;
+}

@@ -24,8 +24,8 @@ from ..mail import send_template
 from ..security import Principal, audit, current_principal, hash_password, new_one_time_token, require, revoke_sessions
 
 router = APIRouter(prefix="/api/v1", tags=["manage"])
-ORG_ROLES = {"platform": {"platform_admin", "platform_ops", "linguist", "verifier"},
-             "bureau": {"bureau_admin", "designer", "verifier", "collaborator", "client"},
+ORG_ROLES = {"platform": {"platform_admin", "platform_ops", "linguist"},
+             "bureau": {"bureau_admin", "designer", "collaborator"},
              "supplier": {"supplier_admin", "supplier_catalog", "manufacturer", "installer"}}
 TEAM_ADMIN = {"bureau": ("team:manage", "bureau_admin"), "supplier": ("supplier:manage", "supplier_admin")}
 INVITE_TTL_H = 72

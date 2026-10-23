@@ -206,7 +206,7 @@ def jobs(response: Response, cursor: str | None = None, limit: int = Query(100, 
 
 
 @router.get("/ai")
-def ai(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
+def ai(p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):
     rows = db.execute(select(m.AIUsage.task, m.AIUsage.provider, m.AIUsage.model, func.count(), func.sum(m.AIUsage.input_tokens), func.sum(m.AIUsage.output_tokens),
                              func.sum(m.AIUsage.cost_usd), func.avg(m.AIUsage.latency_ms), func.sum(case((m.AIUsage.ok.is_(False), 1), else_=0)))
                       .group_by(m.AIUsage.task, m.AIUsage.provider, m.AIUsage.model)).all()
@@ -216,7 +216,7 @@ def ai(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_d
 
 
 @router.get("/ai/costs")
-def ai_costs(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
+def ai_costs(p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):
     from ..ai.budget import platform_costs
 
     return platform_costs(db)

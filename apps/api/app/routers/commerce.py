@@ -148,6 +148,11 @@ def send_rfq(pid: str, rid: str, p: Principal = Depends(current_principal), db: 
     # Delivery channel (email/supplier portal/API) is pluggable; supplier cabinet sees it immediately.
     r.status = "sent"
     audit(db, p, "rfq.send", "rfq", rid, project_id=pid)
+    if sup and sup.org_id:  # in-app now; e-mail delivery to the supplier is a later channel
+        from ..notify import notify
+
+        staff = [ms.user for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == sup.org_id))]
+        notify(db, staff, "rfq_received", params={"supplier": sup.name, "n": len(r.items)}, link="/app/supplier/demand")
     db.commit()
     return rfq_dict(r)
 

@@ -18,9 +18,7 @@ DEMO_USERS = [
     ("ops@forma.local", "Оператор каталога", "platform", "platform_ops"),
     ("designer@forma.local", "Ани Петросян", "bureau", "designer"),
     ("bureau@forma.local", "Руководитель бюро", "bureau", "bureau_admin"),
-    ("client@forma.local", "Клиент (демо)", "bureau", "client"),
     ("supplier@forma.local", "Менеджер поставщика", "supplier", "supplier_admin"),
-    ("verifier@forma.local", "Обмерщик", "bureau", "verifier"),
 ]
 
 

@@ -54,6 +54,48 @@ def supplier_overview(supplier_id: str | None = None, p: Principal = Depends(req
             "rfqs": [{"id": r.id, "status": r.status, "items": len(r.items), "created_at": r.created_at.isoformat(), "message": r.message} for r in rfqs]}
 
 
+@router.get("/api/v1/supplier/demand")
+def supplier_demand(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    """Where the supplier's products are used and who asked for them. Client data (name, address, project title) is not
+    disclosed: the supplier sees the bureau, city, area and items; contact comes through a request or an order."""
+    sup = _supplier_for(p, db, supplier_id)
+    refs = {f"pv:{v.id}": v for v in db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id))}
+    by_project: dict[str, Counter] = {}
+    rows = db.execute(select(m.DesignVersion, m.DesignVariant.project_id).join(m.DesignVariant, m.DesignVariant.current_version_id == m.DesignVersion.id)
+                      .where(m.DesignVariant.status != "archived"))
+    for ver, pid in rows:
+        for o in (ver.scene or {}).get("objects", []):
+            if o.get("product_variant_id") in refs:
+                by_project.setdefault(pid, Counter())[o["product_variant_id"]] += 1
+    rfqs = db.scalars(select(m.RFQ).where(m.RFQ.supplier_id == sup.id, m.RFQ.status != "draft").order_by(m.RFQ.created_at.desc()).limit(200)).all()
+    orders = db.scalars(select(m.Order).where(m.Order.supplier_id == sup.id, m.Order.status != "cart")).all()
+    pids = set(by_project) | {r.project_id for r in rfqs} | {o.project_id for o in orders}
+    projects = {pr.id: pr for pr in db.scalars(select(m.Project).where(m.Project.id.in_(pids)))} if pids else {}
+    orgs = {o.id: o.name for o in db.scalars(select(m.Organization).where(m.Organization.id.in_({pr.org_id for pr in projects.values()})))} if projects else {}
+
+    def ref(pid: str) -> dict:
+        pr = projects.get(pid)
+        return {"ref": f"P-{pid[:6].upper()}", "bureau": orgs.get(pr.org_id, "") if pr else "", "city": pr.city if pr else "", "area_m2": pr.area_m2 if pr else None}
+
+    stage = {}
+    for r in rfqs:
+        stage[r.project_id] = "request"
+    for o in orders:
+        stage[o.project_id] = "order"
+    usage = []
+    for pid, cnt in by_project.items():
+        pr = projects.get(pid)
+        if not pr:
+            continue
+        usage.append({**ref(pid), "stage": stage.get(pid, "design"), "updated_at": pr.updated_at.isoformat() if pr.updated_at else None,
+                      "items": [{"sku": refs[k].sku, "name": refs[k].product.name_ru, "qty": n} for k, n in cnt.most_common()]})
+    usage.sort(key=lambda x: x["updated_at"] or "", reverse=True)
+    return {"usage": usage,
+            "requests": [{"id": r.id, **ref(r.project_id), "status": r.status, "created_at": r.created_at.isoformat(), "message": r.message,
+                          "items": [{"sku": it.get("sku"), "name": it.get("name"), "qty": it.get("qty"), "unit": it.get("unit")} for it in r.items]} for r in rfqs],
+            "counts": {"projects": len(usage), "requests": sum(1 for r in rfqs if r.status == "sent"), "orders": len(orders)}}
+
+
 # ------------------------------------------------------------------ supplier orders (P2-1)
 @router.get("/api/v1/supplier/orders")
 def supplier_orders(supplier_id: str | None = None, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
@@ -211,7 +253,7 @@ def bureau_overview(org_id: str | None = None, p: Principal = Depends(current_pr
 
 def _bureau_org(p: Principal, db: Session, org_id: str | None = None) -> m.Organization:
     """The caller's bureau; platform staff open any bureau's cabinet by org_id."""
-    if org_id and p.is_platform:
+    if org_id and p.is_platform_admin:
         org = db.get(m.Organization, org_id)
         if not org or org.kind != "bureau":
             raise ApiError(404, "bureau.not_found")

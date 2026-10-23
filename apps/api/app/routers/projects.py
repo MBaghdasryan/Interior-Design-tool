@@ -62,11 +62,20 @@ class ProjectPatch(BaseModel):
     accuracy_level: str | None = None
 
 
+def _cover(db: Session, pid: str) -> str | None:
+    """Card image: the latest photoreal render, else the first uploaded room photo."""
+    key = db.scalar(select(m.Document.storage_key).where(m.Document.project_id == pid, m.Document.kind == "render").order_by(m.Document.created_at.desc()).limit(1))
+    if not key:
+        key = db.scalar(select(m.SourceAsset.storage_key).where(m.SourceAsset.project_id == pid, m.SourceAsset.mime.like("image/%"),
+                                                                m.SourceAsset.scan_status != "purged").order_by(m.SourceAsset.created_at).limit(1))
+    return get_storage().signed_url(key) if key else None
+
+
 @router.get("")
 def list_projects(response: Response, cursor: str | None = None, limit: int = Query(200, ge=1, le=500),
                   p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     q = select(m.Project)
-    if not p.is_platform:
+    if not p.is_platform_admin:  # the catalogue operator does not see client projects
         q = q.where(m.Project.org_id.in_(p.org_ids))
     rows, _ = page(db, q, m.Project.updated_at, m.Project.id, cursor=cursor, limit=limit, response=response)
     out = []
@@ -75,13 +84,14 @@ def list_projects(response: Response, cursor: str | None = None, limit: int = Qu
         vs = db.scalars(select(m.DesignVariant).where(m.DesignVariant.project_id == proj.id, m.DesignVariant.status != "archived")).all()
         d["variants"] = len(vs)
         d["total"] = next((v.metrics.get("total") for v in vs if v.status in ("selected", "approved")), None)
+        d["cover"] = _cover(db, proj.id)
         out.append(d)
     return out
 
 
 @router.post("")
 def create_project(body: ProjectIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    org_id = next((oid for oid, roles in p.roles.items() if roles & {"designer", "bureau_admin", "client", "platform_admin"}), None)
+    org_id = next((oid for oid, roles in p.roles.items() if roles & {"designer", "bureau_admin", "platform_admin"}), None)
     if not org_id:
         raise ApiError(403, "auth.no_org")
     from ..commerce.tariffs import check_project_quota
@@ -122,6 +132,21 @@ def patch_project(pid: str, body: ProjectPatch, p: Principal = Depends(current_p
     audit(db, p, "project.update", "project", pid, project_id=pid, data={"fields": list(data)})
     db.commit()
     return project_dict(proj)
+
+
+@router.delete("/{pid}")
+def delete_project(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Deletes a project with its files. Refused once an order left the cart: orders and the ledger keep their history."""
+    proj = project_access(pid, "project:write", p, db)
+    if db.scalar(select(m.Order.id).where(m.Order.project_id == pid, m.Order.status != "cart").limit(1)):
+        raise ApiError(409, "project.has_orders")
+    st = get_storage()
+    for key, _ in st.list(f"projects/{pid}/"):
+        st.delete(key)
+    audit(db, p, "project.delete", "project", pid, org_id=proj.org_id, data={"title": proj.title})
+    db.delete(proj)
+    db.commit()
+    return {"ok": True}
 
 
 # ------------------------------------------------------------------ intake
@@ -844,7 +869,7 @@ class SignoffIn(BaseModel):
 def trust_signoff(pid: str, body: SignoffIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     """Specialist (verifier / bureau admin) confirms measurements & engineering — audit record."""
     proj = project_access(pid, "project:read", p, db)
-    if not (p.can("project:verify", proj.org_id) or "bureau_admin" in p.roles.get(proj.org_id, set()) or p.is_platform):
+    if not (p.can("project:verify", proj.org_id) or "bureau_admin" in p.roles.get(proj.org_id, set()) or p.is_platform_admin):
         raise ApiError(403, "auth.forbidden", permission="project:verify")
     audit(db, p, "trust.specialist_verified", "project", pid, project_id=pid, org_id=proj.org_id, data={"scope": body.scope, "note": body.note, "name": p.user.name})
     db.commit()
@@ -863,7 +888,7 @@ def trust_advance(pid: str, p: Principal = Depends(current_principal), db: Sessi
     missing = [c["code"] for c in req["checklist"] if not c["ok"]]
     if missing:
         raise ApiError(409, "trust.requirements_missing", missing=missing, level=req["next"])
-    if req["next"] == "production" and not p.can("project:verify", proj.org_id) and not p.is_platform:
+    if req["next"] == "production" and not p.can("project:verify", proj.org_id) and not p.is_platform_admin:
         raise ApiError(403, "auth.production_level_requires_verifier")
     old = proj.accuracy_level
     proj.accuracy_level = req["next"]

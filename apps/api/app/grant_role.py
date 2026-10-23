@@ -14,8 +14,8 @@ from .db import SessionLocal
 
 def main() -> None:
     email, role = sys.argv[1].strip().lower(), sys.argv[2]
-    if role not in ("linguist", "verifier", "platform_ops"):
-        raise SystemExit("role must be linguist | verifier | platform_ops")
+    if role not in ("linguist", "platform_ops"):
+        raise SystemExit("role must be linguist | platform_ops")
     with SessionLocal() as db:
         u = db.scalar(select(m.User).where(m.User.email == email))
         if not u:

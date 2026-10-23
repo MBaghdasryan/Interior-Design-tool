@@ -70,7 +70,6 @@ export const pages: Dict = {
 
   // dashboard
   "dash.hello": e("Բարի օր, {name}", "Добрый день, {name}", "Good day, {name}"),
-  "dash.lead": e("Վերբեռնեք բնակարանը — ԱԲ-ն կճանաչի տարածքները, կընտրի իրական ապրանքներ և կհաշվարկի նախահաշիվը։", "Загрузите квартиру — ИИ распознает помещения, подберёт реальные товары и посчитает смету.", "Upload an apartment — AI recognises the rooms, selects real products and calculates the estimate."),
   "dash.projects": e("Նախագծեր", "Проекты", "Projects"),
   "dash.empty": e("Նախագծեր դեռ չկան։", "Пока нет проектов.", "No projects yet."),
   "dash.create_first": e("Ստեղծել առաջինը", "Создать первый", "Create the first one"),
