@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
+import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PackageCheck, PlusCircle, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -109,6 +109,7 @@ export default function AppShell() {
           {designs && <><NavLink to="/app" end><Home size={18} /> {t("nav.home")}</NavLink>
             <NavLink to="/app/projects"><FolderKanban size={18} /> {t("nav.projects")}</NavLink>
             <NavLink to="/app/new"><PlusCircle size={18} /> {t("nav.new")}</NavLink></>}
+          {(designs || isAdmin) && <NavLink to="/app/orders"><PackageCheck size={18} /> {t("nav.orders")}</NavLink>}
           <NavLink to="/app/catalog"><LayoutGrid size={18} /> {t("nav.catalog")}</NavLink>
           {!isSupplier && <NavLink to="/app/suppliers"><Truck size={18} /> {t("nav.suppliers")}</NavLink>}
           {(isBureauHead || isAdmin || isSupplier || isOps) && <div className="section">{t("nav.cabinets")}</div>}

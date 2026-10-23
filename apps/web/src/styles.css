@@ -413,3 +413,14 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
 .dot.ok { background: var(--sage); }
 @media (max-width: 1280px) { .ed-body { grid-template-columns: 64px minmax(0, 1fr); } .ed-side { grid-column: 1 / -1; position: static; } .ed-views.two { grid-template-columns: 1fr; height: auto; } .ed-views.two > div { height: 460px; } }
 @media (max-width: 960px) { .ed-body { grid-template-columns: 1fr; } .ed-rail { flex-direction: row; overflow-x: auto; position: static; } }
+/* ---- order registry ---- */
+.g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1400px) { .g5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 960px) { .g5 { grid-template-columns: 1fr; } }
+.ord-table tr.grp td { background: var(--surface-2); cursor: pointer; }
+.ord-table tr.on td { background: var(--terra-soft); }
+.ord-table .center { text-align: center; }
+.stg { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--surface); }
+.stg.done { background: var(--sage); border-color: var(--sage); }
+.stg.current { border-color: var(--terra); background: var(--terra-soft); box-shadow: 0 0 0 3px var(--terra-soft); }
+.linklike { border: 0; background: none; padding: 0; color: var(--terra-ink); font: inherit; text-decoration: underline; cursor: pointer; }
