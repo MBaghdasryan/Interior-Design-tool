@@ -23,3 +23,4 @@ apps/api/evals/datasets/real/
 # real test apartment materials and partner documents — never commit
 Test-HOME/
 vPOS_*.docx
+*:Zone.Identifier
