@@ -206,6 +206,7 @@ class RegisterIn(BaseModel):
     org_kind: str = Field(default="bureau", pattern="^(bureau|supplier)$")
     locale: str = Field(default="ru", pattern="^(hy|ru|en)$")
     accept_terms: bool = False
+    ref: str = Field(default="", max_length=24, pattern=r"^[a-z0-9-]*$")  # partner code from the landing link
 
 
 @router.post("/register")
@@ -220,7 +221,8 @@ def register(body: RegisterIn, request: Request, response: Response, db: Session
     if db.scalar(select(m.User).where(m.User.email == email)):
         raise ApiError(409, "auth.email_taken")
     now = datetime.now(timezone.utc)
-    org = m.Organization(name=body.org_name.strip(), kind=body.org_kind, settings={})
+    referrer = db.scalar(select(m.PartnerCode).where(m.PartnerCode.code == body.ref)) if body.ref else None
+    org = m.Organization(name=body.org_name.strip(), kind=body.org_kind, settings={"referred_by": referrer.code} if referrer else {})
     user = m.User(email=email, name=body.name.strip(), password_hash=hash_password(body.password), locale=body.locale,
                   consents={"terms": {"version": get_settings().terms_version, "at": now.isoformat(), "ip": client_ip(request)}})
     db.add_all([org, user])

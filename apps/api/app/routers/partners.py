@@ -344,7 +344,12 @@ def client_view(token: str, db: Session = Depends(get_db)):
                             for room, docs in latest_renders(db, ver.id).items() if docs]
         out.append(d)
     comments = db.scalars(select(m.Comment).where(m.Comment.project_id == proj.id, m.Comment.visibility == "client").order_by(m.Comment.created_at)).all()
-    return {"project": {"title": proj.title, "address": proj.address, "area_m2": proj.area_m2, "accuracy_level": proj.accuracy_level, "status": proj.status},
+    from .workspace import _branding_allowed, branding_of
+
+    org = db.get(m.Organization, proj.org_id)
+    brand = branding_of(db, org) if org and org.kind == "bureau" and _branding_allowed(db, org) else None
+    return {"branding": {k: brand[k] for k in ("display_name", "accent_hex", "logo_url")} if brand else None,
+            "project": {"title": proj.title, "address": proj.address, "area_m2": proj.area_m2, "accuracy_level": proj.accuracy_level, "status": proj.status},
             "variants": out, "comments": [{"id": c.id, "body": c.body, "author_name": c.author_name, "anchor": c.anchor, "variant_id": c.variant_id,
                                             "created_at": c.created_at.isoformat(), "resolved": c.resolved} for c in comments]}
 

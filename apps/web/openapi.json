@@ -350,6 +350,51 @@
     "title": "Body_upload_asset_api_v1_supplier_assets_post",
     "type": "object"
    },
+   "Body_upload_logo_api_v1_bureau_branding_logo_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_upload_logo_api_v1_bureau_branding_logo_post",
+    "type": "object"
+   },
+   "BrandingIn": {
+    "properties": {
+     "accent_hex": {
+      "default": "",
+      "pattern": "^(#[0-9a-fA-F]{6})?$",
+      "title": "Accent Hex",
+      "type": "string"
+     },
+     "display_name": {
+      "default": "",
+      "maxLength": 120,
+      "title": "Display Name",
+      "type": "string"
+     },
+     "doc_lang": {
+      "default": "hy",
+      "pattern": "^(hy|ru|en)$",
+      "title": "Doc Lang",
+      "type": "string"
+     },
+     "domain": {
+      "default": "",
+      "maxLength": 200,
+      "pattern": "^([a-z0-9-]+(\\.[a-z0-9-]+)+)?$",
+      "title": "Domain",
+      "type": "string"
+     }
+    },
+    "title": "BrandingIn",
+    "type": "object"
+   },
    "CancelIn": {
     "properties": {
      "reason": {
@@ -2746,6 +2791,13 @@
       "maxLength": 200,
       "title": "Password",
       "type": "string"
+     },
+     "ref": {
+      "default": "",
+      "maxLength": 24,
+      "pattern": "^[a-z0-9-]*$",
+      "title": "Ref",
+      "type": "string"
      }
     },
     "required": [
@@ -3386,6 +3438,13 @@
        "mode": "off",
        "value": 0.0
       }
+     },
+     "referral_reward_pct": {
+      "default": 0,
+      "maximum": 50.0,
+      "minimum": 0.0,
+      "title": "Referral Reward Pct",
+      "type": "number"
      },
      "storage_addons": {
       "default": [],
@@ -9172,6 +9231,275 @@
     ]
    }
   },
+  "/api/v1/bureau/branding": {
+   "get": {
+    "operationId": "get_branding_api_v1_bureau_branding_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Branding",
+    "tags": [
+     "workspace"
+    ]
+   },
+   "put": {
+    "operationId": "put_branding_api_v1_bureau_branding_put",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BrandingIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Branding",
+    "tags": [
+     "workspace"
+    ]
+   }
+  },
+  "/api/v1/bureau/branding/logo": {
+   "delete": {
+    "operationId": "delete_logo_api_v1_bureau_branding_logo_delete",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Logo",
+    "tags": [
+     "workspace"
+    ]
+   },
+   "post": {
+    "description": "PNG/JPEG/WebP up to 2 MB, re-encoded server-side (no SVG: it can carry scripts).",
+    "operationId": "upload_logo_api_v1_bureau_branding_logo_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_logo_api_v1_bureau_branding_logo_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Upload Logo",
+    "tags": [
+     "workspace"
+    ]
+   }
+  },
   "/api/v1/bureau/overview": {
    "get": {
     "operationId": "bureau_overview_api_v1_bureau_overview_get",
@@ -12010,6 +12338,66 @@
      }
     },
     "summary": "Order Registry",
+    "tags": [
+     "workspace"
+    ]
+   }
+  },
+  "/api/v1/partner": {
+   "get": {
+    "description": "Clicks → registrations → organisations with projects → paying organisations; reward only once the platform sets a rate.",
+    "operationId": "partner_dashboard_api_v1_partner_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "months",
+      "required": false,
+      "schema": {
+       "default": 6,
+       "maximum": 24,
+       "minimum": 3,
+       "title": "Months",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Partner Dashboard",
     "tags": [
      "workspace"
     ]
@@ -17186,6 +17574,46 @@
     "summary": "Public Pricing",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/api/v1/public/ref/{code}/click": {
+   "post": {
+    "operationId": "referral_click_api_v1_public_ref__code__click_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Referral Click",
+    "tags": [
+     "workspace"
     ]
    }
   },

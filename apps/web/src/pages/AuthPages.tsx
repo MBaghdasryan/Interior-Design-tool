@@ -29,7 +29,7 @@ export function Register() {
     e.preventDefault();
     setErr(""); setBusy(true);
     try {
-      await api("/auth/register", { method: "POST", json: { ...f, locale: getLang() } });
+      await api("/auth/register", { method: "POST", json: { ...f, locale: getLang(), ref: (() => { try { return localStorage.getItem("forma.ref") || ""; } catch { return ""; } })() } });
       auth.signedIn = true;
       nav("/app/onboarding");
     } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }

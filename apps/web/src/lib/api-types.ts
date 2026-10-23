@@ -1459,6 +1459,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bureau/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Branding */
+        get: operations["get_branding_api_v1_bureau_branding_get"];
+        /** Put Branding */
+        put: operations["put_branding_api_v1_bureau_branding_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bureau/branding/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Logo
+         * @description PNG/JPEG/WebP up to 2 MB, re-encoded server-side (no SVG: it can carry scripts).
+         */
+        post: operations["upload_logo_api_v1_bureau_branding_logo_post"];
+        /** Delete Logo */
+        delete: operations["delete_logo_api_v1_bureau_branding_logo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bureau/overview": {
         parameters: {
             query?: never;
@@ -2177,6 +2216,26 @@ export interface paths {
         };
         /** Order Registry */
         get: operations["order_registry_api_v1_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Partner Dashboard
+         * @description Clicks → registrations → organisations with projects → paying organisations; reward only once the platform sets a rate.
+         */
+        get: operations["partner_dashboard_api_v1_partner_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3418,6 +3477,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/ref/{code}/click": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Referral Click */
+        post: operations["referral_click_api_v1_public_ref__code__click_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/showcase": {
         parameters: {
             query?: never;
@@ -4102,6 +4178,34 @@ export interface components {
             kind: string;
             /** Variant Id */
             variant_id?: string | null;
+        };
+        /** Body_upload_logo_api_v1_bureau_branding_logo_post */
+        Body_upload_logo_api_v1_bureau_branding_logo_post: {
+            /** File */
+            file: string;
+        };
+        /** BrandingIn */
+        BrandingIn: {
+            /**
+             * Accent Hex
+             * @default
+             */
+            accent_hex?: string;
+            /**
+             * Display Name
+             * @default
+             */
+            display_name?: string;
+            /**
+             * Doc Lang
+             * @default hy
+             */
+            doc_lang?: string;
+            /**
+             * Domain
+             * @default
+             */
+            domain?: string;
         };
         /** CancelIn */
         CancelIn: {
@@ -5021,6 +5125,11 @@ export interface components {
             org_name: string;
             /** Password */
             password: string;
+            /**
+             * Ref
+             * @default
+             */
+            ref?: string;
         };
         /** RenderIn */
         RenderIn: {
@@ -5262,6 +5371,11 @@ export interface components {
              *     }
              */
             procurement_fee?: components["schemas"]["Fee"];
+            /**
+             * Referral Reward Pct
+             * @default 0
+             */
+            referral_reward_pct?: number;
             /**
              * Storage Addons
              * @default []
@@ -8599,6 +8713,146 @@ export interface operations {
             };
         };
     };
+    get_branding_api_v1_bureau_branding_get: {
+        parameters: {
+            query?: {
+                org_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_branding_api_v1_bureau_branding_put: {
+        parameters: {
+            query?: {
+                org_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_logo_api_v1_bureau_branding_logo_post: {
+        parameters: {
+            query?: {
+                org_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_logo_api_v1_bureau_branding_logo_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_logo_api_v1_bureau_branding_logo_delete: {
+        parameters: {
+            query?: {
+                org_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     bureau_overview_api_v1_bureau_overview_get: {
         parameters: {
             query?: {
@@ -10153,6 +10407,39 @@ export interface operations {
                 project_id?: string;
                 q?: string;
                 days?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    partner_dashboard_api_v1_partner_get: {
+        parameters: {
+            query?: {
+                months?: number;
             };
             header?: {
                 authorization?: string | null;
@@ -12961,6 +13248,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    referral_click_api_v1_public_ref__code__click_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -18,6 +18,12 @@ export default function Landing() {
   const { t } = useT();
   const [sc, setSc] = useState<Showcase | null>(null);
   useEffect(() => { api<Showcase>("/public/showcase").then(setSc).catch(() => {}); }, []);
+  useEffect(() => {  // partner link: count the visit (no personal data) and remember the code for registration
+    const ref = new URLSearchParams(location.search).get("ref");
+    if (!ref || !/^[a-z0-9-]{3,24}$/.test(ref)) return;
+    try { localStorage.setItem("forma.ref", ref); } catch { /* private mode */ }
+    api(`/public/ref/${ref}/click`, { method: "POST" }).catch(() => {});
+  }, []);
   const links = <>
     <a href="#how">{t("landing.nav.how")}</a><a href="#products">{t("landing.nav.designers")}</a><a href="#suppliers">{t("landing.nav.suppliers")}</a>
     <a href="#pricing">{t("landing.nav.pricing")}</a><a href="#trust">{t("landing.nav.trust")}</a>

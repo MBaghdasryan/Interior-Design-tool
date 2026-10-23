@@ -111,3 +111,46 @@ def test_analytics_scopes(client, designer, admin):
     assert g["scope"] == "platform" and len(g["months"]) == 12 and g["platform"]["orgs"]["bureau"] >= 1 and "subscription" in g["platform"]["revenue"]
     assert g["projects"]["total"] >= a["projects"]["total"]
     assert client.get("/api/v1/analytics", headers=login(client, "supplier@forma.local")).status_code == 403
+
+
+def test_white_label_on_client_portal(client, designer):
+    import io
+
+    from PIL import Image
+
+    boss = login(client, "bureau@forma.local")
+    assert client.put("/api/v1/bureau/branding", headers=designer, json={"display_name": "X"}).status_code == 403  # bureau head only
+    b = client.put("/api/v1/bureau/branding", headers=boss, json={"display_name": "Studio Forma", "accent_hex": "#1f6f5c", "domain": "design.studioforma.am", "doc_lang": "ru"}).json()
+    assert b["domain_status"] == "pending" and b["accent_hex"] == "#1f6f5c"
+    buf = io.BytesIO()
+    Image.new("RGB", (400, 120), "#1f6f5c").save(buf, "PNG")
+    r = client.post("/api/v1/bureau/branding/logo", headers=boss, files={"file": ("logo.png", buf.getvalue(), "image/png")}).json()
+    assert r["logo_url"]
+    assert client.post("/api/v1/bureau/branding/logo", headers=boss, files={"file": ("logo.svg", b"<svg onload=alert(1)>", "image/svg+xml")}).status_code == 415
+    pid = client.post("/api/v1/projects", headers=designer, json={"title": "Бренд"}).json()["id"]
+    share = client.get(f"/api/v1/projects/{pid}", headers=designer).json()["share_token"]
+    cv = client.get(f"/api/v1/client/{share}").json()
+    assert cv["branding"]["display_name"] == "Studio Forma" and cv["branding"]["logo_url"]
+    client.delete("/api/v1/bureau/branding/logo", headers=boss)
+    client.put("/api/v1/bureau/branding", headers=boss, json={"display_name": "", "accent_hex": "", "domain": "", "doc_lang": "hy"})
+    client.delete(f"/api/v1/projects/{pid}", headers=designer)
+
+
+def test_partner_referral_funnel(client, designer, admin):
+    d = client.get("/api/v1/partner", headers=designer).json()
+    code = d["code"]
+    assert d["link"].endswith(f"?ref={code}") and d["reward_amd"] is None  # no rate published → no promised reward
+    assert client.post(f"/api/v1/public/ref/{code}/click").json()["ok"]
+    assert not client.post("/api/v1/public/ref/unknown-0000/click").json()["ok"]
+    r = client.post("/api/v1/auth/register", json={"email": "referred.head@studio.am", "password": "Referred-Strong-Pass-1", "name": "Referred", "org_name": "Referred Studio",
+                                                  "org_kind": "bureau", "locale": "ru", "accept_terms": True, "ref": code})
+    assert r.status_code == 200, r.text
+    client.cookies.clear()
+    d = client.get("/api/v1/partner", headers=designer).json()
+    assert d["funnel"]["clicks"] >= 1 and d["funnel"]["signups"] >= 1 and any(x["org"] == "Referred Studio" for x in d["referred"])
+    t = client.get("/api/v1/admin/tariffs", headers=admin).json()
+    client.put("/api/v1/admin/tariffs", headers=admin, json={**t, "referral_reward_pct": 10})
+    assert client.get("/api/v1/partner", headers=designer).json()["reward_amd"] == 0  # rate set, nothing paid yet
+    with SessionLocal() as db:
+        db.query(m.PlatformSetting).filter_by(key="tariffs").delete()
+        db.commit()

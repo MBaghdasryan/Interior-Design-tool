@@ -26,6 +26,7 @@ MESSAGES: dict[str, str] = {
     "billing.trial_used": "Пробный период уже использован",
     "billing.not_refundable": "Этот платёж нельзя вернуть",
     "billing.refund_amount": "Сумма возврата должна быть от 1 до {max} AMD",
+    "plan.feature_unavailable": "Эта функция доступна на тарифах Designer Pro, Bureau и выше",
     "plan.seat_limit": "Лимит тарифа: не более {limit} рабочих мест",
     "plan.sku_limit": "Лимит тарифа «{plan}»: не более {limit} SKU",
     "application.decided": "Решение по заявке уже принято",

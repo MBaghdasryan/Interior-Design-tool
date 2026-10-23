@@ -97,7 +97,10 @@ def create_project(body: ProjectIn, p: Principal = Depends(current_principal), d
     from ..commerce.tariffs import check_project_quota
 
     check_project_quota(db, org_id)
-    proj = m.Project(org_id=org_id, owner_id=p.user.id, designer_name=p.user.name if "designer" in p.all_roles() else "", **body.model_dump())
+    data = body.model_dump()
+    if "doc_lang" not in body.model_fields_set:  # the organisation's default album language
+        data["doc_lang"] = ((db.get(m.Organization, org_id).settings or {}).get("doc_lang")) or data["doc_lang"]
+    proj = m.Project(org_id=org_id, owner_id=p.user.id, designer_name=p.user.name if "designer" in p.all_roles() else "", **data)
     db.add(proj)
     db.flush()
     audit(db, p, "project.create", "project", proj.id, project_id=proj.id, org_id=org_id)

@@ -112,6 +112,7 @@ export const errors: Dict = {
   "errors.plan.seat_limit": { hy: "Սակագնի սահմանաչափը՝ առավելագույնը {limit} աշխատատեղ", ru: "Лимит тарифа: не более {limit} рабочих мест", en: "Plan limit: at most {limit} seats" },
   "errors.plan.sku_limit": { hy: "«{plan}» սակագնի սահմանաչափը՝ առավելագույնը {limit} SKU", ru: "Лимит тарифа «{plan}»: не более {limit} SKU", en: "“{plan}” plan limit: at most {limit} SKUs" },
   "errors.application.decided": { hy: "Հայտի վերաբերյալ որոշումն արդեն կայացված է", ru: "Решение по заявке уже принято", en: "The application has already been decided" },
+  "errors.plan.feature_unavailable": { hy: "Այս գործառույթը հասանելի է Designer Pro, Bureau և ավելի բարձր սակագներում", ru: "Эта функция доступна на тарифах Designer Pro, Bureau и выше", en: "This feature is available on Designer Pro, Bureau and higher plans" },
   "errors.plan.project_limit": { hy: "«{plan}» սակագնի սահմանաչափը՝ առավելագույնը {limit} ակտիվ նախագիծ", ru: "Лимит тарифа «{plan}»: не более {limit} активных проектов", en: "Plan «{plan}» allows at most {limit} active projects" },
   "errors.rfq.demo_supplier": { hy: "DEMO մատակարար․ հարցումը իրական խանութ չի ուղարկվում", ru: "DEMO-поставщик: RFQ не отправляется реальному магазину", en: "DEMO supplier: the RFQ is not sent to a real store" },
   "errors.aps.disabled": { hy: "Autodesk APS-ը միացված չէ", ru: "Autodesk APS не подключён", en: "Autodesk APS is not connected" },

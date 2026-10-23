@@ -13,7 +13,7 @@ import { LangSwitch, Logo } from "../components/AppShell";
 import { STAGES, stageIndex } from "./Dashboard";
 import { Zoomable } from "../components/Lightbox";
 
-interface CV { project: { title: string; address: string; area_m2: number; accuracy_level: string; status: string }; variants: Variant[]; comments: { id: string; body: string; author_name: string; variant_id: string | null; anchor: { object_id?: string }; created_at: string }[] }
+interface CV { branding: { display_name: string; accent_hex: string; logo_url: string | null } | null; project: { title: string; address: string; area_m2: number; accuracy_level: string; status: string }; variants: Variant[]; comments: { id: string; body: string; author_name: string; variant_id: string | null; anchor: { object_id?: string }; created_at: string }[] }
 
 // Mobile-first approval flow for the end client (opened by share link, no account).
 export default function ClientViewer() {
@@ -48,8 +48,9 @@ export default function ClientViewer() {
     toast(decision === "approved" ? t("cv.approved_msg") : t("cv.changes_msg"));
   };
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 90 }}>
-      <header className="row between wrap" style={{ padding: 16 }}><div className="row"><Logo size={26} /><b>{d.project.title}</b></div><div className="row"><LangSwitch compact /><AccuracyBadge level={d.project.accuracy_level} /></div></header>
+    <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 90, ...(d.branding?.accent_hex ? { ["--terra-ink" as string]: d.branding.accent_hex, ["--terra" as string]: d.branding.accent_hex } : {}) }}>
+      <header className="row between wrap" style={{ padding: 16 }}><div className="row">{d.branding?.logo_url ? <img src={d.branding.logo_url} alt={d.branding.display_name} style={{ height: 30, maxWidth: 160, objectFit: "contain" }} />
+        : d.branding ? <b>{d.branding.display_name}</b> : <Logo size={26} />}<b>{d.project.title}</b></div><div className="row"><LangSwitch compact /><AccuracyBadge level={d.project.accuracy_level} /></div></header>
       <div className="row" style={{ padding: "0 16px", overflowX: "auto" }}>{d.variants.map((x, i) => <button key={x.id} className={`chip ${i === idx ? "on" : ""}`} onClick={() => setIdx(i)}>{variantTitle(x)}{x.status === "approved" && " ✓"}</button>)}</div>
       <div className="tabs" style={{ padding: "0 8px", marginTop: 8 }}>
         {(["look", "plan", "cost", "talk"] as const).map((k) => <button key={k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{t(`cv.tab.${k}`, { n: comments.length })}</button>)}

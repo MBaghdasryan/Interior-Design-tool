@@ -37,6 +37,8 @@ import Crm from "./pages/Crm";
 import Tasks from "./pages/Tasks";
 import Messages from "./pages/Messages";
 import Analytics from "./pages/Analytics";
+import Partner from "./pages/Partner";
+import OrgSettings from "./pages/OrgSettings";
 import BureauCabinet from "./pages/BureauCabinet";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import Pim from "./pages/Pim";
@@ -84,6 +86,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="tasks" element={<Tasks />} />
             <Route path="messages" element={<Messages />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="partner" element={<Partner />} />
+            <Route path="org-settings" element={<OrgSettings />} />
             <Route path="bureau" element={<BureauCabinet />} />
             <Route path="admin" element={<PlatformAdmin />} />
             <Route path="pim" element={<Pim />} />

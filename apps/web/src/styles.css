@@ -460,3 +460,15 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
 .hbar .track i { display: block; height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; }
 .hbar .val { color: var(--ink-2); }
 .icon-btn.on { background: var(--terra-soft); border-color: var(--terra); }
+/* ---- partner programme, organisation settings ---- */
+.funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.fstep { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 6px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); position: relative; }
+.fstep b { font-size: 22px; }
+.logo-box { width: 200px; height: 80px; border: 1px dashed var(--line-2); border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); overflow: hidden; }
+.logo-box img { max-width: 92%; max-height: 70px; object-fit: contain; }
+.wl-preview { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.wl-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.wl-head img { height: 28px; max-width: 140px; object-fit: contain; }
+.wl-body { padding: 16px 14px; background: var(--surface-2); }
+.wl-btn { display: inline-block; padding: 6px 12px; border-radius: 8px; background: var(--wl); color: #fff; font-size: 13px; }
+.wl-btn.ghost { background: transparent; color: var(--wl); border: 1px solid var(--wl); }

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import false, func, or_, select
 from sqlalchemy.orm import Session
@@ -647,3 +647,169 @@ def analytics(months: int = Query(6, ge=3, le=24), org_id: str | None = None, p:
                            "catalogue": {"skus": len(variants_all), "priced": sum(1 for v in variants_all if v.price is not None), "fresh_7d": sum(1 for v in variants_all if fresh(v)),
                                          "external_records": db.scalar(select(func.count(m.ExternalProductRecord.id))) or 0}}
     return out
+
+
+# ------------------------------------------------------------------ white label (mockup 33): bureau brand on client links
+BRANDED_PLANS = {None, "designer_pro", "bureau", "enterprise", "white_label"}  # pilot (no plan) included
+
+
+def branding_of(db: Session, org: m.Organization) -> dict:
+    from ..storage import get_storage
+
+    b = dict((org.settings or {}).get("branding") or {})
+    return {"display_name": b.get("display_name") or org.name, "accent_hex": b.get("accent_hex") or "", "logo_url": get_storage().signed_url(b["logo_key"]) if b.get("logo_key") else None,
+            "domain": b.get("domain") or "", "domain_status": b.get("domain_status") or ("pending" if b.get("domain") else ""),
+            "doc_lang": (org.settings or {}).get("doc_lang") or "hy"}
+
+
+def _branding_allowed(db: Session, org: m.Organization) -> bool:
+    from ..commerce.tariffs import org_plan
+
+    plan = org_plan(db, org)
+    return (plan.key if plan else None) in BRANDED_PLANS
+
+
+@router.get("/bureau/branding")
+def get_branding(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    return {**branding_of(db, org), "allowed": _branding_allowed(db, org)}
+
+
+class BrandingIn(BaseModel):
+    display_name: str = Field(default="", max_length=120)
+    accent_hex: str = Field(default="", pattern=r"^(#[0-9a-fA-F]{6})?$")
+    domain: str = Field(default="", max_length=200, pattern=r"^([a-z0-9-]+(\.[a-z0-9-]+)+)?$")
+    doc_lang: str = Field(default="hy", pattern="^(hy|ru|en)$")
+
+
+def _admin_of(p: Principal, org: m.Organization) -> None:
+    if not (p.is_platform_admin or "bureau_admin" in p.roles.get(org.id, set())):
+        raise ApiError(403, "auth.forbidden")
+
+
+@router.put("/bureau/branding")
+def put_branding(body: BrandingIn, org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    _admin_of(p, org)
+    if not _branding_allowed(db, org):
+        raise ApiError(402, "plan.feature_unavailable")
+    st = dict(org.settings or {})
+    b = dict(st.get("branding") or {})
+    if body.domain != b.get("domain"):
+        b["domain_status"] = "pending" if body.domain else ""  # connected by the platform once DNS and hosting exist
+    b.update(display_name=body.display_name.strip(), accent_hex=body.accent_hex, domain=body.domain)
+    st.update(branding=b, doc_lang=body.doc_lang)
+    org.settings = st
+    audit(db, p, "bureau.branding", "organization", org.id, org_id=org.id, data={"domain": body.domain})
+    db.commit()
+    return {**branding_of(db, org), "allowed": True}
+
+
+@router.post("/bureau/branding/logo")
+async def upload_logo(file: UploadFile = File(...), org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """PNG/JPEG/WebP up to 2 MB, re-encoded server-side (no SVG: it can carry scripts)."""
+    import io
+
+    from PIL import Image, UnidentifiedImageError
+
+    from ..storage import get_storage
+
+    org = _bureau(p, db, org_id)
+    _admin_of(p, org)
+    if not _branding_allowed(db, org):
+        raise ApiError(402, "plan.feature_unavailable")
+    data = await file.read(2_000_001)
+    if len(data) > 2_000_000:
+        raise ApiError(413, "asset.too_large")
+    try:
+        img = Image.open(io.BytesIO(data))
+        if img.format not in ("PNG", "JPEG", "WEBP"):
+            raise ApiError(415, "file.unsupported")
+        img.thumbnail((800, 400))
+        out = io.BytesIO()
+        img.convert("RGBA").save(out, "PNG", optimize=True)
+    except (UnidentifiedImageError, OSError):
+        raise ApiError(415, "file.unsupported") from None
+    key = f"orgs/{org.id}/logo-{m.new_id()[:8]}.png"
+    get_storage().put(key, out.getvalue(), "image/png")
+    st = dict(org.settings or {})
+    st["branding"] = {**(st.get("branding") or {}), "logo_key": key}
+    org.settings = st
+    audit(db, p, "bureau.logo", "organization", org.id, org_id=org.id)
+    db.commit()
+    return {**branding_of(db, org), "allowed": True}
+
+
+@router.delete("/bureau/branding/logo")
+def delete_logo(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    _admin_of(p, org)
+    st = dict(org.settings or {})
+    b = dict(st.get("branding") or {})
+    b.pop("logo_key", None)
+    st["branding"] = b
+    org.settings = st
+    db.commit()
+    return {**branding_of(db, org), "allowed": _branding_allowed(db, org)}
+
+
+# ------------------------------------------------------------------ partner (referral) programme (mockup 23)
+def _code_for(db: Session, user: m.User) -> str:
+    row = db.get(m.PartnerCode, user.id)
+    if row:
+        return row.code
+    import secrets
+
+    base = "".join(ch for ch in (user.name or "partner").lower() if ch.isascii() and ch.isalnum())[:10] or "partner"
+    code = f"{base}-{secrets.token_hex(2)}"
+    while db.scalar(select(m.PartnerCode.user_id).where(m.PartnerCode.code == code)):
+        code = f"{base}-{secrets.token_hex(2)}"
+    db.add(m.PartnerCode(user_id=user.id, code=code))
+    db.commit()
+    return code
+
+
+@router.get("/partner")
+def partner_dashboard(months: int = Query(6, ge=3, le=24), p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Clicks → registrations → organisations with projects → paying organisations; reward only once the platform sets a rate."""
+    from ..commerce.tariffs import get_tariffs
+    from ..config import get_settings
+
+    code = _code_for(db, p.user)
+    labels = _months(months)
+    clicks = {r.day: r.count for r in db.scalars(select(m.ReferralClick).where(m.ReferralClick.code == code))}
+    by_month = {k: 0 for k in labels}
+    for day, n in clicks.items():
+        if day[:7] in by_month:
+            by_month[day[:7]] += n
+    orgs = [o for o in db.scalars(select(m.Organization).where(m.Organization.kind.in_(("bureau", "supplier")))) if (o.settings or {}).get("referred_by") == code]
+    rows = []
+    paid_total = 0
+    for o in orgs:
+        projects = db.scalar(select(func.count(m.Project.id)).where(m.Project.org_id == o.id)) or 0
+        paid = int(db.scalar(select(func.coalesce(func.sum(m.BillingPayment.amount_amd - m.BillingPayment.refunded_amd), 0)).where(
+            m.BillingPayment.org_id == o.id, m.BillingPayment.status.in_(("paid", "refunded")))) or 0)
+        paid_total += paid
+        rows.append({"org": o.name, "kind": o.kind, "joined": _iso(o.created_at), "projects": projects, "paid_amd": paid,
+                     "stage": "payment" if paid else "project" if projects else "signup"})
+    rate = get_tariffs(db).referral_reward_pct
+    total_clicks = sum(clicks.values())
+    return {"code": code, "link": f"{get_settings().public_base_url.rstrip('/')}/?ref={code}", "months": labels, "clicks_by_month": [by_month[k] for k in labels],
+            "funnel": {"clicks": total_clicks, "signups": len(orgs), "projects": sum(1 for r in rows if r["projects"]), "payments": sum(1 for r in rows if r["paid_amd"])},
+            "referred": sorted(rows, key=lambda r: r["joined"] or "", reverse=True), "paid_amd": paid_total,
+            "reward_pct": rate, "reward_amd": round(paid_total * rate / 100) if rate else None}
+
+
+@router.post("/public/ref/{code}/click")
+def referral_click(code: str, request: Request, db: Session = Depends(get_db)):
+    from ..ratelimit import check as rate_check
+
+    rate_check(f"refclick:{request.client.host if request.client else '-'}:{code}", 20, 3600)
+    if not db.scalar(select(m.PartnerCode.user_id).where(m.PartnerCode.code == code)):
+        return {"ok": False}
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    row = db.get(m.ReferralClick, (code, day)) or m.ReferralClick(code=code, day=day, count=0)
+    row.count += 1
+    db.merge(row)
+    db.commit()
+    return {"ok": True}

@@ -73,6 +73,7 @@ class Tariffs(BaseModel):
     trial: Trial = Trial()
     credits_enforced: bool = False  # refuse paid AI operations at zero balance (off for the pilot)
     default_plan: str | None = None  # plan of new organisations; None = pilot without limits
+    referral_reward_pct: float = Field(default=0, ge=0, le=50)  # partner reward on referred organisations' platform payments; 0 = terms not published yet
     partner_commission_default_pct: float = Field(default=0, ge=0, le=50)  # per-supplier value overrides
     procurement_fee: Fee = Fee()
     manufacturer: Fee = Fee()  # pct = per SKU per month (AMD), fixed = monthly subscription

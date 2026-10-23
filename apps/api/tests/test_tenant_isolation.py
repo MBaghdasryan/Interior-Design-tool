@@ -12,6 +12,7 @@ from app.main import app
 
 pytestmark = pytest.mark.usefixtures("client")
 PUBLIC_BY_TOKEN = ("/api/v1/client/{token}",)  # capability links: checked separately with a wrong token
+PUBLIC = ("/api/v1/public/",)  # anonymous site endpoints (price list, applications, referral counter) — no tenant data in or out
 DUMMY = "0" * 32
 
 
@@ -101,7 +102,7 @@ def test_no_route_leaks_across_tenants(client):
     leaks, errors, checked = [], [], 0
     for path, ops in spec["paths"].items():
         params = re.findall(r"{(\w+)(?::\w+)?}", path)
-        if not params or path.startswith(PUBLIC_BY_TOKEN):
+        if not params or path.startswith(PUBLIC_BY_TOKEN) or path.startswith(PUBLIC):
             continue
         for method, op in ops.items():
             if path.startswith("/api/v1/admin/sources") or path.startswith("/api/v1/catalog/external/review"):

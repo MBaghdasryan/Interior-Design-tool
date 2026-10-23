@@ -837,6 +837,22 @@ class ProjectRead(Base):
     last_read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+# ---------------------------------------------------------------- partner (referral) programme
+class PartnerCode(TimestampMixin, Base):
+    """A person's referral code; organisations registered through it carry settings.referred_by."""
+    __tablename__ = "partner_codes"
+    user_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    code: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+
+
+class ReferralClick(Base):
+    """Daily click counter per code — no IP, cookie or other personal data is kept."""
+    __tablename__ = "referral_clicks"
+    code: Mapped[str] = mapped_column(String(24), primary_key=True)
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)  # YYYY-MM-DD
+    count: Mapped[int] = mapped_column(Integer, default=0)
+
+
 # ---------------------------------------------------------------- billing (pricing v1.0, Ameriabank vPOS)
 class CreditEntry(TimestampMixin, Base):
     """Immutable AI-credit ledger of an organisation: grants (plan, pack, trial) and spends (one row per AI operation)."""

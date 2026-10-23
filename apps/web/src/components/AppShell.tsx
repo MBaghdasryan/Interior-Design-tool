@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, MessagesSquare, PackageCheck, PlusCircle, Contact, ListTodo, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
+import { BarChart3, BookOpenCheck, Handshake, Palette, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, MessagesSquare, PackageCheck, PlusCircle, Contact, ListTodo, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -127,12 +127,14 @@ export default function AppShell() {
           {!isSupplier && <NavLink to="/app/suppliers"><Truck size={18} /> {t("nav.suppliers")}</NavLink>}
           {(isBureauHead || isAdmin || isSupplier || isOps) && <div className="section">{t("nav.cabinets")}</div>}
           {(isBureauHead || isAdmin) && <NavLink to="/app/bureau"><Building2 size={18} /> {t("nav.bureau")}</NavLink>}
+          {isBureauHead && <NavLink to="/app/org-settings"><Palette size={18} /> {t("nav.org_settings")}</NavLink>}
           {(isSupplier || isPlatform) && <NavLink to="/app/supplier" end><Store size={18} /> {t("nav.supplier")}</NavLink>}
           {isSupplier && <NavLink to="/app/supplier/demand"><Inbox size={18} /> {t("nav.demand")}</NavLink>}
           {isPlatform && <><div className="section">{t("nav.administration")}</div>
             <NavLink to="/app/admin"><ShieldCheck size={18} /> {t("nav.admin")}</NavLink>
             {isAdmin && <NavLink to="/app/finance"><Wallet size={18} /> {t("nav.finance")}</NavLink>}
             <NavLink to="/app/pim"><Settings2 size={18} /> {t("nav.pim")}</NavLink></>}
+          {designs && !isAdmin && <NavLink to="/app/partner"><Handshake size={18} /> {t("nav.partner")}</NavLink>}
           {(designs || isSupplier) && !isAdmin && <NavLink to="/app/billing"><CreditCard size={18} /> {t("nav.billing")}</NavLink>}
           {isLinguist && <NavLink to="/app/glossary"><BookOpenCheck size={18} /> {t("nav.glossary")}</NavLink>}
         </nav>
