@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import false, or_, select
+from sqlalchemy import false, func, or_, select
 from sqlalchemy.orm import Session
 
 from .. import models as m
@@ -520,3 +520,130 @@ def inbox(p: Principal = Depends(current_principal), db: Session = Depends(get_d
                     "unread": sum(1 for c in msgs if c.author_id != p.user.id and _after(c.created_at, seen))})
     out.sort(key=lambda x: x["last"]["at"] or "", reverse=True)
     return {"items": out, "unread": sum(x["unread"] for x in out)}
+
+
+# ------------------------------------------------------------------ analytics (mockup 19) — computed from the organisation's own records
+def _months(n: int) -> list[str]:
+    now = datetime.now(timezone.utc)
+    out = []
+    y, mo = now.year, now.month
+    for _ in range(n):
+        out.append(f"{y:04d}-{mo:02d}")
+        mo -= 1
+        if not mo:
+            y, mo = y - 1, 12
+    return out[::-1]
+
+
+def _bucket(d: datetime | None) -> str | None:
+    return f"{d.year:04d}-{d.month:02d}" if d else None
+
+
+@router.get("/analytics")
+def analytics(months: int = Query(6, ge=3, le=24), org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Bureau: its projects, estimates, orders, clients and tasks. Platform admin without org_id: the whole platform plus revenue and catalogue."""
+    from statistics import median
+
+    scope_all = p.is_platform_admin and not org_id
+    org = None if scope_all else _bureau(p, db, org_id)
+    labels = _months(months)
+    pq = select(m.Project) if scope_all else select(m.Project).where(m.Project.org_id == org.id)
+    projects = db.scalars(pq).all()
+    pids = [x.id for x in projects]
+    per_month = {k: 0 for k in labels}
+    for x in projects:
+        k = _bucket(x.created_at)
+        if k in per_month:
+            per_month[k] += 1
+    status = defaultdict(int)
+    for x in projects:
+        status[x.status] += 1
+    # chosen / approved variants: budget, cost per m², spend by group, suppliers
+    variants = db.scalars(select(m.DesignVariant).where(m.DesignVariant.project_id.in_(pids), m.DesignVariant.status.in_(("selected", "approved")))).all() if pids else []
+    by_proj = {v.project_id: v for v in variants}
+    totals = [(v.metrics or {}).get("total") or 0 for v in by_proj.values()]
+    area = {x.id: x.area_m2 for x in projects}
+    per_m2 = [t / area[pid] for pid, t in ((v.project_id, (v.metrics or {}).get("total") or 0) for v in by_proj.values()) if area.get(pid) and t]
+    groups, suppliers = defaultdict(int), defaultdict(int)
+    real = demo = concept = 0
+    for v in by_proj.values():
+        ver = db.get(m.DesignVersion, v.current_version_id) if v.current_version_id else None
+        for ln in ((ver.estimate or {}).get("lines") or []) if ver else []:
+            tot = ln.get("total") or 0
+            groups[ln.get("group") or "other"] += tot
+            if ln.get("supplier") and ln.get("ref"):
+                suppliers[ln["supplier"]] += tot
+                if ln.get("is_demo"):
+                    demo += 1
+                elif str(ln.get("ref", "")).startswith("concept:"):
+                    concept += 1
+                else:
+                    real += 1
+    # time from project creation to the first approval
+    days_to_approve = []
+    if pids:
+        firsts = {}
+        for a in db.scalars(select(m.Approval).where(m.Approval.project_id.in_(pids), m.Approval.decision == "approved").order_by(m.Approval.created_at)):
+            firsts.setdefault(a.project_id, a.created_at)
+        created = {x.id: x.created_at for x in projects}
+        for pid, at in firsts.items():
+            if created.get(pid) and at:
+                days_to_approve.append((at - created[pid]).total_seconds() / 86400)
+    # orders
+    oq = select(m.Order).where(m.Order.status != "cart") if scope_all else select(m.Order).where(m.Order.status != "cart", m.Order.project_id.in_(pids or [""]))
+    orders = db.scalars(oq).all()
+    o_month = {k: 0 for k in labels}
+    for o in orders:
+        k = _bucket(o.created_at)
+        if k in o_month:
+            o_month[k] += sum((o.totals or {}).get(x) or 0 for x in ("goods", "delivery", "installation"))
+    # CRM and tasks (bureau scope)
+    crm = tasks = None
+    if org:
+        clients = db.scalars(select(m.Client).where(m.Client.org_id == org.id)).all()
+        src = defaultdict(lambda: {"clients": 0, "won": 0, "lost": 0})
+        for c in clients:
+            s = src[c.source]
+            s["clients"] += 1
+            s["won"] += c.stage in ("in_work", "done")
+            s["lost"] += c.stage == "lost"
+        crm = {"by_stage": {s: sum(1 for c in clients if c.stage == s) for s in STAGES_CRM}, "by_source": [{"source": k, **v} for k, v in sorted(src.items(), key=lambda x: -x[1]["clients"])]}
+        ts = db.scalars(select(m.Task).where(m.Task.org_id == org.id)).all()
+        done = {k: 0 for k in labels}
+        for t in ts:
+            k = _bucket(t.done_at)
+            if k in done:
+                done[k] += 1
+        now = datetime.now(timezone.utc)
+        tasks = {"done_by_month": [done[k] for k in labels], "open": sum(1 for t in ts if t.status != "done"),
+                 "overdue": sum(1 for t in ts if t.status != "done" and t.due_at and (t.due_at.replace(tzinfo=timezone.utc) if t.due_at.tzinfo is None else t.due_at) < now)}
+    # AI spend per project (variable cost)
+    ai_rows = db.execute(select(m.AIUsage.project_id, func.coalesce(func.sum(m.AIUsage.cost_usd), 0.0)).where(m.AIUsage.project_id.in_(pids or [""]), m.AIUsage.provider != "stub")
+                         .group_by(m.AIUsage.project_id)).all()
+    ai = [float(c) for _, c in ai_rows if c]
+    out = {"scope": "platform" if scope_all else "bureau", "months": labels,
+           "projects": {"total": len(projects), "by_month": [per_month[k] for k in labels], "by_status": dict(status),
+                        "accuracy": {lvl: sum(1 for x in projects if x.accuracy_level == lvl) for lvl in ("concept", "verified", "production")},
+                        "median_days_to_approval": round(median(days_to_approve), 1) if days_to_approve else None},
+           "estimates": {"projects": len(totals), "average_amd": round(sum(totals) / len(totals)) if totals else None, "median_amd": round(median(totals)) if totals else None,
+                         "per_m2_amd": round(median(per_m2)) if per_m2 else None, "by_group": dict(sorted(groups.items(), key=lambda x: -x[1])),
+                         "top_suppliers": [{"name": k, "amount_amd": v} for k, v in sorted(suppliers.items(), key=lambda x: -x[1])[:8]],
+                         "sourcing": {"real": real, "demo": demo, "concept": concept}},
+           "orders": {"count": len(orders), "amount_by_month": [o_month[k] for k in labels], "by_status": dict((s, sum(1 for o in orders if o.status == s)) for s in {o.status for o in orders})},
+           "crm": crm, "tasks": tasks,
+           "ai": {"projects_with_ai": len(ai), "avg_usd": round(sum(ai) / len(ai), 3) if ai else None, "median_usd": round(median(ai), 3) if ai else None}}
+    if scope_all:
+        from ..commerce import tariffs
+
+        fresh_cut = datetime.now(timezone.utc) - timedelta(days=7)
+        variants_all = db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.status == "active", m.Product.is_demo.is_(False))).all()
+
+        def fresh(v):
+            c = v.price_checked_at
+            return c is not None and (c.replace(tzinfo=timezone.utc) if c.tzinfo is None else c) >= fresh_cut
+        out["platform"] = {"orgs": {k: db.scalar(select(func.count(m.Organization.id)).where(m.Organization.kind == k)) or 0 for k in ("bureau", "supplier")},
+                           "users": db.scalar(select(func.count(m.User.id)).where(m.User.status == "active")) or 0,
+                           "revenue": tariffs.revenue_report(db)["totals"],
+                           "catalogue": {"skus": len(variants_all), "priced": sum(1 for v in variants_all if v.price is not None), "fresh_7d": sum(1 for v in variants_all if fresh(v)),
+                                         "external_records": db.scalar(select(func.count(m.ExternalProductRecord.id))) or 0}}
+    return out

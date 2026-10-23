@@ -851,6 +851,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analytics
+         * @description Bureau: its projects, estimates, orders, clients and tasks. Platform admin without org_id: the whole platform plus revenue and catalogue.
+         */
+        get: operations["analytics_api_v1_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/aps/setup-design-automation": {
         parameters: {
             query?: never;
@@ -7350,6 +7370,40 @@ export interface operations {
             path: {
                 uid: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analytics_api_v1_analytics_get: {
+        parameters: {
+            query?: {
+                months?: number;
+                org_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

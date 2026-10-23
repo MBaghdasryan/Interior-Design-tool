@@ -444,3 +444,19 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
 .chat-input { display: flex; gap: 8px; align-items: flex-end; padding: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
 @media (max-width: 960px) { .msg-grid { grid-template-columns: 1fr; } }
 .chip { white-space: nowrap; }
+/* ---- single-series charts (validated slot-1 blue, value labels, hover tips, table view) ---- */
+:root { --viz-1: #2a78d6; }
+.cols { display: flex; align-items: flex-end; gap: 10px; padding: 18px 4px 22px; position: relative; }
+.col-slot { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+.col-slot i { width: min(36px, 70%); background: var(--viz-1); border-radius: 4px 4px 0 0; }
+.col-slot .val { color: var(--ink-2); margin-bottom: 2px; }
+.col-slot .lab { position: absolute; bottom: -18px; }
+.col-slot:hover i { opacity: 0.85; }
+.tip { position: absolute; top: -6px; left: 50%; transform: translate(-50%, -100%); background: var(--ink); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; z-index: 3; pointer-events: none; }
+.hbars { display: flex; flex-direction: column; gap: 6px; }
+.hbar { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; gap: 8px; align-items: center; }
+.hbar .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .track { position: relative; height: 14px; }
+.hbar .track i { display: block; height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; }
+.hbar .val { color: var(--ink-2); }
+.icon-btn.on { background: var(--terra-soft); border-color: var(--terra); }

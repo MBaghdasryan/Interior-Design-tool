@@ -101,3 +101,13 @@ def test_project_chat_team_notes_stay_internal(client, designer):
     client.post(f"/api/v1/projects/{pid}/messages/read", headers=boss)
     assert next(x for x in client.get("/api/v1/messages/inbox", headers=boss).json()["items"] if x["project_id"] == pid)["unread"] == 0
     client.delete(f"/api/v1/projects/{pid}", headers=designer)
+
+
+def test_analytics_scopes(client, designer, admin):
+    a = client.get("/api/v1/analytics", headers=designer).json()
+    assert a["scope"] == "bureau" and len(a["months"]) == 6 and a["projects"]["total"] >= 1 and a["crm"] is not None and "platform" not in a
+    assert len(a["projects"]["by_month"]) == 6 and sum(a["projects"]["by_month"]) <= a["projects"]["total"]
+    g = client.get("/api/v1/analytics", headers=admin, params={"months": 12}).json()
+    assert g["scope"] == "platform" and len(g["months"]) == 12 and g["platform"]["orgs"]["bureau"] >= 1 and "subscription" in g["platform"]["revenue"]
+    assert g["projects"]["total"] >= a["projects"]["total"]
+    assert client.get("/api/v1/analytics", headers=login(client, "supplier@forma.local")).status_code == 403

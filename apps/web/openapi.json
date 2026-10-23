@@ -7280,6 +7280,82 @@
     ]
    }
   },
+  "/api/v1/analytics": {
+   "get": {
+    "description": "Bureau: its projects, estimates, orders, clients and tasks. Platform admin without org_id: the whole platform plus revenue and catalogue.",
+    "operationId": "analytics_api_v1_analytics_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "months",
+      "required": false,
+      "schema": {
+       "default": 6,
+       "maximum": 24,
+       "minimum": 3,
+       "title": "Months",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Analytics",
+    "tags": [
+     "workspace"
+    ]
+   }
+  },
   "/api/v1/aps/setup-design-automation": {
    "post": {
     "operationId": "aps_setup_api_v1_aps_setup_design_automation_post",
