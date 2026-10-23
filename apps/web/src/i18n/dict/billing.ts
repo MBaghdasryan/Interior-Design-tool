@@ -4,6 +4,7 @@ const e = (hy: string, ru: string, en: string): Entry => ({ hy, ru, en });
 
 // Pricing v1.0, billing (Ameriabank vPOS), landing page (mockup 10), supplier applications.
 export const billing: Dict = {
+  "nav.menu": e("Մենյու", "Меню", "Menu"),
   "nav.billing": e("Սակագին և վճարում", "Тариф и оплата", "Plan & billing"),
   "nav.section.billing": e("Սակագին և վճարում", "Тариф и оплата", "Plan & billing"),
 

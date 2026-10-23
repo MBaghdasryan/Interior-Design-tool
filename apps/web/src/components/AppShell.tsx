@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
+import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -90,6 +90,7 @@ export default function AppShell() {
   const { t } = useT();
   const loc = useLocation();
   const nav = useNavigate();
+  const [menu, setMenu] = useState(false);  // phone / tablet navigation drawer
   const roles = new Set(me?.roles || []);
   const isAdmin = roles.has("platform_admin");
   const isOps = roles.has("platform_ops");
@@ -100,8 +101,9 @@ export default function AppShell() {
   const isLinguist = roles.has("linguist") || isAdmin;
   const section = loc.pathname.split("/").filter(Boolean)[1];
   return (
-    <div className="shell">
-      <aside className="sidebar">
+    <div className={`shell ${menu ? "menu-open" : ""}`}>
+      {menu && <div className="menu-back" onClick={() => setMenu(false)} aria-hidden />}
+      <aside className="sidebar" id="app-menu" onClick={(e) => (e.target as HTMLElement).closest("a") && setMenu(false)}>
         <div className="brand"><BrandLockup tagline /></div>
         <nav className="nav col gap-4">
           {designs && <><NavLink to="/app" end><Home size={18} /> {t("nav.home")}</NavLink>
@@ -126,6 +128,7 @@ export default function AppShell() {
       </aside>
       <div className="main">
         <header className="topbar">
+          <button className="icon-btn menu-btn" aria-label={t("nav.menu")} aria-expanded={menu} aria-controls="app-menu" onClick={() => setMenu(!menu)}><Menu size={18} /></button>
           <div className="crumbs grow hide-sm">{t("common.workspace")}{section ? <> / <b>{t(`nav.section.${section}`)}</b></> : null}</div>
           <LangSwitch compact />
           <NotificationBell />

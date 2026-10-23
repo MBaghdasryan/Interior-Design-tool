@@ -9,8 +9,8 @@ import { useMe } from "../components/AppShell";
 
 const TONE: Record<string, string> = { draft: "", intake: "info", recognized: "info", generating: "terra", ready: "sage", approved: "dark", ordered: "dark" };
 // project lifecycle as the stage timeline of the dashboard (mockup 20)
-const STAGES = ["intake", "recognized", "generating", "ready", "approved", "ordered"] as const;
-const stageIndex = (s: string) => Math.max(0, STAGES.indexOf((s === "draft" ? "intake" : s) as (typeof STAGES)[number]));
+export const STAGES = ["intake", "recognized", "generating", "ready", "approved", "ordered"] as const;
+export const stageIndex = (s: string) => Math.max(0, STAGES.indexOf((s === "draft" ? "intake" : s) as (typeof STAGES)[number]));
 const ACTIVE = new Set(["draft", "intake", "recognized", "generating", "ready"]);
 
 export function projectLink(p: Project) {

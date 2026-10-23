@@ -52,7 +52,7 @@ def _cand_line(c: Candidate, qty: float, unit: str | None = None, *, rooms=(), n
     group = extra.pop("group", group_of(c.category))
     return _line(group, c.category, c.name, qty, unit or c.unit, unit_price, status,
                  ref=c.ref, sku=c.sku, supplier=c.supplier_name, supplier_key=c.supplier_key, url=c.url, checked_at=c.checked_at,
-                 lead_days=c.lead_days, stock=c.stock, rooms=sorted(set(rooms)), note=note, is_demo=c.is_demo, color_hex=c.color_hex,
+                 lead_days=c.lead_days, stock=c.stock, rooms=sorted(set(rooms)), note=note, is_demo=c.is_demo, color_hex=c.color_hex, image_url=c.image_url,
                  warnings=c.warnings[:3], **extra)
 
 

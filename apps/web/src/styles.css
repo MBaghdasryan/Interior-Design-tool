@@ -338,3 +338,12 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
 .level-card { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink-3); }
 .level-card.on { border-color: var(--terra); background: var(--terra-soft); color: var(--terra-ink); box-shadow: 0 0 0 1px var(--terra); }
 .level-card b { color: var(--ink); }
+/* ---- phone / tablet navigation ---- */
+.menu-btn { display: none; }
+@media (max-width: 960px) {
+  .menu-btn { display: inline-grid; }
+  .shell.menu-open .sidebar { display: flex; position: fixed; inset: 0 auto 0 0; width: min(280px, 84vw); z-index: 60; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .menu-back { position: fixed; inset: 0; background: rgba(46, 37, 30, 0.35); z-index: 55; }
+  .topbar { gap: 10px; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
