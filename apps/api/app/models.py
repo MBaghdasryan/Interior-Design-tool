@@ -116,6 +116,7 @@ class Project(TimestampMixin, Base):
     product_source: Mapped[str] = mapped_column(String(20), default="external")  # external | own | concept
     external_settings: Mapped[dict] = mapped_column(JSON, default=dict)
     client_name: Mapped[str] = mapped_column(String(200), default="")
+    client_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)  # CRM client
     designer_name: Mapped[str] = mapped_column(String(200), default="")
     doc_lang: Mapped[str] = mapped_column(String(5), default="hy")
     share_token: Mapped[str] = mapped_column(String(64), default=lambda: secrets.token_urlsafe(18), unique=True)
@@ -611,6 +612,7 @@ class Comment(TimestampMixin, Base):
     body: Mapped[str] = mapped_column(Text)
     anchor: Mapped[dict] = mapped_column(JSON, default=dict)  # {object_id} | {x, y} in mm
     resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+    visibility: Mapped[str] = mapped_column(String(10), default="client")  # client (shown in the client portal) | team (internal)
 
 
 class Approval(TimestampMixin, Base):
@@ -778,6 +780,63 @@ class GlossaryEntry(TimestampMixin, Base):
 
 
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)
+# ---------------------------------------------------------------- CRM, tasks, project chat
+class Client(TimestampMixin, Base):
+    """A bureau's client and the deal around them (funnel stage, budget, next action)."""
+    __tablename__ = "clients"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    org_id: Mapped[str] = mapped_column(String(32), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    email: Mapped[str] = mapped_column(String(320), default="")
+    source: Mapped[str] = mapped_column(String(20), default="other")  # referral | instagram | facebook | site | walk_in | partner | other
+    stage: Mapped[str] = mapped_column(String(20), default="lead")  # lead | contacted | brief | proposal | contract | in_work | done | lost
+    budget_amd: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    area_m2: Mapped[float | None] = mapped_column(Float, nullable=True)
+    address: Mapped[str] = mapped_column(String(300), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    owner_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    next_action: Mapped[str] = mapped_column(String(300), default="")
+    next_action_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lost_reason: Mapped[str] = mapped_column(String(300), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ClientActivity(TimestampMixin, Base):
+    __tablename__ = "client_activities"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    client_id: Mapped[str] = mapped_column(ForeignKey("clients.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    kind: Mapped[str] = mapped_column(String(20), default="note")  # note | call | meeting | stage | project
+    body: Mapped[str] = mapped_column(Text, default="")
+
+
+class Task(TimestampMixin, Base):
+    __tablename__ = "tasks"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    org_id: Mapped[str] = mapped_column(String(32), index=True)
+    project_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    client_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(300))
+    description: Mapped[str] = mapped_column(Text, default="")
+    assignee_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="todo")  # todo | in_progress | review | done
+    priority: Mapped[str] = mapped_column(String(10), default="normal")  # low | normal | high
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    estimate_h: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class ProjectRead(Base):
+    """Where a person stopped reading a project's conversation (unread counters)."""
+    __tablename__ = "project_reads"
+    user_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    last_read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 # ---------------------------------------------------------------- billing (pricing v1.0, Ameriabank vPOS)
 class CreditEntry(TimestampMixin, Base):
     """Immutable AI-credit ledger of an organisation: grants (plan, pack, trial) and spends (one row per AI operation)."""

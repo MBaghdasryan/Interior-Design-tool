@@ -424,3 +424,23 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; }
 .stg.done { background: var(--sage); border-color: var(--sage); }
 .stg.current { border-color: var(--terra); background: var(--terra-soft); box-shadow: 0 0 0 3px var(--terra-soft); }
 .linklike { border: 0; background: none; padding: 0; color: var(--terra-ink); font: inherit; text-decoration: underline; cursor: pointer; }
+/* ---- CRM / tasks boards, chat ---- */
+.kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 12px; overflow-x: auto; align-items: start; padding-bottom: 6px; }
+.kanban.four { grid-auto-columns: minmax(250px, 1fr); }
+.kcol { background: var(--bg-2); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; }
+.kcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.kcard:hover { border-color: var(--terra); }
+.danger-text { color: var(--danger); }
+.nav-badge { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--terra-ink); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
+.msg-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 12px; align-items: start; }
+.inbox-row { text-align: left; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: transparent; font: inherit; color: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.inbox-row.on { background: var(--terra-soft); }
+.chat { display: flex; flex-direction: column; min-height: 0; }
+.chat-log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface-2); }
+.bubble { max-width: 76%; padding: 8px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); align-self: flex-start; }
+.bubble.mine { align-self: flex-end; background: var(--terra-soft); border-color: #efd6c8; }
+.bubble.client { background: var(--sage-soft); border-color: #cfd8c3; }
+.bubble.team { border-style: dashed; }
+.chat-input { display: flex; gap: 8px; align-items: flex-end; padding: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+@media (max-width: 960px) { .msg-grid { grid-template-columns: 1fr; } }
+.chip { white-space: nowrap; }

@@ -1,16 +1,19 @@
-"""Cross-project workspace sections: the order registry (all orders of the organisation, mockup 32)."""
+"""Cross-project workspace sections: order registry (mockup 32), CRM clients and funnel, tasks and team workload,
+project conversation (team-only notes and messages shown to the client)."""
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import false, or_, select
 from sqlalchemy.orm import Session
 
 from .. import models as m
 from ..db import get_db
-from ..security import Principal, current_principal
+from ..errors import ApiError
+from ..security import Principal, audit, current_principal, project_access
 from .commerce import order_dict
 
 router = APIRouter(prefix="/api/v1", tags=["workspace"])
@@ -96,3 +99,424 @@ def order_registry(status: str = "", supplier_id: str = "", project_id: str = ""
            "closed": sum(1 for d in items if d["status"] == "closed"), "amount_amd": sum(d["amount_amd"] for d in items if d["status"] not in ("cancelled", "refunded")),
            "series": {"active": monthly(lambda d: d["status"] in ACTIVE), "all": monthly(lambda d: True)}}
     return {"items": items, "kpi": kpi, "suppliers": [{"key": k, **v} for k, v in sorted(by_supplier.items(), key=lambda x: -x[1]["amount_amd"])]}
+
+
+# ------------------------------------------------------------------ helpers: the caller's bureau
+
+
+STAGES_CRM = ("lead", "contacted", "brief", "proposal", "contract", "in_work", "done", "lost")
+SOURCES = ("referral", "instagram", "facebook", "site", "walk_in", "partner", "other")
+
+
+def _bureau(p: Principal, db: Session, org_id: str | None = None) -> m.Organization:
+    """CRM and tasks belong to a bureau. Platform admins may open any bureau by org_id."""
+    if org_id and p.is_platform_admin:
+        org = db.get(m.Organization, org_id)
+        if org and org.kind == "bureau":
+            return org
+    org = next((o for o in (db.get(m.Organization, i) for i in p.org_ids) if o and o.kind == "bureau" and p.can("project:read", o.id)), None)
+    if not org:
+        raise ApiError(403, "auth.forbidden")
+    return org
+
+
+def _user_names(db: Session, ids) -> dict[str, str]:
+    ids = {i for i in ids if i}
+    return {u.id: u.name for u in db.scalars(select(m.User).where(m.User.id.in_(ids)))} if ids else {}
+
+
+def _iso(d):
+    return d.isoformat() if d else None
+
+
+# ------------------------------------------------------------------ CRM
+def client_dict(c: m.Client, names: dict[str, str], projects: int = 0, open_tasks: int = 0) -> dict:
+    return {"id": c.id, "name": c.name, "phone": c.phone, "email": c.email, "source": c.source, "stage": c.stage, "budget_amd": c.budget_amd, "area_m2": c.area_m2,
+            "address": c.address, "notes": c.notes, "owner_id": c.owner_id, "owner_name": names.get(c.owner_id or "", ""), "next_action": c.next_action,
+            "next_action_at": _iso(c.next_action_at), "lost_reason": c.lost_reason, "created_at": _iso(c.created_at), "updated_at": _iso(c.updated_at),
+            "projects": projects, "open_tasks": open_tasks}
+
+
+@router.get("/crm/clients")
+def list_clients(stage: str = "", q: str = "", owner: str = "", org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    stmt = select(m.Client).where(m.Client.org_id == org.id)
+    if stage:
+        stmt = stmt.where(m.Client.stage == stage)
+    if owner:
+        stmt = stmt.where(m.Client.owner_id == (p.user.id if owner == "me" else owner))
+    rows = db.scalars(stmt.order_by(m.Client.updated_at.desc()).limit(1000)).all()
+    if q:
+        rows = [c for c in rows if q.lower() in f"{c.name} {c.phone} {c.email} {c.address}".lower()]
+    names = _user_names(db, (c.owner_id for c in rows))
+    ids = [c.id for c in rows]
+    pcount: dict[str, int] = defaultdict(int)
+    tcount: dict[str, int] = defaultdict(int)
+    if ids:
+        for cid in db.scalars(select(m.Project.client_id).where(m.Project.client_id.in_(ids))):
+            pcount[cid] += 1
+        for cid in db.scalars(select(m.Task.client_id).where(m.Task.client_id.in_(ids), m.Task.status != "done")):
+            tcount[cid] += 1
+    all_rows = db.scalars(select(m.Client).where(m.Client.org_id == org.id)).all()
+    counts = {s: sum(1 for c in all_rows if c.stage == s) for s in STAGES_CRM}
+    pipeline = sum(c.budget_amd or 0 for c in all_rows if c.stage not in ("done", "lost"))
+    won, lost = counts["done"] + counts["in_work"], counts["lost"]
+    return {"items": [client_dict(c, names, pcount[c.id], tcount[c.id]) for c in rows], "counts": counts, "pipeline_amd": pipeline,
+            "conversion": round(won / (won + lost), 3) if won + lost else None, "stages": list(STAGES_CRM), "sources": list(SOURCES),
+            "members": [{"id": ms.user_id, "name": ms.user.name} for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == org.id))]}
+
+
+class ClientIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    phone: str = Field(default="", max_length=40)
+    email: str = Field(default="", max_length=320)
+    source: str = Field(default="other", pattern="^(" + "|".join(SOURCES) + ")$")
+    stage: str = Field(default="lead", pattern="^(" + "|".join(STAGES_CRM) + ")$")
+    budget_amd: int | None = Field(default=None, ge=0)
+    area_m2: float | None = Field(default=None, ge=0, le=100000)
+    address: str = Field(default="", max_length=300)
+    notes: str = Field(default="", max_length=5000)
+    owner_id: str | None = None
+    next_action: str = Field(default="", max_length=300)
+    next_action_at: datetime | None = None
+    lost_reason: str = Field(default="", max_length=300)
+
+
+class ClientPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    phone: str | None = Field(default=None, max_length=40)
+    email: str | None = Field(default=None, max_length=320)
+    source: str | None = Field(default=None, pattern="^(" + "|".join(SOURCES) + ")$")
+    stage: str | None = Field(default=None, pattern="^(" + "|".join(STAGES_CRM) + ")$")
+    budget_amd: int | None = Field(default=None, ge=0)
+    area_m2: float | None = Field(default=None, ge=0, le=100000)
+    address: str | None = Field(default=None, max_length=300)
+    notes: str | None = Field(default=None, max_length=5000)
+    owner_id: str | None = None
+    next_action: str | None = Field(default=None, max_length=300)
+    next_action_at: datetime | None = None
+    lost_reason: str | None = Field(default=None, max_length=300)
+
+
+def _client(p: Principal, db: Session, cid: str) -> m.Client:
+    c = db.get(m.Client, cid)
+    if not c or c.org_id not in p.org_ids and not p.is_platform_admin:
+        raise ApiError(404, "not_found")
+    if not p.is_platform_admin and not p.can("project:read", c.org_id):
+        raise ApiError(404, "not_found")
+    return c
+
+
+def _check_member(db: Session, org_id: str, user_id: str | None) -> None:
+    if user_id and not db.scalar(select(m.Membership.id).where(m.Membership.org_id == org_id, m.Membership.user_id == user_id).limit(1)):
+        raise ApiError(422, "validation", fields=["owner_id"])
+
+
+@router.post("/crm/clients")
+def create_client(body: ClientIn, org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    _check_member(db, org.id, body.owner_id)
+    c = m.Client(org_id=org.id, **{**body.model_dump(), "owner_id": body.owner_id or p.user.id})
+    db.add(c)
+    db.flush()
+    db.add(m.ClientActivity(client_id=c.id, user_id=p.user.id, kind="stage", body=c.stage))
+    audit(db, p, "crm.client_create", "client", c.id, org_id=org.id)
+    db.commit()
+    return client_dict(c, _user_names(db, [c.owner_id]))
+
+
+@router.get("/crm/clients/{cid}")
+def get_client(cid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    c = _client(p, db, cid)
+    acts = db.scalars(select(m.ClientActivity).where(m.ClientActivity.client_id == cid).order_by(m.ClientActivity.created_at.desc()).limit(200)).all()
+    projects = db.scalars(select(m.Project).where(m.Project.client_id == cid)).all()
+    tasks = db.scalars(select(m.Task).where(m.Task.client_id == cid).order_by(m.Task.created_at.desc())).all()
+    names = _user_names(db, [c.owner_id, *(a.user_id for a in acts), *(t.assignee_id for t in tasks)])
+    return {**client_dict(c, names, len(projects)), "activities": [{"id": a.id, "kind": a.kind, "body": a.body, "user": names.get(a.user_id or "", ""), "at": _iso(a.created_at)} for a in acts],
+            "project_list": [{"id": x.id, "title": x.title, "status": x.status, "updated_at": _iso(x.updated_at)} for x in projects],
+            "tasks": [task_dict(x, names, {}) for x in tasks]}
+
+
+@router.patch("/crm/clients/{cid}")
+def patch_client(cid: str, body: ClientPatch, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    c = _client(p, db, cid)
+    data = body.model_dump(exclude_unset=True)
+    if "owner_id" in data:
+        _check_member(db, c.org_id, data["owner_id"])
+    if data.get("stage") and data["stage"] != c.stage:
+        db.add(m.ClientActivity(client_id=c.id, user_id=p.user.id, kind="stage", body=f"{c.stage}→{data['stage']}"))
+    for k, v in data.items():
+        setattr(c, k, v)
+    db.commit()
+    return client_dict(c, _user_names(db, [c.owner_id]))
+
+
+@router.delete("/crm/clients/{cid}")
+def delete_client(cid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    c = _client(p, db, cid)
+    for pr in db.scalars(select(m.Project).where(m.Project.client_id == cid)):
+        pr.client_id = None  # projects stay; only the CRM card goes
+    for t in db.scalars(select(m.Task).where(m.Task.client_id == cid)):
+        t.client_id = None
+    audit(db, p, "crm.client_delete", "client", cid, org_id=c.org_id, data={"name": c.name})
+    db.delete(c)
+    db.commit()
+    return {"ok": True}
+
+
+class ActivityIn(BaseModel):
+    kind: str = Field(default="note", pattern="^(note|call|meeting)$")
+    body: str = Field(min_length=1, max_length=5000)
+
+
+@router.post("/crm/clients/{cid}/activities")
+def add_activity(cid: str, body: ActivityIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    c = _client(p, db, cid)
+    db.add(m.ClientActivity(client_id=c.id, user_id=p.user.id, kind=body.kind, body=body.body))
+    c.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return get_client(cid, p, db)
+
+
+class LinkIn(BaseModel):
+    project_id: str | None = None  # link an existing project, or create one from the client card
+    title: str = Field(default="", max_length=200)
+
+
+@router.post("/crm/clients/{cid}/projects")
+def link_project(cid: str, body: LinkIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    c = _client(p, db, cid)
+    if body.project_id:
+        pr = project_access(body.project_id, "project:write", p, db)
+        if pr.org_id != c.org_id:
+            raise ApiError(404, "project.not_found")
+    else:
+        if not p.can("project:write", c.org_id):
+            raise ApiError(403, "auth.forbidden")
+        from ..commerce.tariffs import check_project_quota
+
+        check_project_quota(db, c.org_id)
+        pr = m.Project(org_id=c.org_id, owner_id=p.user.id, title=body.title.strip() or c.name, address=c.address, area_m2=c.area_m2,
+                       designer_name=p.user.name, preferences={"budget_amd": c.budget_amd} if c.budget_amd else {})
+        db.add(pr)
+        db.flush()
+    pr.client_id, pr.client_name = c.id, pr.client_name or c.name
+    db.add(m.ClientActivity(client_id=c.id, user_id=p.user.id, kind="project", body=pr.title))
+    if c.stage in ("lead", "contacted", "brief", "proposal", "contract"):
+        c.stage = "in_work"
+    db.commit()
+    return {"project_id": pr.id}
+
+
+# ------------------------------------------------------------------ tasks and team workload
+TASK_STATUS = ("todo", "in_progress", "review", "done")
+
+
+def task_dict(t: m.Task, names: dict[str, str], titles: dict[str, str]) -> dict:
+    now = datetime.now(timezone.utc)
+    due = t.due_at.replace(tzinfo=timezone.utc) if t.due_at and t.due_at.tzinfo is None else t.due_at
+    return {"id": t.id, "title": t.title, "description": t.description, "status": t.status, "priority": t.priority, "due_at": _iso(t.due_at),
+            "overdue": bool(due and due < now and t.status != "done"), "estimate_h": t.estimate_h, "assignee_id": t.assignee_id, "assignee_name": names.get(t.assignee_id or "", ""),
+            "project_id": t.project_id, "project_title": titles.get(t.project_id or "", ""), "client_id": t.client_id, "created_at": _iso(t.created_at), "done_at": _iso(t.done_at)}
+
+
+@router.get("/tasks")
+def list_tasks(assignee: str = "", status: str = "", project_id: str = "", org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    stmt = select(m.Task).where(m.Task.org_id == org.id)
+    if assignee:
+        stmt = stmt.where(m.Task.assignee_id == (p.user.id if assignee == "me" else assignee))
+    if status:
+        stmt = stmt.where(m.Task.status == status)
+    if project_id:
+        stmt = stmt.where(m.Task.project_id == project_id)
+    rows = db.scalars(stmt.order_by(m.Task.due_at.is_(None), m.Task.due_at, m.Task.created_at.desc()).limit(1000)).all()
+    names = _user_names(db, (t.assignee_id for t in rows))
+    titles = {x.id: x.title for x in db.scalars(select(m.Project).where(m.Project.id.in_({t.project_id for t in rows if t.project_id})))} if rows else {}
+    return {"items": [task_dict(t, names, titles) for t in rows],
+            "members": [{"id": ms.user_id, "name": ms.user.name} for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == org.id))],
+            "projects": [{"id": x.id, "title": x.title} for x in db.scalars(select(m.Project).where(m.Project.org_id == org.id).order_by(m.Project.updated_at.desc()).limit(200))]}
+
+
+class TaskIn(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    description: str = Field(default="", max_length=5000)
+    assignee_id: str | None = None
+    status: str = Field(default="todo", pattern="^(todo|in_progress|review|done)$")
+    priority: str = Field(default="normal", pattern="^(low|normal|high)$")
+    due_at: datetime | None = None
+    estimate_h: float | None = Field(default=None, ge=0, le=1000)
+    project_id: str | None = None
+    client_id: str | None = None
+
+
+class TaskPatch(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    description: str | None = Field(default=None, max_length=5000)
+    assignee_id: str | None = None
+    status: str | None = Field(default=None, pattern="^(todo|in_progress|review|done)$")
+    priority: str | None = Field(default=None, pattern="^(low|normal|high)$")
+    due_at: datetime | None = None
+    estimate_h: float | None = Field(default=None, ge=0, le=1000)
+    project_id: str | None = None
+
+
+def _task_refs(p: Principal, db: Session, org: m.Organization, data: dict) -> None:
+    if data.get("assignee_id"):
+        _check_member(db, org.id, data["assignee_id"])
+    if data.get("project_id"):
+        pr = db.get(m.Project, data["project_id"])
+        if not pr or pr.org_id != org.id:
+            raise ApiError(422, "validation", fields=["project_id"])
+    if data.get("client_id"):
+        cl = db.get(m.Client, data["client_id"])
+        if not cl or cl.org_id != org.id:
+            raise ApiError(422, "validation", fields=["client_id"])
+
+
+def _notify_assignee(db: Session, p: Principal, t: m.Task) -> None:
+    if t.assignee_id and t.assignee_id != p.user.id:
+        from ..notify import notify
+
+        notify(db, [db.get(m.User, t.assignee_id)], "task_assigned", params={"task": t.title[:80], "by": p.user.name}, link="/app/tasks", project_id=t.project_id)
+
+
+@router.post("/tasks")
+def create_task(body: TaskIn, org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau(p, db, org_id)
+    data = body.model_dump()
+    _task_refs(p, db, org, data)
+    t = m.Task(org_id=org.id, created_by=p.user.id, **data)
+    if t.status == "done":
+        t.done_at = datetime.now(timezone.utc)
+    db.add(t)
+    db.flush()
+    _notify_assignee(db, p, t)
+    db.commit()
+    return task_dict(t, _user_names(db, [t.assignee_id]), {})
+
+
+def _task(p: Principal, db: Session, tid: str) -> m.Task:
+    t = db.get(m.Task, tid)
+    if not t or (t.org_id not in p.org_ids and not p.is_platform_admin):
+        raise ApiError(404, "not_found")
+    return t
+
+
+@router.patch("/tasks/{tid}")
+def patch_task(tid: str, body: TaskPatch, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    t = _task(p, db, tid)
+    data = body.model_dump(exclude_unset=True)
+    _task_refs(p, db, db.get(m.Organization, t.org_id), data)
+    reassigned = "assignee_id" in data and data["assignee_id"] != t.assignee_id
+    if data.get("status") == "done" and t.status != "done":
+        t.done_at = datetime.now(timezone.utc)
+    elif data.get("status") and data["status"] != "done":
+        t.done_at = None
+    for k, v in data.items():
+        setattr(t, k, v)
+    if reassigned:
+        _notify_assignee(db, p, t)
+    db.commit()
+    return task_dict(t, _user_names(db, [t.assignee_id]), {})
+
+
+@router.delete("/tasks/{tid}")
+def delete_task(tid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    t = _task(p, db, tid)
+    db.delete(t)
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/team/workload")
+def workload(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Per member: open tasks by status, overdue, due this week, planned hours, done in 30 days, active projects."""
+    org = _bureau(p, db, org_id)
+    now = datetime.now(timezone.utc)
+    week = now + timedelta(days=7)
+    tasks = db.scalars(select(m.Task).where(m.Task.org_id == org.id)).all()
+    projects = db.scalars(select(m.Project).where(m.Project.org_id == org.id, m.Project.status.notin_(("approved", "ordered")))).all()
+
+    def aware(d):
+        return d.replace(tzinfo=timezone.utc) if d and d.tzinfo is None else d
+    out = []
+    for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == org.id)):
+        mine = [t for t in tasks if t.assignee_id == ms.user_id]
+        open_ = [t for t in mine if t.status != "done"]
+        out.append({"user_id": ms.user_id, "name": ms.user.name, "role": ms.role,
+                    "todo": sum(1 for t in open_ if t.status == "todo"), "in_progress": sum(1 for t in open_ if t.status == "in_progress"),
+                    "review": sum(1 for t in open_ if t.status == "review"), "overdue": sum(1 for t in open_ if t.due_at and aware(t.due_at) < now),
+                    "due_week": sum(1 for t in open_ if t.due_at and now <= aware(t.due_at) <= week), "planned_h": round(sum(t.estimate_h or 0 for t in open_), 1),
+                    "done_30d": sum(1 for t in mine if t.done_at and aware(t.done_at) >= now - timedelta(days=30)),
+                    "projects": sum(1 for x in projects if x.owner_id == ms.user_id)})
+    unassigned = sum(1 for t in tasks if not t.assignee_id and t.status != "done")
+    return {"members": sorted({x["user_id"]: x for x in out}.values(), key=lambda x: -(x["todo"] + x["in_progress"] + x["review"])), "unassigned": unassigned}
+
+
+# ------------------------------------------------------------------ project conversation (team + client)
+class MessageIn(BaseModel):
+    body: str = Field(min_length=1, max_length=5000)
+    visibility: str = Field(default="team", pattern="^(team|client)$")
+
+
+def message_dict(c: m.Comment, me: str) -> dict:
+    return {"id": c.id, "body": c.body, "author": c.author_name, "from_client": c.author_id is None, "mine": c.author_id == me, "visibility": c.visibility,
+            "variant_id": c.variant_id, "anchor": c.anchor, "at": _iso(c.created_at)}
+
+
+@router.get("/projects/{pid}/messages")
+def project_messages(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    project_access(pid, "project:read", p, db)
+    rows = db.scalars(select(m.Comment).where(m.Comment.project_id == pid).order_by(m.Comment.created_at).limit(1000)).all()
+    return [message_dict(c, p.user.id) for c in rows]
+
+
+@router.post("/projects/{pid}/messages")
+def post_message(pid: str, body: MessageIn, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    proj = project_access(pid, "project:write", p, db)
+    c = m.Comment(project_id=pid, author_name=p.user.name, author_id=p.user.id, body=body.body.strip(), visibility=body.visibility)
+    db.add(c)
+    db.merge(m.ProjectRead(user_id=p.user.id, project_id=pid, last_read_at=datetime.now(timezone.utc)))
+    from ..notify import notify
+
+    team = [ms.user for ms in db.scalars(select(m.Membership).where(m.Membership.org_id == proj.org_id)) if ms.user_id != p.user.id and ms.role in ("bureau_admin", "designer")]
+    notify(db, team, "message", params={"author": p.user.name, "project": proj.title}, link=f"/app/messages?project={pid}", project_id=pid)
+    db.commit()
+    return message_dict(c, p.user.id)
+
+
+@router.post("/projects/{pid}/messages/read")
+def mark_read(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    project_access(pid, "project:read", p, db)
+    db.merge(m.ProjectRead(user_id=p.user.id, project_id=pid, last_read_at=datetime.now(timezone.utc)))
+    db.commit()
+    return {"ok": True}
+
+
+def _after(at: datetime, seen: datetime | None) -> bool:
+    at = at.replace(tzinfo=timezone.utc) if at.tzinfo is None else at
+    return seen is None or at > seen
+
+
+@router.get("/messages/inbox")
+def inbox(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    """Projects of the caller's organisations with their latest message and the unread count."""
+    stmt = select(m.Project)
+    if not p.is_platform_admin:
+        stmt = stmt.where(m.Project.org_id.in_(p.org_ids))
+    projects = db.scalars(stmt.order_by(m.Project.updated_at.desc()).limit(300)).all()
+    reads = {r.project_id: r.last_read_at for r in db.scalars(select(m.ProjectRead).where(m.ProjectRead.user_id == p.user.id))}
+    out = []
+    for pr in projects:
+        msgs = db.scalars(select(m.Comment).where(m.Comment.project_id == pr.id).order_by(m.Comment.created_at.desc()).limit(50)).all()
+        if not msgs:
+            continue
+        seen = reads.get(pr.id)
+        seen = seen.replace(tzinfo=timezone.utc) if seen and seen.tzinfo is None else seen
+
+        last = msgs[0]
+        out.append({"project_id": pr.id, "title": pr.title, "client_name": pr.client_name, "last": message_dict(last, p.user.id),
+                    "unread": sum(1 for c in msgs if c.author_id != p.user.id and _after(c.created_at, seen))})
+    out.sort(key=lambda x: x["last"]["at"] or "", reverse=True)
+    return {"items": out, "unread": sum(x["unread"] for x in out)}

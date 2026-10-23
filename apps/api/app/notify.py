@@ -20,7 +20,7 @@ from . import models as m
 from .scheduler import periodic
 
 log = logging.getLogger("forma.notify")
-KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert", "order_update", "rfq_received"]
+KINDS = ["job_done", "job_failed", "client_comment", "client_approved", "client_changes", "rfq_reply", "price_stale", "catalog_alert", "order_update", "rfq_received", "task_assigned", "message"]
 DIGEST_SUBJECT = {"hy": "Ձեր ծանուցումները — {brand}", "ru": "Ваши уведомления — {brand}", "en": "Your notifications — {brand}"}
 DIGEST_LINE = {
     "job_done": {"hy": "Առաջադրանքը ավարտված է՝ {job}", "ru": "Задача завершена: {job}", "en": "Job finished: {job}"},
@@ -31,6 +31,8 @@ DIGEST_LINE = {
     "rfq_reply": {"hy": "Մատակարարի պատասխան՝ {supplier}", "ru": "Ответ поставщика: {supplier}", "en": "Supplier reply: {supplier}"},
     "price_stale": {"hy": "Գները հնացել են՝ {n} ապրանք", "ru": "Цены устарели: {n} товаров", "en": "Prices are out of date: {n} products"},
     "order_update": {"hy": "Պատվեր՝ {supplier} — {status}", "ru": "Заказ: {supplier} — {status}", "en": "Order: {supplier} — {status}"},
+    "task_assigned": {"hy": "Նոր առաջադրանք՝ {task} ({by})", "ru": "Новая задача: {task} ({by})", "en": "New task: {task} ({by})"},
+    "message": {"hy": "Նոր հաղորդագրություն՝ {project} ({author})", "ru": "Новое сообщение: {project} ({author})", "en": "New message: {project} ({author})"},
     "rfq_received": {"hy": "Նոր հարցում ձեր ապրանքների վերաբերյալ՝ {n} դիրք", "ru": "Новый запрос по вашим товарам: {n} поз.", "en": "New request for your products: {n} items"},
     "catalog_alert": {"hy": "Կատալոգի ահազանգ՝ {source} ({reason})", "ru": "Сигнал каталога: {source} ({reason})", "en": "Catalogue alert: {source} ({reason})"},
 }

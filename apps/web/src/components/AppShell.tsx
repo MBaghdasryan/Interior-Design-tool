@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PackageCheck, PlusCircle, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
+import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, MessagesSquare, PackageCheck, PlusCircle, Contact, ListTodo, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -91,6 +91,15 @@ export default function AppShell() {
   const loc = useLocation();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);  // phone / tablet navigation drawer
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    const roles0 = me?.roles || [];
+    if (!roles0.some((r) => r === "designer" || r === "bureau_admin")) return;
+    const tick = () => api<{ unread: number }>("/messages/inbox").then((x) => setUnread(x.unread)).catch(() => {});
+    tick();
+    const iv = setInterval(tick, 60000);
+    return () => clearInterval(iv);
+  }, [me, loc.pathname]);
   const roles = new Set(me?.roles || []);
   const isAdmin = roles.has("platform_admin");
   const isOps = roles.has("platform_ops");
@@ -109,6 +118,9 @@ export default function AppShell() {
           {designs && <><NavLink to="/app" end><Home size={18} /> {t("nav.home")}</NavLink>
             <NavLink to="/app/projects"><FolderKanban size={18} /> {t("nav.projects")}</NavLink>
             <NavLink to="/app/new"><PlusCircle size={18} /> {t("nav.new")}</NavLink></>}
+          {designs && !isAdmin && <><NavLink to="/app/crm"><Contact size={18} /> {t("nav.crm")}</NavLink>
+            <NavLink to="/app/tasks"><ListTodo size={18} /> {t("nav.tasks")}</NavLink>
+            <NavLink to="/app/messages"><MessagesSquare size={18} /> {t("nav.messages")}{unread > 0 && <span className="nav-badge">{unread}</span>}</NavLink></>}
           {(designs || isAdmin) && <NavLink to="/app/orders"><PackageCheck size={18} /> {t("nav.orders")}</NavLink>}
           <NavLink to="/app/catalog"><LayoutGrid size={18} /> {t("nav.catalog")}</NavLink>
           {!isSupplier && <NavLink to="/app/suppliers"><Truck size={18} /> {t("nav.suppliers")}</NavLink>}

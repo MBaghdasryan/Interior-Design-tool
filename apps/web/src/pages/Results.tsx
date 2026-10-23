@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Box, CalendarClock, CheckCircle2, ExternalLink, FileText, Image, LayoutPanelTop, ListChecks, Maximize2, Pencil, Receipt, Share2, ShoppingCart, Sparkles, Store, Truck, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, Box, CalendarClock, CheckCircle2, ExternalLink, FileText, Image, LayoutPanelTop, ListChecks, Maximize2, MessagesSquare, Pencil, Receipt, Share2, ShoppingCart, Sparkles, Store, Truck, Wrench } from "lucide-react";
 import { api, fileUrl, type Doc, type Project, type Scene, type Variant } from "../lib/api";
 import { amd, catName, lineName, m2, n1, pct, roomType, variantSubtitle, variantTitle } from "../lib/format";
 import { ruleMessage } from "../lib/messages";
@@ -12,12 +12,13 @@ import CommandDrawer from "../components/CommandDrawer";
 import AlternativesDrawer from "../components/AlternativesDrawer";
 import RenderGallery from "../components/RenderGallery";
 import { useLightbox, Zoomable } from "../components/Lightbox";
+import { ProjectChat } from "./Messages";
 import TrustPanel from "../components/TrustPanel";
 import ProjectAiCost from "../components/ProjectAiCost";
 import PilotPanel from "../components/PilotPanel";
 import { AccuracyBadge, Badge, Empty, Loading, Modal, PriceStatus, useToast } from "../components/ui";
 
-type Tab = "plan" | "visuals" | "products" | "estimate" | "suppliers" | "timeline" | "checks";
+type Tab = "plan" | "visuals" | "products" | "estimate" | "suppliers" | "timeline" | "chat" | "checks";
 
 export default function Results() {
   const { t, lang } = useT();
@@ -82,7 +83,7 @@ export default function Results() {
   const stock = (s?: string, days?: number | null) => (s === "in_stock" ? t("common.in_stock") : s === "to_order" ? (days ? t("common.to_order_days", { n: days }) : t("common.to_order")) : t("common.stock_unknown"));
   const thumbRooms = scene.rooms.filter((r) => ["kitchen_living", "bedroom", "bathroom", "kids", "living"].includes(r.type)).slice(0, 4);
   const tabs: [Tab, typeof Box, string][] = [["plan", LayoutPanelTop, t("res.tab.plan")], ["visuals", Image, t("res.tab.visuals")], ["products", Box, t("res.tab.products", { n: scene.objects.length })],
-    ["estimate", Receipt, t("res.tab.estimate")], ["suppliers", Store, t("res.tab.suppliers")], ["timeline", CalendarClock, t("res.tab.timeline")], ["checks", ListChecks, `${t("res.tab.checks")}${blocks ? ` (${blocks})` : ""}`]];
+    ["estimate", Receipt, t("res.tab.estimate")], ["suppliers", Store, t("res.tab.suppliers")], ["timeline", CalendarClock, t("res.tab.timeline")], ["chat", MessagesSquare, t("res.tab.chat")], ["checks", ListChecks, `${t("res.tab.checks")}${blocks ? ` (${blocks})` : ""}`]];
 
   return (
     <div className="col gap-16">
@@ -180,6 +181,7 @@ export default function Results() {
             </div>
           )}
           {tab === "timeline" && <Timeline lead={cur.metrics.lead_days_max} />}
+          {tab === "chat" && <ProjectChat pid={pid!} />}
           {tab === "checks" && (
             <div className="col gap-6">
               {issues.filter((i) => i.severity !== "pass").map((i, k) => <div key={k} className={`alert ${i.severity === "block" ? "danger" : "warn"} small`}><AlertTriangle size={16} /> {ruleMessage(i)}</div>)}

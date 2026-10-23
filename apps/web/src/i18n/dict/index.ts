@@ -9,5 +9,6 @@ import { account } from "./account";
 import { management } from "./management";
 import { cabinets } from "./cabinets";
 import { billing } from "./billing";
+import { crm } from "./crm";
 
-export const DICT: Dict = { ...common, ...enums, ...errors, ...steps, ...rules, ...notices, ...works, ...pages, ...projects, ...workspace, ...account, ...management, ...cabinets, ...billing };
+export const DICT: Dict = { ...common, ...enums, ...errors, ...steps, ...rules, ...notices, ...works, ...pages, ...projects, ...workspace, ...account, ...management, ...cabinets, ...billing, ...crm };
