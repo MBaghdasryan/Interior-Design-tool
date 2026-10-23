@@ -159,4 +159,4 @@ def test_skirting_is_not_laminate(name, category):
 def test_skirting_end_caps_are_accessories():
     from app.catalog.normalize import is_accessory
 
-    assert is_accessory("54 Ծայրակալ-փշարմավ K55 COMFORT", "Լամինատ") and is_accessory("Заглушка для плинтуса дуб", None)
+    assert is_accessory("54 Ծայրակալ-փշարմավ K55 COMFORT", "Լամինատ") and is_accessory("Անկյունակ ներքին-թեղի K55", "Լամինատ") and is_accessory("Заглушка для плинтуса дуб", None)
