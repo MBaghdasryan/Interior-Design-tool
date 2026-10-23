@@ -552,12 +552,29 @@ def _apply_variant(v: m.ProductVariant, data: dict, db: Session) -> None:
         v.availability_checked_at = now
 
 
+def _can_write(p: Principal, db: Session, supplier_id: str) -> bool:
+    try:
+        _writable_supplier(p, db, supplier_id)
+        return True
+    except ApiError:
+        return False
+
+
 @router.get("/catalog/products/{product_id}/detail")
 def product_detail(product_id: str, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
     prod = db.get(m.Product, product_id)
     if not prod:
         raise ApiError(404, "product.not_found")
-    return product_dict(prod)
+    return {**product_dict(prod), "can_edit": _can_write(p, db, prod.supplier_id)}
+
+
+@router.get("/catalog/variants/{vid}/product")
+def product_of_variant(vid: str, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    """The catalogue lists variants (`pv:<id>`); the editor opens the whole product."""
+    v = db.get(m.ProductVariant, vid)
+    if not v:
+        raise ApiError(404, "product.not_found")
+    return {**product_dict(v.product), "can_edit": _can_write(p, db, v.product.supplier_id)}
 
 
 @router.post("/catalog/products")

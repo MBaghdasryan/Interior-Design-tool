@@ -335,7 +335,7 @@ export const pages: Dict = {
   "spd.price": e("Գին, ֏ (դատարկ՝ հարցումով)", "Цена, ֏ (пусто — по запросу)", "Price, ֏ (empty = on request)"),
   "spd.on_request": e("հարցումով", "по запросу", "on request"),
   "spd.add": e("Ավելացնել", "Добавить", "Add"),
-  "adm.tab.partners": e("Մատակարարներ", "Поставщики", "Suppliers"),
+  "adm.tab.partners": e("Մատակարարների ստուգում", "Проверка поставщиков", "Supplier verification"),
   "adm.partners.steps": e("Կատարված քայլեր", "Выполненные шаги", "Completed steps"),
   "adm.partners.products": e("Ապրանքներ / ֆայլեր", "Товары / файлы", "Products / files"),
   "adm.partners.note": e("Մեկնաբանություն", "Комментарий", "Note"),

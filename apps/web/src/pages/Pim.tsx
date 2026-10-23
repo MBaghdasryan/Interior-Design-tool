@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, ExternalLink, FileUp, XCircle } from "lucide-react";
 import { api } from "../lib/api";
 import { amd, catName, pct } from "../lib/format";
@@ -15,7 +16,8 @@ export default function Pim() {
   const [file, setFile] = useState<File | null>(null);
   const [pv, setPv] = useState<Preview | null>(null);
   const [mapping, setMapping] = useState<Record<string, string | null>>({});
-  const [supplier, setSupplier] = useState("");
+  const [sp] = useSearchParams();
+  const [supplier, setSupplier] = useState(sp.get("supplier_name") || "");  // opened from a supplier cabinet
   const [review, setReview] = useState<Rev[]>([]);
   const loadReview = () => api<Rev[]>("/catalog/external/review").then(setReview).catch(() => {});
   useEffect(() => { loadReview(); }, []);
@@ -26,7 +28,7 @@ export default function Pim() {
   };
   const commit = async () => {
     if (!file || !supplier) { toast(t("pim.need_supplier"), true); return; }
-    const fd = new FormData(); fd.append("file", file); fd.append("supplier_name", supplier); fd.append("mapping", JSON.stringify(mapping));
+    const fd = new FormData(); fd.append("file", file); fd.append("supplier_name", supplier); if (sp.get("supplier_id")) fd.append("supplier_id", sp.get("supplier_id")!); fd.append("mapping", JSON.stringify(mapping));
     try { const r = await api<{ created: number; updated: number; rejected: number }>("/catalog/import/commit", { method: "POST", body: fd }); toast(t("pim.result", r)); setPv(null); setFile(null); }
     catch (x) { toast((x as Error).message, true); }
   };
@@ -36,7 +38,7 @@ export default function Pim() {
       <div><h1>{t("pim.title")}</h1><p className="muted">{t("pim.lead")}</p></div>
       <div className="card pad col gap-10">
         <h3><FileUp size={18} /> {t("pim.import")}</h3>
-        <div className="row wrap"><input className="input" style={{ maxWidth: 320 }} aria-label={t("pim.supplier_ph")} placeholder={t("pim.supplier_ph")} value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+        <div className="row wrap"><input className="input" style={{ maxWidth: 320 }} aria-label={t("pim.supplier_ph")} placeholder={t("pim.supplier_ph")} value={supplier} disabled={!!sp.get("supplier_id")} onChange={(e) => setSupplier(e.target.value)} />
           <input type="file" accept=".csv,.xlsx" aria-label={t("pim.import")} onChange={(e) => e.target.files?.[0] && preview(e.target.files[0])} /></div>
         {pv && <>
           <div className="small">{t("pim.rows", { total: pv.rows_total, valid: pv.valid_in_preview, shown: Math.min(200, pv.rows_total) })}</div>

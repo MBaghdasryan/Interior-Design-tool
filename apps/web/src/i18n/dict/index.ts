@@ -6,5 +6,6 @@ import { pages } from "./pages";
 import { projects } from "./projects";
 import { workspace } from "./workspace";
 import { account } from "./account";
+import { management } from "./management";
 
-export const DICT: Dict = { ...common, ...enums, ...errors, ...steps, ...rules, ...notices, ...works, ...pages, ...projects, ...workspace, ...account };
+export const DICT: Dict = { ...common, ...enums, ...errors, ...steps, ...rules, ...notices, ...works, ...pages, ...projects, ...workspace, ...account, ...management };

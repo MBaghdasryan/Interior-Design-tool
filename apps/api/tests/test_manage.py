@@ -2,6 +2,7 @@
 platform staff opening bureau / supplier cabinets. Permissions checked for every role involved."""
 import email
 import email.policy
+import io
 import os
 from pathlib import Path
 
@@ -50,6 +51,10 @@ def test_platform_user_and_org_management(client, admin, designer):
     assert client.delete(f"/api/v1/admin/users/{me['id']}/memberships/{mid}", headers=admin).json()["code"] == "user.last_admin"
     assert client.post(f"/api/v1/admin/users/{u['id']}/reset-password", headers=admin).json()["ok"]
     assert client.delete(f"/api/v1/admin/users/{u['id']}", headers=admin).json()["status"] == "deletion_pending"
+    with SessionLocal() as db:  # keep the shared database clean for the privacy purge test
+        x = db.get(m.User, u["id"])
+        x.status, x.deletion_due_at = "active", None
+        db.commit()
     # organisation suspension: its roles stop working
     assert client.patch(f"/api/v1/admin/organizations/{org['id']}", headers=admin, json={"status": "suspended"}).json()["status"] == "suspended"
     assert client.patch(f"/api/v1/admin/organizations/{pm['org_id']}", headers=admin, json={"status": "suspended"}).json()["code"] == "org.platform_locked"
@@ -83,6 +88,8 @@ def test_supplier_management_and_manual_products(client, admin, designer):
     items = client.get("/api/v1/catalog/products", headers=designer, params={"q": "hm-1"}).json()["items"]  # SQLite lower() is ASCII-only
     assert items and items[0]["price_amd"] == 500000
     pv = prod["variants"][0]["id"]
+    assert client.get(f"/api/v1/catalog/variants/{pv}/product", headers=admin).json()["can_edit"] is True
+    assert client.get(f"/api/v1/catalog/variants/{pv}/product", headers=designer).json()["can_edit"] is False
     prod = client.patch(f"/api/v1/catalog/variants/{pv}", headers=admin, json={"price": 450000}).json()
     assert prod["variants"][0]["price"] == 450000
     with SessionLocal() as db:
@@ -117,4 +124,43 @@ def test_supplier_staff_manage_only_their_products_and_admin_opens_cabinets(clie
     assert client.get("/api/v1/bureau/overview", headers=admin, params={"org_id": bureau["id"]}).json()["org"]["id"] == bureau["id"]
     assert client.get("/api/v1/bureau/overview", headers=sh, params={"org_id": bureau["id"]}).status_code == 404  # only platform staff may pick
     client.delete(f"/api/v1/catalog/products/{prod['id']}", headers=sh)
+    client.delete(f"/api/v1/admin/suppliers/{other['id']}", headers=admin)
+
+
+def test_platform_admin_edits_a_supplier_cabinet_and_bureau_settings(client, admin):
+    sh = login(client, "supplier@forma.local")
+    sid = client.get("/api/v1/supplier/overview", headers=sh).json()["supplier"]["id"]
+    q = {"supplier_id": sid}
+    row = client.post("/api/v1/supplier/locations", headers=admin, params=q, json={"name": "Склад Админ", "address": "Арагацотн 1", "kind": "warehouse"}).json()
+    assert any(x["id"] == row["id"] for x in client.get("/api/v1/supplier/partner-data", headers=sh).json()["locations"])  # landed in that supplier
+    assert client.delete(f"/api/v1/supplier/locations/{row['id']}", headers=admin, params=q).json()["ok"]
+    assert client.put("/api/v1/supplier/feed", headers=admin, params=q, json={"enabled": False, "url": "", "interval_h": 24, "max_price_change_pct": 60}).status_code == 200
+    assert client.get("/api/v1/supplier/category-map", headers=admin, params=q).status_code == 200
+    # a supplier cannot reach another supplier through the parameter
+    other = client.post("/api/v1/admin/suppliers", headers=admin, json={"name": "Third Shop"}).json()
+    r = client.post("/api/v1/supplier/locations", headers=sh, params={"supplier_id": other["id"]}, json={"name": "X", "address": "", "kind": "warehouse"}).json()
+    assert any(x["id"] == r["id"] for x in client.get("/api/v1/supplier/partner-data", headers=sh).json()["locations"])  # parameter ignored
+    assert not client.get("/api/v1/supplier/partner-data", headers=admin, params={"supplier_id": other["id"]}).json()["locations"]
+    client.delete(f"/api/v1/supplier/locations/{r['id']}", headers=sh)
+    client.delete(f"/api/v1/admin/suppliers/{other['id']}", headers=admin)
+    bureau = next(o for o in client.get("/api/v1/admin/organizations", headers=admin, params={"kind": "bureau"}).json() if o["projects"])
+    tb = {"company": "Studio X"}
+    assert client.put("/api/v1/bureau/settings", headers=admin, params={"org_id": bureau["id"]}, json={"title_block": tb}).json()["title_block"] == tb
+    assert client.get("/api/v1/bureau/overview", headers=admin, params={"org_id": bureau["id"]}).json()["org"]["settings"]["title_block"] == tb
+
+
+def test_price_list_import_cannot_target_another_supplier(client, admin):
+    sh = login(client, "supplier@forma.local")
+    other = client.post("/api/v1/admin/suppliers", headers=admin, json={"name": "Foreign Store"}).json()
+    csv = "sku,name,category,price\nFS-1,Диван,sofa,100000\n"
+    mapping = '{"sku":"sku","name":"name","category":"category","price":"price"}'
+    by_name = client.post("/api/v1/catalog/import/commit", headers=sh, files={"file": ("p.csv", io.BytesIO(csv.encode()), "text/csv")},
+                          data={"supplier_name": "Foreign Store", "mapping": mapping})
+    assert by_name.status_code == 403
+    by_id = client.post("/api/v1/catalog/import/commit", headers=sh, files={"file": ("p.csv", io.BytesIO(csv.encode()), "text/csv")},
+                        data={"supplier_id": other["id"], "mapping": mapping})
+    assert by_id.status_code == 403
+    ok = client.post("/api/v1/catalog/import/commit", headers=admin, files={"file": ("p.csv", io.BytesIO(csv.encode()), "text/csv")},
+                     data={"supplier_id": other["id"], "mapping": mapping})
+    assert ok.status_code == 200 and ok.json()["created"] == 1
     client.delete(f"/api/v1/admin/suppliers/{other['id']}", headers=admin)

@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Box, CheckCircle2, Circle, FileBadge, Image as ImageIcon, Layers, Trash2, Upload, X } from "lucide-react";
 import { api, fileUrl } from "../lib/api";
+import { useScope, withQs } from "../lib/scope";
 import { amd, catName, dt, kb } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, useToast } from "./ui";
@@ -16,12 +17,13 @@ const V_TONE: Record<string, string> = { verified: "sage", pending: "warn", reje
 /** Partner onboarding: profile → agreement → catalogue → category mapping → assets → submit for verification. */
 export function OnboardingCard({ onChange }: { onChange?: () => void }) {
   const { t } = useT();
+  const { qs } = useScope();
   const toast = useToast();
   const [st, setSt] = useState<Onb | null>(null);
   const [f, setF] = useState({ name: "", website: "", city: "", kind: "store", tax_id: "", phone: "", email: "" });
   const [agree, setAgree] = useState(false);
-  const load = () => api<Onb>("/supplier/onboarding").then((s) => { setSt(s); if (s.supplier) setF((x) => ({ ...x, name: s.supplier!.name, website: s.supplier!.website, city: s.supplier!.city, kind: s.supplier!.kind, tax_id: s.supplier!.tax_id, phone: s.supplier!.contacts?.phone || "", email: s.supplier!.contacts?.email || "" })); }).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const load = () => api<Onb>(withQs("/supplier/onboarding", qs)).then((s) => { setSt(s); if (s.supplier) setF((x) => ({ ...x, name: s.supplier!.name, website: s.supplier!.website, city: s.supplier!.city, kind: s.supplier!.kind, tax_id: s.supplier!.tax_id, phone: s.supplier!.contacts?.phone || "", email: s.supplier!.contacts?.email || "" })); }).catch(() => {});
+  useEffect(() => { load(); }, [qs]);  // eslint-disable-line react-hooks/exhaustive-deps
   const run = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); toast(ok); load(); onChange?.(); } catch (x) { toast((x as Error).message, true); } };
   if (!st) return null;
   return (
@@ -32,29 +34,32 @@ export function OnboardingCard({ onChange }: { onChange?: () => void }) {
       <ol className="row gap-12 wrap small" style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {STEPS.map((s) => <li key={s} className="row gap-4">{st.steps[s] ? <CheckCircle2 size={16} color="var(--sage-ink)" /> : <Circle size={16} />}{t(`sob.step.${s}`)}</li>)}
       </ol>
+      {qs ? <div className="alert info small">{t("mg.onb_platform_hint")}</div> : <>
       <div className="grid g3">
         {(["name", "website", "city", "tax_id", "phone", "email"] as const).map((k) => (
           <label key={k} className="col gap-4"><span className="tiny muted">{t(`sob.f.${k}`)}</span><input className="input" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>))}
         <label className="col gap-4"><span className="tiny muted">{t("sob.f.kind")}</span>
           <select className="select input" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["store", "manufacturer", "installer"].map((k) => <option key={k} value={k}>{t(`sob.kind.${k}`)}</option>)}</select></label>
       </div>
-      <div><button className="btn" disabled={f.name.length < 2} onClick={() => run(() => api("/supplier/onboarding/profile", { method: "PUT", json: f }), t("sob.saved"))}>{t("sob.save_profile")}</button></div>
+      <div><button className="btn" disabled={f.name.length < 2} onClick={() => run(() => api(withQs("/supplier/onboarding/profile", qs), { method: "PUT", json: f }), t("sob.saved"))}>{t("sob.save_profile")}</button></div>
       {st.supplier && !st.steps.agreement && <div className="row gap-8 wrap small">
         <label className="row gap-6"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> {t("sob.agree", { v: st.agreement_version })}</label>
-        <button className="btn sm" disabled={!agree} onClick={() => run(() => api("/supplier/onboarding/agreement", { method: "POST", json: { version: st.agreement_version, accept: true } }), t("sob.saved"))}>{t("sob.accept")}</button></div>}
+        <button className="btn sm" disabled={!agree} onClick={() => run(() => api(withQs("/supplier/onboarding/agreement", qs), { method: "POST", json: { version: st.agreement_version, accept: true } }), t("sob.saved"))}>{t("sob.accept")}</button></div>}
+      </>}
       {st.supplier && <CategoryMap />}
-      {st.supplier && st.verification !== "verified" && <div><button className="btn primary" disabled={st.steps.submitted && st.verification === "pending"} onClick={() => run(() => api("/supplier/onboarding/submit", { method: "POST" }), t("sob.submitted"))}>{t("sob.submit")}</button></div>}
+      {st.supplier && !qs && st.verification !== "verified" && <div><button className="btn primary" disabled={st.steps.submitted && st.verification === "pending"} onClick={() => run(() => api(withQs("/supplier/onboarding/submit", qs), { method: "POST" }), t("sob.submitted"))}>{t("sob.submit")}</button></div>}
     </section>
   );
 }
 
 function CategoryMap() {
   const { t } = useT();
+  const { qs } = useScope();
   const toast = useToast();
   const [rows, setRows] = useState<[string, string][]>([]);
   const [tax, setTax] = useState<string[]>([]);
-  useEffect(() => { api<{ mapping: Record<string, string>; taxonomy: string[] }>("/supplier/category-map").then((r) => { setRows(Object.entries(r.mapping)); setTax(r.taxonomy); }).catch(() => {}); }, []);
-  const save = async () => { try { await api("/supplier/category-map", { method: "PUT", json: { mapping: Object.fromEntries(rows.filter(([k, v]) => k && v)) } }); toast(t("sob.saved")); } catch (x) { toast((x as Error).message, true); } };
+  useEffect(() => { api<{ mapping: Record<string, string>; taxonomy: string[] }>(withQs("/supplier/category-map", qs)).then((r) => { setRows(Object.entries(r.mapping)); setTax(r.taxonomy); }).catch(() => {}); }, [qs]);
+  const save = async () => { try { await api(withQs("/supplier/category-map", qs), { method: "PUT", json: { mapping: Object.fromEntries(rows.filter(([k, v]) => k && v)) } }); toast(t("sob.saved")); } catch (x) { toast((x as Error).message, true); } };
   return (
     <div className="col gap-6">
       <b className="small">{t("sob.catmap")}</b><span className="tiny muted">{t("sob.catmap_hint")}</span>
@@ -73,6 +78,7 @@ const KINDS = [["model3d", Box, ".glb,.gltf"], ["texture", ImageIcon, ".png,.jpg
 /** Supplier asset library: files are validated by content on the server; GLB models open in a 3D preview. */
 export function AssetsCard({ products }: { products: { id: string; sku: string; name: string }[] }) {
   const { t } = useT();
+  const { qs } = useScope();
   const toast = useToast();
   const [rows, setRows] = useState<Asset[]>([]);
   const [kind, setKind] = useState<string>("model3d");
@@ -80,15 +86,15 @@ export function AssetsCard({ products }: { products: { id: string; sku: string; 
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<Asset | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const load = () => api<Asset[]>("/supplier/assets").then(setRows).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const load = () => api<Asset[]>(withQs("/supplier/assets", qs)).then(setRows).catch(() => {});
+  useEffect(() => { load(); }, [qs]);  // eslint-disable-line react-hooks/exhaustive-deps
   const upload = async (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("kind", kind);
     if (variant) fd.append("variant_id", variant);
     setBusy(true);
-    try { await api("/supplier/assets", { method: "POST", body: fd }); toast(t("sas.uploaded")); load(); } catch (x) { toast((x as Error).message, true); } finally { setBusy(false); if (input.current) input.current.value = ""; }
+    try { await api(withQs("/supplier/assets", qs), { method: "POST", body: fd }); toast(t("sas.uploaded")); load(); } catch (x) { toast((x as Error).message, true); } finally { setBusy(false); if (input.current) input.current.value = ""; }
   };
   const accept = KINDS.find((k) => k[0] === kind)?.[2] || "";
   return (
@@ -112,7 +118,7 @@ export function AssetsCard({ products }: { products: { id: string; sku: string; 
             {a.kind === "model3d" && a.meta.ext === ".glb" && <button className="btn sm" onClick={() => setPreview(a)}>{t("sas.preview")}</button>}
             {a.kind === "texture" && <img src={fileUrl(a.url)} alt={a.filename} width={40} height={40} style={{ objectFit: "cover", borderRadius: 6 }} />}
             <a className="btn sm ghost" href={fileUrl(a.url)}>{t("sas.open")}</a>
-            <button className="icon-btn" aria-label={t("common.delete")} onClick={async () => { await api(`/supplier/assets/${a.id}`, { method: "DELETE" }).catch(() => {}); load(); }}><Trash2 size={15} /></button>
+            <button className="icon-btn" aria-label={t("common.delete")} onClick={async () => { await api(withQs(`/supplier/assets/${a.id}`, qs), { method: "DELETE" }).catch(() => {}); load(); }}><Trash2 size={15} /></button>
           </div>
         );
       })}
@@ -170,16 +176,17 @@ interface PData { locations: { id: string; kind: string; name: string; city: str
 /** Warehouses / showrooms, delivery options and installation services. */
 export function PartnerDataCard() {
   const { t } = useT();
+  const { qs } = useScope();
   const toast = useToast();
   const [d, setD] = useState<PData | null>(null);
   const [loc, setLoc] = useState({ name: "", address: "", kind: "warehouse" });  // city defaults server-side
   const [del, setDel] = useState({ name: "", regions: "", fee_amd: "", days_min: "1", days_max: "3" });
   const [svc, setSvc] = useState({ name: "", price_amd: "" });
-  const load = () => api<PData>("/supplier/partner-data").then(setD).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const load = () => api<PData>(withQs("/supplier/partner-data", qs)).then(setD).catch(() => {});
+  useEffect(() => { load(); }, [qs]);  // eslint-disable-line react-hooks/exhaustive-deps
   const run = async (fn: () => Promise<unknown>) => { try { await fn(); toast(t("sob.saved")); load(); } catch (x) { toast((x as Error).message, true); } };
   if (!d) return null;
-  const rm = (kind: string, id: string) => run(() => api(`/supplier/${kind}/${id}`, { method: "DELETE" }));
+  const rm = (kind: string, id: string) => run(() => api(withQs(`/supplier/${kind}/${id}`, qs), { method: "DELETE" }));
   return (
     <section className="card pad col gap-10" aria-labelledby="spd-h">
       <h3 id="spd-h">{t("spd.title")}</h3>
@@ -189,7 +196,7 @@ export function PartnerDataCard() {
           <input className="input" aria-label={t("spd.name")} placeholder={t("spd.name")} value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} />
           <input className="input" aria-label={t("spd.address")} placeholder={t("spd.address")} value={loc.address} onChange={(e) => setLoc({ ...loc, address: e.target.value })} />
           <select className="select input" aria-label={t("spd.kind")} value={loc.kind} onChange={(e) => setLoc({ ...loc, kind: e.target.value })}>{["warehouse", "showroom", "pickup"].map((k) => <option key={k} value={k}>{t(`spd.lk.${k}`)}</option>)}</select>
-          <button className="btn sm" disabled={!loc.name} onClick={() => run(() => api("/supplier/locations", { method: "POST", json: loc }))}>{t("spd.add")}</button></div>
+          <button className="btn sm" disabled={!loc.name} onClick={() => run(() => api(withQs("/supplier/locations", qs), { method: "POST", json: loc }))}>{t("spd.add")}</button></div>
         <div className="col gap-6"><b className="small">{t("spd.delivery")}</b>
           {d["delivery-options"].map((x) => <div key={x.id} className="row between small"><span>{x.name}: {amd(x.fee_amd)}, {x.days_min}–{x.days_max} {t("spd.days")}</span><button className="icon-btn" aria-label={t("common.delete")} onClick={() => rm("delivery-options", x.id)}><Trash2 size={14} /></button></div>)}
           <input className="input" aria-label={t("spd.name")} placeholder={t("spd.name")} value={del.name} onChange={(e) => setDel({ ...del, name: e.target.value })} />
@@ -197,12 +204,12 @@ export function PartnerDataCard() {
           <div className="row gap-4"><input className="input" inputMode="numeric" aria-label={t("spd.fee")} placeholder={t("spd.fee")} value={del.fee_amd} onChange={(e) => setDel({ ...del, fee_amd: e.target.value })} />
             <input className="input" style={{ width: 60 }} inputMode="numeric" aria-label={t("spd.days_min")} value={del.days_min} onChange={(e) => setDel({ ...del, days_min: e.target.value })} />
             <input className="input" style={{ width: 60 }} inputMode="numeric" aria-label={t("spd.days_max")} value={del.days_max} onChange={(e) => setDel({ ...del, days_max: e.target.value })} /></div>
-          <button className="btn sm" disabled={!del.name} onClick={() => run(() => api("/supplier/delivery-options", { method: "POST", json: { name: del.name, regions: del.regions.split(",").map((s) => s.trim()).filter(Boolean), fee_amd: Number(del.fee_amd) || 0, days_min: Number(del.days_min) || 0, days_max: Number(del.days_max) || 0 } }))}>{t("spd.add")}</button></div>
+          <button className="btn sm" disabled={!del.name} onClick={() => run(() => api(withQs("/supplier/delivery-options", qs), { method: "POST", json: { name: del.name, regions: del.regions.split(",").map((s) => s.trim()).filter(Boolean), fee_amd: Number(del.fee_amd) || 0, days_min: Number(del.days_min) || 0, days_max: Number(del.days_max) || 0 } }))}>{t("spd.add")}</button></div>
         <div className="col gap-6"><b className="small">{t("spd.services")}</b>
           {d.services.map((x) => <div key={x.id} className="row between small"><span>{x.name}: {x.price_amd == null ? t("spd.on_request") : amd(x.price_amd)}</span><button className="icon-btn" aria-label={t("common.delete")} onClick={() => rm("services", x.id)}><Trash2 size={14} /></button></div>)}
           <input className="input" aria-label={t("spd.name")} placeholder={t("spd.name")} value={svc.name} onChange={(e) => setSvc({ ...svc, name: e.target.value })} />
           <input className="input" inputMode="numeric" aria-label={t("spd.price")} placeholder={t("spd.price")} value={svc.price_amd} onChange={(e) => setSvc({ ...svc, price_amd: e.target.value })} />
-          <button className="btn sm" disabled={!svc.name} onClick={() => run(() => api("/supplier/services", { method: "POST", json: { name: svc.name, price_amd: svc.price_amd ? Number(svc.price_amd) : null } }))}>{t("spd.add")}</button></div>
+          <button className="btn sm" disabled={!svc.name} onClick={() => run(() => api(withQs("/supplier/services", qs), { method: "POST", json: { name: svc.name, price_amd: svc.price_amd ? Number(svc.price_amd) : null } }))}>{t("spd.add")}</button></div>
       </div>
     </section>
   );
@@ -214,15 +221,16 @@ interface Rates { rates: { body?: Record<string, number>; front?: Record<string,
 /** Manufacturer rates for the custom furniture configurator; without them configurations stay «on request». */
 export function CustomRatesCard() {
   const { t } = useT();
+  const { qs } = useScope();
   const toast = useToast();
   const [d, setD] = useState<Rates | null>(null);
-  useEffect(() => { api<Rates>("/supplier/custom-rates").then(setD).catch(() => {}); }, []);
+  useEffect(() => { api<Rates>(withQs("/supplier/custom-rates", qs)).then(setD).catch(() => {}); }, [qs]);
   if (!d || d.kind !== "manufacturer") return null;
   const r = d.rates;
   const setMap = (k: "body" | "front" | "hardware", key: string, v: string) => setD({ ...d, rates: { ...r, [k]: { ...(r[k] || {}), [key]: Number(v) || 0 } } });
   const num = (label: string, value: number | null | undefined, on: (v: string) => void) => (
     <label key={label} className="col gap-4"><span className="tiny muted">{label}</span><input className="input" style={{ width: 120 }} inputMode="numeric" value={value ?? ""} onChange={(e) => on(e.target.value)} /></label>);
-  const save = async () => { try { setD(await api<Rates>("/supplier/custom-rates", { method: "PUT", json: r })); toast(t("sob.saved")); } catch (x) { toast((x as Error).message, true); } };
+  const save = async () => { try { setD(await api<Rates>(withQs("/supplier/custom-rates", qs), { method: "PUT", json: r })); toast(t("sob.saved")); } catch (x) { toast((x as Error).message, true); } };
   return (
     <section className="card pad col gap-10" aria-labelledby="crt-h">
       <div className="row between"><h3 id="crt-h">{t("crt.title")}</h3><button className="btn sm primary" onClick={save}>{t("common.save")}</button></div>

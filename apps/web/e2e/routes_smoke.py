@@ -35,7 +35,7 @@ run("designer@forma.local", ["/", "/app", "/app/projects", "/app/new", f"/app/p/
     f"/app/p/{pid}/editor/{vid}", f"/app/p/{pid}/documents", f"/app/p/{pid}/procurement", f"/app/p/{pid}/versions/{vid}", "/app/catalog", "/app/suppliers"])
 run("bureau@forma.local", ["/app/bureau"])
 run("supplier@forma.local", ["/app/supplier", "/app/pim"])
-run("admin@forma.local", ["/app/admin"])
+run("admin@forma.local", ["/app/admin", "/app/admin?tab=orgs", "/app/admin?tab=suppliers", "/app/admin?tab=sources", "/app/bureau", "/app/supplier", "/app/catalog"])
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(); errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)[:120]))

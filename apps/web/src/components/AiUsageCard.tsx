@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Cpu } from "lucide-react";
 import { api } from "../lib/api";
+import { useScope, withQs } from "../lib/scope";
 import { useT } from "../i18n";
 import { useToast } from "./ui";
 
@@ -11,12 +12,13 @@ const usd = (v: number) => `$${v.toFixed(2)}`;
 export default function AiUsageCard({ canEdit }: { canEdit: boolean }) {
   const { t } = useT();
   const toast = useToast();
+  const { qs } = useScope();
   const [u, setU] = useState<Usage | null>(null);
   const [lim, setLim] = useState({ daily_usd: 0, monthly_usd: 0 });
-  useEffect(() => { api<Usage>("/bureau/ai-usage").then((x) => { setU(x); setLim(x.limits); }).catch(() => {}); }, []);
+  useEffect(() => { api<Usage>(withQs("/bureau/ai-usage", qs)).then((x) => { setU(x); setLim(x.limits); }).catch(() => {}); }, [qs]);
   if (!u) return null;
   const bar = (v: number, cap: number) => <div className="progress" aria-hidden><i style={{ width: `${cap ? Math.min(100, (v / cap) * 100) : 0}%`, background: cap && v >= cap ? "var(--danger)" : undefined }} /></div>;
-  const save = async () => { try { const x = await api<Usage>("/bureau/ai-budget", { method: "PUT", json: lim }); setU(x); toast(t("acc.saved")); } catch (e) { toast((e as Error).message, true); } };
+  const save = async () => { try { const x = await api<Usage>(withQs("/bureau/ai-budget", qs), { method: "PUT", json: lim }); setU(x); toast(t("acc.saved")); } catch (e) { toast((e as Error).message, true); } };
   return (
     <div className="card pad col gap-10">
       <h3 className="row gap-6"><Cpu size={18} /> {t("ai.usage_title")}</h3>

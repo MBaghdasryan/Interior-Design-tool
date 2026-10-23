@@ -90,7 +90,7 @@ async def import_preview(file: UploadFile = File(...), p: Principal = Depends(re
 
 
 @router.post("/import/commit")
-async def import_commit(file: UploadFile = File(...), supplier_name: str = Form(...), mapping: str = Form(...), max_price_change_pct: float = Form(60.0),
+async def import_commit(file: UploadFile = File(...), supplier_name: str = Form(""), mapping: str = Form(...), max_price_change_pct: float = Form(60.0), supplier_id: str | None = Form(None),
                         p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
     """Commits a supplier price list. Guard: a mass update that changes prices by more
     than max_price_change_pct for >20% of rows is rejected (protection from broken feeds)."""
@@ -98,9 +98,17 @@ async def import_commit(file: UploadFile = File(...), supplier_name: str = Form(
 
     data = await file.read()
     rows = _read_table(data, file.filename or "")
+    from .manage import _writable_supplier
+
+    if not supplier_id and not supplier_name.strip():
+        raise ApiError(422, "validation", fields=["supplier_name"])
     slug = "".join(ch if ch.isalnum() else "-" for ch in supplier_name.lower()).strip("-")[:60] or "supplier"
-    sup = db.scalar(select(m.Supplier).where(m.Supplier.slug == slug))
-    if not sup:
+    sup = db.scalar(select(m.Supplier).where(m.Supplier.id == supplier_id)) if supplier_id else db.scalar(select(m.Supplier).where(m.Supplier.slug == slug))
+    if sup:
+        _writable_supplier(p, db, sup.id)  # a price list never lands in another supplier's catalogue
+    elif supplier_id:
+        raise ApiError(404, "not_found")
+    else:
         org_id = next(iter(p.org_ids), None)
         sup = m.Supplier(name=supplier_name, slug=slug, org_id=org_id, is_demo=False)
         db.add(sup)

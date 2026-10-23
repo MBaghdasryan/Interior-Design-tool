@@ -1,10 +1,12 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Activity, Bot, Boxes, Globe2, PenTool, ScrollText, ShieldAlert, Store, Wallet, Workflow } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Activity, Bot, Boxes, Building2, Globe2, PenTool, ScrollText, ShieldAlert, Store, Users, Wallet, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
 import { amd as amdFmt, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import FinanceTab from "../components/FinanceTab";
+import { OrgsAdmin, SuppliersAdmin, UsersAdmin } from "../components/Management";
 
 interface Src { id: string; key: string; name: string; domain: string; enabled: boolean; live_enabled?: boolean; connector_type?: string; categories: string[]; method: string; connector_status: string; policy_status?: string; policy: Record<string, any>; rate_limit_s: number; notes: string; last_check_at: string | null; success_rate: number | null; avg_latency_ms: number | null; records: number; pending_review: number; indexed?: boolean; index?: { cursor?: number; total?: number; indexed?: number; last_run_at?: string }; last_errors: string[] }
 interface Scan { urls_found: number; methods: Record<string, number>; restricted: string | null; error: string | null;
@@ -13,13 +15,15 @@ interface Hist { runs: { at: string; kind: string; status: string; found: number
 interface Costs { projects_with_ai: number; avg_per_project_usd: number; median_per_project_usd: number; max_per_project_usd: number; unattributed_usd: number;
   projects: { project_id: string; title: string; org: string; calls: number; cost_usd: number }[]; by_org: { org: string; calls: number; cost_usd: number }[] }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
-type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
+type Tab = "users" | "orgs" | "suppliers" | "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
 export default function PlatformAdmin() {
   const { t } = useT();
   const toast = useToast();
-  const [tab, setTab] = useState<Tab>("sources");
+  const [sp, setSp] = useSearchParams();
+  const tab = (sp.get("tab") as Tab) || "users";
+  const setTab = (k: Tab) => setSp({ tab: k });
   const [stats, setStats] = useState<Record<string, any> | null>(null);
   const [src, setSrc] = useState<Src[]>([]);
   const [jobs, setJobs] = useState<(Job & { attempts?: number })[]>([]);
@@ -62,7 +66,7 @@ export default function PlatformAdmin() {
   const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
+  const tabs: [Tab, typeof Bot][] = [["users", Users], ["orgs", Building2], ["suppliers", Store], ["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -73,6 +77,9 @@ export default function PlatformAdmin() {
         <div className="card kpi"><div className="ico"><Activity size={22} /></div><div><div className="v">{stats.jobs_failed}</div><div className="small muted">{t("adm.failed_jobs")}</div></div></div>
       </div>
       <div className="tabs">{tabs.map(([k, I]) => <button key={k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><I size={16} /> {t(`adm.tab.${k}`)}</button>)}</div>
+      {tab === "users" && <UsersAdmin />}
+      {tab === "orgs" && <OrgsAdmin />}
+      {tab === "suppliers" && <SuppliersAdmin />}
       {tab === "sources" && (
         <div className="col gap-10">
           <div className="alert info small">{stats.integrations.external_fetch_live ? t("adm.live_on") : t("adm.live_off")}</div>

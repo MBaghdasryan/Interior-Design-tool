@@ -47,7 +47,7 @@ def supplier_overview(supplier_id: str | None = None, p: Principal = Depends(req
                 projects.add(ver.variant_id)
     top = [{"sku": refs[r].sku, "name": refs[r].product.name_ru, "placements": n} for r, n in used.most_common(10)]
     rfqs = db.scalars(select(m.RFQ).where(m.RFQ.supplier_id == sup.id).order_by(m.RFQ.created_at.desc()).limit(50)).all()
-    return {"supplier": {"id": sup.id, "name": sup.name, "is_demo": sup.is_demo, "commission_pct": sup.commission_pct, "delivery": sup.delivery},
+    return {"supplier": {"id": sup.id, "org_id": sup.org_id, "name": sup.name, "is_demo": sup.is_demo, "commission_pct": sup.commission_pct, "delivery": sup.delivery},
             "products": len(variants), "with_price": sum(1 for v in variants if v.price is not None), "with_dims": sum(1 for v in variants if v.width_mm),
             "with_3d": sum(1 for v in variants if v.model3d_url), "in_stock": sum(1 for v in variants if v.stock_status == "in_stock"),
             "placements": sum(used.values()), "variants_using": len(projects), "top": top,
@@ -64,8 +64,8 @@ def supplier_orders(supplier_id: str | None = None, p: Principal = Depends(requi
     return [order_dict(db, o) | {"project_id": o.project_id} for o in rows]
 
 
-def _supplier_order(p: Principal, db: Session, oid: str) -> m.Order:
-    sup = _supplier_for(p, db)
+def _supplier_order(p: Principal, db: Session, oid: str, supplier_id: str | None = None) -> m.Order:
+    sup = _supplier_for(p, db, supplier_id)
     o = db.get(m.Order, oid)
     if not o or o.supplier_id != sup.id or o.status == "cart":
         raise ApiError(404, "not_found")
@@ -79,12 +79,12 @@ class ConfirmIn(BaseModel):
 
 
 @router.post("/api/v1/supplier/orders/{oid}/confirm")
-def supplier_confirm(oid: str, body: ConfirmIn, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+def supplier_confirm(oid: str, body: ConfirmIn, supplier_id: str | None = None, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
     from ..commerce import orders as orders_svc
     from ..notify import notify, project_people
     from .commerce import order_dict
 
-    o = _supplier_order(p, db, oid)
+    o = _supplier_order(p, db, oid, supplier_id)
     orders_svc.confirm(db, o, total_amd=body.total_amd, valid_days=body.valid_days, actor=p.user.email, note=body.note)
     audit(db, p, "order.confirmed", "order", oid, project_id=o.project_id, data={"total_amd": body.total_amd})
     proj = db.get(m.Project, o.project_id)
@@ -99,12 +99,12 @@ class SupplierStatusIn(BaseModel):
 
 
 @router.post("/api/v1/supplier/orders/{oid}/status")
-def supplier_status(oid: str, body: SupplierStatusIn, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+def supplier_status(oid: str, body: SupplierStatusIn, supplier_id: str | None = None, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
     from ..commerce import orders as orders_svc
     from ..notify import notify, project_people
     from .commerce import order_dict
 
-    o = _supplier_order(p, db, oid)
+    o = _supplier_order(p, db, oid, supplier_id)
     orders_svc.transition(db, o, body.to, side="supplier", actor=p.user.email, note=body.note)
     audit(db, p, f"order.{body.to}", "order", oid, project_id=o.project_id)
     proj = db.get(m.Project, o.project_id)
@@ -133,10 +133,10 @@ def get_feed(supplier_id: str | None = None, p: Principal = Depends(require("sup
 
 
 @router.put("/api/v1/supplier/feed")
-def put_feed(body: FeedIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+def put_feed(body: FeedIn, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
     from urllib.parse import urlparse
 
-    sup = _supplier_for(p, db)
+    sup = _supplier_for(p, db, supplier_id)
     u = urlparse(body.url)
     if body.url and (u.scheme != "https" or not u.hostname):
         raise ApiError(422, "validation", fields=["url"])
@@ -149,10 +149,10 @@ def put_feed(body: FeedIn, p: Principal = Depends(require("supplier:manage")), d
 
 
 @router.post("/api/v1/supplier/feed/sync")
-def sync_feed_now(p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+def sync_feed_now(supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
     from ..jobs.runner import enqueue, job_dict
 
-    sup = _supplier_for(p, db)
+    sup = _supplier_for(p, db, supplier_id)
     if not (sup.feed or {}).get("url"):
         raise ApiError(422, "validation", fields=["url"])
     job = enqueue(db, "supplier_feed", project_id=None, params={"supplier_id": sup.id})
@@ -169,8 +169,8 @@ class QuoteIn(BaseModel):
 
 
 @router.post("/api/v1/supplier/rfqs/{rid}/respond")
-def respond_rfq(rid: str, body: QuoteIn, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
-    sup = _supplier_for(p, db)
+def respond_rfq(rid: str, body: QuoteIn, supplier_id: str | None = None, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+    sup = _supplier_for(p, db, supplier_id)
     r = db.get(m.RFQ, rid)
     if not r or r.supplier_id != sup.id:
         raise ApiError(404, "not_found")
@@ -236,10 +236,10 @@ class AiBudgetIn(BaseModel):
 
 
 @router.put("/api/v1/bureau/ai-budget")
-def bureau_ai_budget(body: AiBudgetIn, p: Principal = Depends(require("team:manage")), db: Session = Depends(get_db)):
+def bureau_ai_budget(body: AiBudgetIn, org_id: str | None = None, p: Principal = Depends(require("team:manage")), db: Session = Depends(get_db)):
     from ..ai.budget import summary
 
-    org = _bureau_org(p, db)
+    org = _bureau_org(p, db, org_id)
     org.settings = {**(org.settings or {}), "ai_budget": body.model_dump()}
     audit(db, p, "bureau.ai_budget", "organization", org.id, org_id=org.id, data=body.model_dump())
     db.commit()
@@ -251,11 +251,10 @@ class OrgSettingsIn(BaseModel):
 
 
 @router.put("/api/v1/bureau/settings")
-def bureau_settings(body: OrgSettingsIn, p: Principal = Depends(require("team:manage")), db: Session = Depends(get_db)):
-    org = next((db.get(m.Organization, oid) for oid in p.org_ids if db.get(m.Organization, oid).kind == "bureau"), None)
-    if not org:
-        raise ApiError(404, "not_found")
+def bureau_settings(body: OrgSettingsIn, org_id: str | None = None, p: Principal = Depends(require("team:manage")), db: Session = Depends(get_db)):
+    org = _bureau_org(p, db, org_id)
     org.settings = {**(org.settings or {}), "title_block": body.title_block}
+    audit(db, p, "bureau.settings", "organization", org.id, org_id=org.id)
     db.commit()
     return org.settings
 

@@ -251,7 +251,6 @@ export const workspace: Dict = {
   "aicost.hint": e("Գնահատական՝ տոկեններ և պատկերներ × մոդելների սակագին․ AI-ով նախագծեր՝ {n}։ Սերվերը և Autodesk-ը հաշվված չեն։", "Оценка: токены и изображения × тарифы моделей; проектов с AI: {n}. Сервер и Autodesk не учтены.", "Estimate: tokens and images × model prices; projects with AI: {n}. Server and Autodesk not included."),
   "aicost.col.project": e("Նախագիծ", "Проект", "Project"),
   "aicost.col.org": e("Կազմակերպություն", "Организация", "Organisation"),
-  "aicost.platform_hint": e("Բյուրոյի AI ծախսը ցույց է տրվում բյուրոյի անդամներին։ Բոլոր կազմակերպությունների և նախագծերի ծախսը՝ Պլատֆորմ → AI մատակարարներ։", "Расход AI бюро виден сотрудникам бюро. Расход всех организаций и проектов — в разделе Платформа → AI-провайдеры.", "A bureau's AI spend is shown to its members. All organisations and projects: Platform → AI providers."),
   "aicost.task.design_brief": e("Դիզայնի տեխնիկական առաջադրանք", "ТЗ на дизайн", "Design brief"),
   "aicost.task.variant_copy": e("Տարբերակների նկարագրություն", "Описания вариантов", "Variant descriptions"),
   "aicost.task.change_command": e("AI հրամաններ", "AI-команды правок", "AI change commands"),

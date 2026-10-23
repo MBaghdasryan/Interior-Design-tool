@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Camera, ExternalLink, Search, Shuffle, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, ExternalLink, Pencil, Plus, Search, Shuffle, X } from "lucide-react";
 import { api } from "../lib/api";
 import { amd, catName, dt, styleName, tierName } from "../lib/format";
 import { useT } from "../i18n";
-import { Badge, Empty, Loading, PriceStatus } from "../components/ui";
+import { Badge, Empty, Loading, PriceStatus, useToast } from "../components/ui";
+import { ProductEditor } from "../components/Management";
+import { useMe } from "../components/AppShell";
 
 interface Item { ref: string; category: string; name: string; supplier_name: string; price_amd: number | null; price_status: string; unit: string; w: number; d: number; h: number; color_hex: string; styles: string[]; tier: string; stock: string; sku: string; url: string; checked_at: string | null; is_demo: boolean; source: string; dims_known: boolean; warnings: string[] }
 interface SearchStatus { text_provider: string; neural: boolean; indexed: { text: number; image: number } }
@@ -20,6 +22,28 @@ export default function Catalog() {
   const [st, setSt] = useState<SearchStatus | null>(null);
   const [analogs, setAnalogs] = useState<{ base: string; items: Analog[] } | null>(null);
   const photo = useRef<HTMLInputElement>(null);
+  const toast = useToast();
+  const { me } = useMe();
+  // manual catalogue editing: platform catalogue staff for any supplier, supplier staff for their own products (enforced server-side)
+  const canWrite = !!me?.roles.some((r) => ["platform_admin", "platform_ops", "supplier_admin", "supplier_catalog"].includes(r));
+  const isPlatform = !!me?.roles.some((r) => r === "platform_admin" || r === "platform_ops");
+  const [sups, setSups] = useState<{ id: string; name: string; is_demo: boolean }[]>([]);
+  const [newFor, setNewFor] = useState("");
+  const [edit, setEdit] = useState<{ productId: string | null; supplierId: string } | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!canWrite) return;
+    if (isPlatform) api<{ id: string; name: string; is_demo: boolean }[]>("/catalog/suppliers").then((r) => { setSups(r); setNewFor(r.find((x) => !x.is_demo)?.id || r[0]?.id || ""); }).catch(() => {});
+    else api<{ supplier: { id: string } }>("/supplier/overview").then((o) => setNewFor(o.supplier.id)).catch(() => {});
+  }, [canWrite, isPlatform]);
+  const openEdit = async (it: Item) => {
+    try {
+      const p = await api<{ id: string; supplier_id: string; can_edit: boolean }>(`/catalog/variants/${it.ref.slice(3)}/product`);
+      if (!p.can_edit) { toast(t("mg.not_your_product"), true); return; }
+      setEdit({ productId: p.id, supplierId: p.supplier_id });
+    } catch (x) { toast((x as Error).message, true); }
+  };
+  const closeEdit = useCallback(() => setEdit(null), []);
   useEffect(() => { api<Tax>("/catalog/taxonomy").then(setTax); api<SearchStatus>("/catalog/search/status").then(setSt).catch(() => {}); }, []);
   const byPhoto = async (file: File) => {
     const fd = new FormData();
@@ -42,11 +66,15 @@ export default function Catalog() {
     setItems(null);
     const tm = setTimeout(() => api<{ items: Item[] }>(`/catalog/products?${p}`).then((r) => setItems(r.items)), 250);
     return () => clearTimeout(tm);
-  }, [q, f, mode]);
+  }, [q, f, mode, reload]);
   const stock = (s: string) => (s === "in_stock" ? t("common.in_stock") : s === "to_order" ? t("common.to_order") : "?");
   return (
     <div className="col gap-16">
-      <div><h1>{t("catalog.title")}</h1><p className="muted">{t("catalog.lead")}</p></div>
+      <div className="row between wrap gap-12"><div><h1>{t("catalog.title")}</h1><p className="muted">{t("catalog.lead")}</p></div>
+        {canWrite && newFor && <div className="row gap-6">
+          {isPlatform && <select className="select input" aria-label={t("mg.col.supplier")} value={newFor} onChange={(e) => setNewFor(e.target.value)}>{sups.map((x) => <option key={x.id} value={x.id}>{x.name}{x.is_demo ? " · DEMO" : ""}</option>)}</select>}
+          <button className="btn primary" onClick={() => setEdit({ productId: null, supplierId: newFor })}><Plus size={16} /> {t("mg.product_new")}</button></div>}
+      </div>
       <div className="card pad row wrap">
         <div className="row grow" style={{ minWidth: 240 }}><Search size={18} /><input className="input" placeholder={t("catalog.search_ph")} value={q} onChange={(e) => { setQ(e.target.value); if (mode === "photo") setMode("keyword"); }} aria-label={t("common.search")} /></div>
         <select className="select input" aria-label={t("catalog.all_groups")} style={{ width: 190 }} value={f.group} onChange={(e) => setF({ ...f, group: e.target.value, category: "" })}><option value="">{t("catalog.all_groups")}</option>{tax?.groups.map((g) => <option key={g.key} value={g.key}>{t(`enum.group.${g.key}`)}</option>)}</select>
@@ -78,12 +106,14 @@ export default function Catalog() {
                 <div className="row between mt-8"><b className="mono">{it.price_amd === null ? t("common.on_request") : amd(it.price_amd)}<span className="tiny muted"> {t("catalog.per", { unit: t(`unit.${it.unit}`) })}</span></b>
                   <Badge tone={it.stock === "in_stock" ? "sage" : ""}>{stock(it.stock)}</Badge></div>
                 <div className="row between tiny muted"><span>{t("catalog.checked", { when: dt(it.checked_at) })}</span>{it.url && <a href={it.url} target="_blank" rel="noreferrer">{t("alt.at_supplier")} <ExternalLink size={11} /></a>}</div>
-                <button className="btn sm ghost mt-8" onClick={() => openAnalogs(it)}><Shuffle size={14} /> {t("srch.analogs")}</button>
+                <div className="row gap-4 mt-8"><button className="btn sm ghost grow" onClick={() => openAnalogs(it)}><Shuffle size={14} /> {t("srch.analogs")}</button>
+                  {canWrite && it.ref.startsWith("pv:") && <button className="btn sm" onClick={() => openEdit(it)} aria-label={`${t("mg.edit")}: ${it.name}`}><Pencil size={14} /> {t("mg.edit")}</button>}</div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <ProductEditor open={!!edit} supplierId={edit?.supplierId || ""} productId={edit?.productId || null} onClose={closeEdit} onSaved={() => setReload((x) => x + 1)} />
       {analogs && <div className="modal" role="dialog" aria-modal="true" aria-label={t("srch.analogs_for", { name: analogs.base })} onClick={() => setAnalogs(null)}>
         <div className="col gap-8" style={{ padding: 20 }} onClick={(e) => e.stopPropagation()}>
           <div className="row between"><b>{t("srch.analogs_for", { name: analogs.base })}</b><button className="icon-btn" aria-label={t("common.close")} onClick={() => setAnalogs(null)}><X size={16} /></button></div>

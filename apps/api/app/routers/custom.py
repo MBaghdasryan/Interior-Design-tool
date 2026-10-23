@@ -196,18 +196,18 @@ class RatesIn(BaseModel):
 
 
 @router.get("/api/v1/supplier/custom-rates")
-def get_rates(p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+def get_rates(supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
     from .suppliers import _supplier
 
-    sup = _supplier(p, db)
+    sup = _supplier(p, db, supplier_id=supplier_id)
     return {"rates": sup.custom_rates or {}, "body": BODY, "fronts": FRONTS, "hardware": HARDWARE, "kind": sup.kind}
 
 
 @router.put("/api/v1/supplier/custom-rates")
-def put_rates(body: RatesIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+def put_rates(body: RatesIn, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
     from .suppliers import _supplier
 
-    sup = _supplier(p, db)
+    sup = _supplier(p, db, supplier_id=supplier_id)
     if any(k not in BODY for k in body.body) or any(k not in FRONTS for k in body.front) or any(k not in HARDWARE for k in body.hardware):
         raise ApiError(422, "validation", fields=["rates"])
     if any(v < 0 for d in (body.body, body.front, body.hardware) for v in d.values()):

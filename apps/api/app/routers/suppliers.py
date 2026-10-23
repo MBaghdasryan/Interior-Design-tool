@@ -134,14 +134,14 @@ class CategoryMapIn(BaseModel):
 
 
 @router.get("/api/v1/supplier/category-map")
-def get_category_map(p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+def get_category_map(supplier_id: str | None = None, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     return {"mapping": sup.category_map or {}, "taxonomy": sorted(CATEGORIES)}
 
 
 @router.put("/api/v1/supplier/category-map")
-def put_category_map(body: CategoryMapIn, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+def put_category_map(body: CategoryMapIn, supplier_id: str | None = None, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     bad = [v for v in body.mapping.values() if v not in CATEGORIES]
     if bad:
         raise ApiError(422, "validation", fields=["mapping"], info=", ".join(bad[:5]))
@@ -165,8 +165,8 @@ def list_assets(supplier_id: str | None = None, p: Principal = Depends(require("
 
 @router.post("/api/v1/supplier/assets")
 async def upload_asset(file: UploadFile = File(...), kind: str = Form(...), variant_id: str | None = Form(None),
-                       p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+                       supplier_id: str | None = None, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     data = await file.read()
     name = (file.filename or "file").replace("/", "_")[-200:]
     try:
@@ -200,8 +200,8 @@ async def upload_asset(file: UploadFile = File(...), kind: str = Form(...), vari
 
 
 @router.delete("/api/v1/supplier/assets/{aid}")
-def delete_asset(aid: str, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+def delete_asset(aid: str, supplier_id: str | None = None, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     a = db.get(m.SupplierAsset, aid)
     if not a or a.supplier_id != sup.id:
         raise ApiError(404, "not_found")
@@ -252,8 +252,8 @@ def partner_data(supplier_id: str | None = None, p: Principal = Depends(require(
     return {k: [_row(r) for r in db.scalars(select(model).where(model.supplier_id == sup.id).order_by(model.created_at))] for k, (model, _) in PARTNER.items()}
 
 
-def _add(kind: str, payload: BaseModel, p: Principal, db: Session) -> dict:
-    sup = _supplier(p, db)
+def _add(kind: str, payload: BaseModel, p: Principal, db: Session, supplier_id: str | None = None) -> dict:
+    sup = _supplier(p, db, supplier_id=supplier_id)
     model, _ = PARTNER[kind]
     if isinstance(payload, DeliveryIn) and payload.days_max < payload.days_min:
         raise ApiError(422, "validation", fields=["days_max"])
@@ -267,25 +267,25 @@ def _add(kind: str, payload: BaseModel, p: Principal, db: Session) -> dict:
 
 
 @router.post("/api/v1/supplier/locations")
-def add_location(body: LocationIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
-    return _add("locations", body, p, db)
+def add_location(body: LocationIn, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    return _add("locations", body, p, db, supplier_id)
 
 
 @router.post("/api/v1/supplier/delivery-options")
-def add_delivery(body: DeliveryIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
-    return _add("delivery-options", body, p, db)
+def add_delivery(body: DeliveryIn, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    return _add("delivery-options", body, p, db, supplier_id)
 
 
 @router.post("/api/v1/supplier/services")
-def add_service(body: ServiceIn, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
-    return _add("services", body, p, db)
+def add_service(body: ServiceIn, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    return _add("services", body, p, db, supplier_id)
 
 
 @router.delete("/api/v1/supplier/{kind}/{rid}")
-def delete_partner_row(kind: str, rid: str, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+def delete_partner_row(kind: str, rid: str, supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
     if kind not in PARTNER:
         raise ApiError(404, "not_found")
-    sup = _supplier(p, db)
+    sup = _supplier(p, db, supplier_id=supplier_id)
     r = db.get(PARTNER[kind][0], rid)
     if not r or r.supplier_id != sup.id:
         raise ApiError(404, "not_found")

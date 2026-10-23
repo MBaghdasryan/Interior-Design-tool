@@ -1,34 +1,56 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { BarChart3, Box, Boxes, Image, RefreshCw, Rss, Ruler, Tag } from "lucide-react";
 import { api, ApiError, type Schemas } from "../lib/api";
-import { amd, catName, dt } from "../lib/format";
+import { amd, dt } from "../lib/format";
 import { useT } from "../i18n";
-import { Badge, Loading, PriceStatus, Switch, useToast } from "../components/ui";
+import { Badge, Empty, Loading, Switch, useToast } from "../components/ui";
 import { AssetsCard, CustomRatesCard, OnboardingCard, PartnerDataCard } from "../components/SupplierPartner";
+import { SupplierPicker, SupplierProducts, TeamCard } from "../components/Management";
+import { useMe } from "../components/AppShell";
+import { ScopeCtx, useScope, withQs } from "../lib/scope";
 
-interface Ov { supplier: { name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
-interface P { id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
+interface Ov { supplier: { id: string; org_id?: string | null; name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
+interface P { id: string; product_id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
 
 export default function SupplierCabinet() {
+  const { me } = useMe();
+  const [sp, setSp] = useSearchParams();
+  const isPlatform = !!me?.roles.some((r) => r === "platform_admin" || r === "platform_ops");
+  const supplierId = isPlatform ? sp.get("supplier") || "" : "";
+  const qs = supplierId ? `supplier_id=${encodeURIComponent(supplierId)}` : "";
+  const picker = isPlatform && <SupplierPicker value={supplierId} onChange={(v) => setSp(v ? { supplier: v } : {})} />;
+  return <ScopeCtx.Provider value={{ qs }}><Cabinet key={qs} picker={picker} /></ScopeCtx.Provider>;
+}
+
+function Cabinet({ picker }: { picker: ReactNode }) {
   const { t } = useT();
   const toast = useToast();
+  const { me } = useMe();
+  const { qs } = useScope();
   const [ov, setOv] = useState<Ov | null>(null);
   const [items, setItems] = useState<P[]>([]);
   const [err, setErr] = useState("");
-  const load = () => api<Ov>("/supplier/overview").then((o) => { setOv(o); setErr(""); }).catch((e: ApiError) => setErr(e.code));
-  useEffect(() => { load(); api<P[]>("/supplier/products").then(setItems).catch(() => {}); }, []);
+  const load = useCallback(() => api<Ov>(withQs("/supplier/overview", qs)).then((o) => { setOv(o); setErr(""); }).catch((e: ApiError) => setErr(e.code)), [qs]);
+  const loadItems = useCallback(() => api<P[]>(withQs("/supplier/products", qs)).then(setItems).catch(() => {}), [qs]);
+  useEffect(() => { load(); loadItems(); }, [load, loadItems]);
+  const isPlatform = !!me?.roles.some((r) => r === "platform_admin" || r === "platform_ops");
+  const canTeam = !!me?.roles.includes("supplier_admin") || !!me?.roles.includes("platform_admin");
   const respond = async (id: string, status: "quoted" | "declined") => {
     const total = status === "quoted" ? Number(prompt(t("supc.quote_prompt")) || 0) : null;
-    try { await api(`/supplier/rfqs/${id}/respond`, { method: "POST", json: { status, total_amd: total, valid_days: 7 } }); toast(t("supc.sent")); load(); } catch (x) { toast((x as Error).message, true); }
+    try { await api(withQs(`/supplier/rfqs/${id}/respond`, qs), { method: "POST", json: { status, total_amd: total, valid_days: 7 } }); toast(t("supc.sent")); load(); } catch (x) { toast((x as Error).message, true); }
   };
+  // platform staff without a chosen supplier: pick one first
+  if (err && isPlatform && !qs) return <div className="col gap-16"><h1>{t("supc.title")}</h1>{picker}<Empty>{t("mg.pick_supplier")}</Empty></div>;
   // a self-registered supplier starts with onboarding: there is no catalogue to show yet
-  if (err) return <div className="col gap-16"><h1>{t("supc.title")}</h1><OnboardingCard onChange={() => { load(); api<P[]>("/supplier/products").then(setItems).catch(() => {}); }} /></div>;
+  if (err) return <div className="col gap-16"><h1>{t("supc.title")}</h1>{picker}<OnboardingCard onChange={() => { load(); loadItems(); }} /></div>;
   if (!ov) return <Loading />;
   const q = (n: number) => (ov.products ? Math.round((n / ov.products) * 100) : 0);
   const quality: [string, number, typeof Tag][] = [["supc.q.price", ov.with_price, Tag], ["supc.q.dims", ov.with_dims, Ruler], ["supc.q.model", ov.with_3d, Box], ["supc.q.stock", ov.in_stock, Image]];
   return (
     <div className="col gap-16">
-      <div className="row between wrap"><div><h1>{t("supc.title")}</h1><div className="muted">{ov.supplier.name} {ov.supplier.is_demo && <Badge tone="danger">DEMO</Badge>}</div></div><a className="btn primary" href="/app/pim">{t("supc.upload")}</a></div>
+      <div className="row between wrap gap-12"><div><h1>{t("supc.title")}</h1><div className="muted">{ov.supplier.name} {ov.supplier.is_demo && <Badge tone="danger">DEMO</Badge>}</div></div>{picker}</div>
+      {qs && <div className="alert info small">{t("mg.viewing_as_platform", { name: ov.supplier.name })}</div>}
       <div className="grid g4">
         <div className="card kpi"><div className="ico"><Boxes size={22} /></div><div><div className="v">{ov.products}</div><div className="muted small">{t("supc.skus")}</div></div></div>
         <div className="card kpi"><div className="ico"><BarChart3 size={22} /></div><div><div className="v">{ov.placements}</div><div className="muted small">{t("supc.placements", { n: ov.variants_using })}</div></div></div>
@@ -59,10 +81,8 @@ export default function SupplierCabinet() {
       <PartnerDataCard />
       <CustomRatesCard />
       <FeedCard />
-      <div className="card" style={{ overflow: "auto", maxHeight: 520 }}>
-        <table className="table compact"><thead><tr><th /><th>{t("common.sku")}</th><th>{t("supc.col.name")}</th><th>{t("common.category")}</th><th className="right">{t("common.price")}</th><th>{t("common.status")}</th><th>{t("common.in_stock")}</th><th>{t("common.dims")}</th><th>{t("supc.col.3d")}</th></tr></thead>
-          <tbody>{items.map((p) => <tr key={p.id}><td><span className="dot" style={{ background: p.color_hex, width: 14, height: 14 }} /></td><td className="small mono">{p.sku}</td><td className="small">{p.name}</td><td className="small">{catName(p.category)}</td><td className="right mono small">{amd(p.price, "")}</td><td><PriceStatus s={p.price_status} /></td><td className="small">{p.stock === "in_stock" ? t("common.yes") : t("common.no")}</td><td className="small">{p.dims.join("×")}</td><td>{p.has_3d ? "✓" : "—"}</td></tr>)}</tbody></table>
-      </div>
+      <SupplierProducts supplierId={ov.supplier.id} supplierName={ov.supplier.name} items={items} onChange={() => { load(); loadItems(); }} />
+      {canTeam && (qs ? ov.supplier.org_id && <TeamCard orgId={ov.supplier.org_id} /> : <TeamCard />)}
     </div>
   );
 }
@@ -74,15 +94,16 @@ function FeedCard() {
   const { t } = useT();
   const toast = useToast();
   const [f, setF] = useState<Feed | null>(null);
-  useEffect(() => { api<Feed>("/supplier/feed").then(setF).catch(() => {}); }, []);
+  const { qs } = useScope();
+  useEffect(() => { api<Feed>(withQs("/supplier/feed", qs)).then(setF).catch(() => {}); }, [qs]);
   if (!f) return null;
   const save = async (next: Partial<Feed>) => {
     const body: Schemas["FeedIn"] = { enabled: f.enabled, url: f.url, interval_h: f.interval_h, max_price_change_pct: f.max_price_change_pct, ...next };
-    try { setF(await api<Feed>("/supplier/feed", { method: "PUT", json: body })); toast(t("supc.feed.saved")); }
+    try { setF(await api<Feed>(withQs("/supplier/feed", qs), { method: "PUT", json: body })); toast(t("supc.feed.saved")); }
     catch (x) { toast((x as Error).message, true); }
   };
   const sync = async () => {
-    try { await api("/supplier/feed/sync", { method: "POST" }); setF(await api<Feed>("/supplier/feed")); toast(t("supc.feed.sync_started")); } catch (x) { toast((x as Error).message, true); }
+    try { await api(withQs("/supplier/feed/sync", qs), { method: "POST" }); setF(await api<Feed>(withQs("/supplier/feed", qs))); toast(t("supc.feed.sync_started")); } catch (x) { toast((x as Error).message, true); }
   };
   const tone = (s: string) => (s === "ok" ? "sage" : s === "guard_blocked" || s === "error" ? "danger" : "warn");
   return (
@@ -117,8 +138,9 @@ function SupplierOrders() {
   const toast = useToast();
   const [rows, setRows] = useState<SOrder[]>([]);
   const [totals, setTotals] = useState<Record<string, string>>({});
-  const load = () => api<SOrder[]>("/supplier/orders").then(setRows).catch(() => {});
-  useEffect(() => { load(); }, []);
+  const { qs } = useScope();
+  const load = () => api<SOrder[]>(withQs("/supplier/orders", qs)).then(setRows).catch(() => {});
+  useEffect(() => { load(); }, [qs]);  // eslint-disable-line react-hooks/exhaustive-deps
   const run = async (fn: () => Promise<unknown>) => { try { await fn(); toast(t("supc.ord.saved")); load(); } catch (x) { toast((x as Error).message, true); } };
   return (
     <section className="card pad col gap-10" aria-labelledby="sord-h">
@@ -134,10 +156,10 @@ function SupplierOrders() {
             {o.quote && <div className="small">{t("supc.ord.quoted", { v: amd(o.quote.total_amd) })}</div>}
             {o.status === "requested" && <div className="row gap-6 wrap">
               <input className="input" style={{ width: 160 }} inputMode="numeric" aria-label={t("supc.ord.total")} placeholder={String(suggested)} value={totals[o.id] ?? ""} onChange={(e) => setTotals({ ...totals, [o.id]: e.target.value })} />
-              <button className="btn sm primary" onClick={() => run(() => api(`/supplier/orders/${o.id}/confirm`, { method: "POST", json: { total_amd: Number(totals[o.id] || suggested), valid_days: 7 } }))}>{t("supc.ord.confirm")}</button>
+              <button className="btn sm primary" onClick={() => run(() => api(withQs(`/supplier/orders/${o.id}/confirm`, qs), { method: "POST", json: { total_amd: Number(totals[o.id] || suggested), valid_days: 7 } }))}>{t("supc.ord.confirm")}</button>
             </div>}
             <div className="row gap-6 wrap">{o.next.filter((n) => SUPPLIER_MOVES.includes(n)).map((n) => (
-              <button key={n} className="btn sm ghost" onClick={() => run(() => api(`/supplier/orders/${o.id}/status`, { method: "POST", json: { to: n } }))}>{t(`supc.ord.move.${n}`)}</button>))}</div>
+              <button key={n} className="btn sm ghost" onClick={() => run(() => api(withQs(`/supplier/orders/${o.id}/status`, qs), { method: "POST", json: { to: n } }))}>{t(`supc.ord.move.${n}`)}</button>))}</div>
           </div>
         );
       })}

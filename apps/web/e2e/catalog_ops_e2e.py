@@ -27,7 +27,7 @@ with sync_playwright() as p:
         pg.goto(B + "/app")
         pg.get_by_role("button", name="Eng").first.click()
         if email.startswith("admin"):
-            pg.goto(B + "/app/admin")
+            pg.goto(B + "/app/admin?tab=sources")
             row = pg.locator("tr", has_text="VLV Centre").first
             row.get_by_role("button", name="History").click()
             pg.wait_for_selector("text=Alerts")
