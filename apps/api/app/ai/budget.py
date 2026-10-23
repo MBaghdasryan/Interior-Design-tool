@@ -71,7 +71,7 @@ def platform_costs(db: Session) -> dict:
     by_org = db.execute(select(m.AIUsage.org_id, func.count(), func.sum(m.AIUsage.cost_usd)).where(m.AIUsage.provider != "stub").group_by(m.AIUsage.org_id)).all()
     unattributed = db.scalar(select(func.coalesce(func.sum(m.AIUsage.cost_usd), 0.0)).where(m.AIUsage.project_id.is_(None), m.AIUsage.provider != "stub")) or 0.0
     return {"projects_with_ai": len(costs), "avg_per_project_usd": round(sum(costs) / len(costs), 4) if costs else 0.0,
-            "median_per_project_usd": round(costs[len(costs) // 2], 4) if costs else 0.0, "max_per_project_usd": round(costs[-1], 4) if costs else 0.0,
+            "median_per_project_usd": round(__import__("statistics").median(costs), 4) if costs else 0.0, "max_per_project_usd": round(costs[-1], 4) if costs else 0.0,
             "projects": [{"project_id": r[0], "title": titles[r[0]][0], "org": orgs.get(titles[r[0]][1], ""), "calls": r[1], "cost_usd": round(float(r[2] or 0), 4)}
                          for r in sorted(per_project, key=lambda r: -(r[2] or 0)) if r[0] in titles][:50],
             "by_org": [{"org": orgs.get(r[0], "—") if r[0] else "—", "calls": r[1], "cost_usd": round(float(r[2] or 0), 4)} for r in sorted(by_org, key=lambda r: -(r[2] or 0))],
