@@ -41,7 +41,7 @@ class RenderProvider:
 
     def cost(self, r: RenderResult) -> float:
         p = get_settings().price(r.model)
-        return round(r.images * p.get("image", 0.0) + r.input_tokens / 1e6 * p["in"], 6)
+        return round(r.images * p.get("image", 0.0) + r.input_tokens / 1e6 * p["in"] + r.output_tokens / 1e6 * p["out"], 6)
 
 
 class GeminiImageProvider(RenderProvider):

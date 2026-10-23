@@ -86,3 +86,20 @@ def test_gemini_joins_multipart_json_and_reports_truncation():
     replies.append({"candidates": [{"finishReason": "MAX_TOKENS", "content": {"parts": [{"text": '{"rooms": [1,'}]}}]})
     with pytest.raises(ProviderError, match="truncated"):
         g.complete_json(req)
+
+
+def test_project_and_platform_ai_costs(client, designer, admin):
+    with SessionLocal() as db:
+        proj = _demo(db)
+        db.add(m.AIUsage(project_id=proj.id, org_id=proj.org_id, task="render_room", provider="gemini", model="gemini-3-pro-image", prompt_version="v1", cost_usd=0.15))
+        db.add(m.AIUsage(project_id=proj.id, org_id=proj.org_id, task="design_brief", provider="stub", model="rules", prompt_version="v1", cost_usd=0.0))
+        db.commit()
+        pid = proj.id
+    c = client.get(f"/api/v1/projects/{pid}/ai-cost", headers=designer).json()
+    assert c["total_usd"] >= 0.15 and any(r["task"] == "render_room" for r in c["by_task"]) and all(r["task"] != "design_brief" or r["cost_usd"] > 0 for r in c["by_task"])
+    pc = client.get("/api/v1/admin/ai/costs", headers=admin).json()
+    assert pc["projects_with_ai"] >= 1 and pc["avg_per_project_usd"] > 0 and any(r["project_id"] == pid for r in pc["projects"])
+    assert client.get("/api/v1/admin/ai/costs", headers=designer).status_code == 403
+    with SessionLocal() as db:
+        db.query(m.AIUsage).filter(m.AIUsage.project_id == pid, m.AIUsage.task.in_(("render_room", "design_brief")), m.AIUsage.cost_usd.in_((0.15, 0.0))).delete()
+        db.commit()

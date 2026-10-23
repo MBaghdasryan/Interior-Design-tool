@@ -2281,6 +2281,53 @@
     ]
    }
   },
+  "/api/v1/admin/ai/costs": {
+   "get": {
+    "operationId": "ai_costs_api_v1_admin_ai_costs_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ai Costs",
+    "tags": [
+     "admin"
+    ]
+   }
+  },
   "/api/v1/admin/audit": {
    "get": {
     "operationId": "audit_log_api_v1_admin_audit_get",
@@ -7262,6 +7309,62 @@
      }
     },
     "summary": "Patch Project",
+    "tags": [
+     "projects"
+    ]
+   }
+  },
+  "/api/v1/projects/{pid}/ai-cost": {
+   "get": {
+    "operationId": "project_ai_cost_api_v1_projects__pid__ai_cost_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Project Ai Cost",
     "tags": [
      "projects"
     ]

@@ -53,6 +53,31 @@ def check(db: Session, org_id: str | None) -> None:
             raise QuotaExceeded(period, used, cap)
 
 
+def project_cost(db: Session, project_id: str) -> dict:
+    """AI spend of one project — the variable AI part of its unit cost."""
+    rows = db.execute(select(m.AIUsage.task, func.count(), func.coalesce(func.sum(m.AIUsage.cost_usd), 0.0))
+                      .where(m.AIUsage.project_id == project_id, m.AIUsage.provider != "stub").group_by(m.AIUsage.task)).all()
+    return {"total_usd": round(sum(r[2] for r in rows), 4), "calls": sum(r[1] for r in rows),
+            "by_task": [{"task": r[0], "calls": r[1], "cost_usd": round(r[2], 4)} for r in sorted(rows, key=lambda r: -r[2])]}
+
+
+def platform_costs(db: Session) -> dict:
+    """Unit economics for the platform admin: AI cost per project (average, median) and per organisation."""
+    per_project = db.execute(select(m.AIUsage.project_id, func.count(), func.sum(m.AIUsage.cost_usd)).where(m.AIUsage.project_id.isnot(None), m.AIUsage.provider != "stub")
+                             .group_by(m.AIUsage.project_id)).all()
+    titles = {p.id: (p.title, p.org_id) for p in db.scalars(select(m.Project).where(m.Project.id.in_([r[0] for r in per_project])))} if per_project else {}
+    orgs = {o.id: o.name for o in db.scalars(select(m.Organization))}
+    costs = sorted(float(r[2] or 0) for r in per_project if r[0] in titles)
+    by_org = db.execute(select(m.AIUsage.org_id, func.count(), func.sum(m.AIUsage.cost_usd)).where(m.AIUsage.provider != "stub").group_by(m.AIUsage.org_id)).all()
+    unattributed = db.scalar(select(func.coalesce(func.sum(m.AIUsage.cost_usd), 0.0)).where(m.AIUsage.project_id.is_(None), m.AIUsage.provider != "stub")) or 0.0
+    return {"projects_with_ai": len(costs), "avg_per_project_usd": round(sum(costs) / len(costs), 4) if costs else 0.0,
+            "median_per_project_usd": round(costs[len(costs) // 2], 4) if costs else 0.0, "max_per_project_usd": round(costs[-1], 4) if costs else 0.0,
+            "projects": [{"project_id": r[0], "title": titles[r[0]][0], "org": orgs.get(titles[r[0]][1], ""), "calls": r[1], "cost_usd": round(float(r[2] or 0), 4)}
+                         for r in sorted(per_project, key=lambda r: -(r[2] or 0)) if r[0] in titles][:50],
+            "by_org": [{"org": orgs.get(r[0], "—") if r[0] else "—", "calls": r[1], "cost_usd": round(float(r[2] or 0), 4)} for r in sorted(by_org, key=lambda r: -(r[2] or 0))],
+            "unattributed_usd": round(unattributed, 4)}
+
+
 def summary(db: Session, org_id: str) -> dict:
     lim = limits(db, org_id)
     p = periods()

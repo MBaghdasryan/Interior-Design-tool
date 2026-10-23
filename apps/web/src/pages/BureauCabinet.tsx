@@ -49,5 +49,8 @@ export default function BureauCabinet() {
 
 function AiUsageCardForRole() {
   const { me } = useMe();
+  const { t } = useT();
+  // the card is per bureau organisation; platform staff see all organisations under Platform → AI providers
+  if (!me?.memberships.some((x) => x.org_kind === "bureau")) return <div className="alert info small">{t("aicost.platform_hint")}</div>;
   return <AiUsageCard canEdit={!!me?.roles.includes("bureau_admin") || !!me?.roles.includes("platform_admin")} />;
 }

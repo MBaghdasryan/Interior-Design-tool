@@ -809,6 +809,14 @@ def resolve_comment(pid: str, cid: str, p: Principal = Depends(current_principal
     return comment_dict(c)
 
 
+@router.get("/{pid}/ai-cost")
+def project_ai_cost(pid: str, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    from ..ai.budget import project_cost
+
+    project_access(pid, "project:read", p, db)
+    return project_cost(db, pid)
+
+
 @router.get("/{pid}/audit")
 def project_audit(pid: str, response: Response, cursor: str | None = None, limit: int = Query(200, ge=1, le=500),
                   p: Principal = Depends(current_principal), db: Session = Depends(get_db)):

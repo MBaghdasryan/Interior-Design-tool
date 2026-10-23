@@ -215,6 +215,13 @@ def ai(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_d
                        "avg_latency_ms": round(r[7] or 0), "failures": r[8] or 0} for r in rows]}
 
 
+@router.get("/ai/costs")
+def ai_costs(p: Principal = Depends(require("jobs:read")), db: Session = Depends(get_db)):
+    from ..ai.budget import platform_costs
+
+    return platform_costs(db)
+
+
 @router.get("/audit")
 def audit_log(response: Response, cursor: str | None = None, limit: int = Query(300, ge=1, le=1000),
               p: Principal = Depends(require("audit:read")), db: Session = Depends(get_db)):

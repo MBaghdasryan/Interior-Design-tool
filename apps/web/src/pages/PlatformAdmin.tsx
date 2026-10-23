@@ -10,6 +10,8 @@ interface Src { id: string; key: string; name: string; domain: string; enabled: 
 interface Scan { urls_found: number; methods: Record<string, number>; restricted: string | null; error: string | null;
   sample: { name: string; price_amd: number | null; currency: string | null; image: string | null; category: string | null; url: string; method: string; confidence: number; warnings: string[] }[] }
 interface Hist { runs: { at: string; kind: string; status: string; found: number; validated: number; latency_ms: number; errors: string[] }[]; alerts: { at: string; reason: string; detail: string }[]; index: { cursor?: number; total?: number; passes?: number; last_run_at?: string }; schedule: { index_interval_min: number | null; price_ttl_h: number | null } }
+interface Costs { projects_with_ai: number; avg_per_project_usd: number; median_per_project_usd: number; max_per_project_usd: number; unattributed_usd: number;
+  projects: { project_id: string; title: string; org: string; calls: number; cost_usd: number }[]; by_org: { org: string; calls: number; cost_usd: number }[] }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
 type Tab = "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
@@ -22,6 +24,7 @@ export default function PlatformAdmin() {
   const [src, setSrc] = useState<Src[]>([]);
   const [jobs, setJobs] = useState<(Job & { attempts?: number })[]>([]);
   const [ai, setAi] = useState<Ai | null>(null);
+  const [costs, setCosts] = useState<Costs | null>(null);
   const [aps, setAps] = useState<Record<string, any> | null>(null);
   const [quar, setQuar] = useState<Quarantined[]>([]);
   const [hist, setHist] = useState<{ sid: string; data: Hist } | null>(null);
@@ -44,6 +47,7 @@ export default function PlatformAdmin() {
     api<Src[]>("/admin/sources").then(setSrc);
     api<Job[]>("/admin/jobs").then(setJobs);
     api<Ai>("/admin/ai").then(setAi);
+    api<Costs>("/admin/ai/costs").then(setCosts).catch(() => {});
     api("/aps/status").then(setAps);
     moreAudit(null).catch(() => {});
     api<Quarantined[]>("/admin/quarantine").then(setQuar).catch(() => {});
@@ -120,6 +124,22 @@ export default function PlatformAdmin() {
       {tab === "ai" && ai && <div className="col gap-10">
         <div className="grid g4">{Object.entries(ai.providers).map(([k, v]) => <div key={k} className="card pad"><b>{k}</b><div className="small muted">{v.model}</div><Badge tone={v.available ? "sage" : ""}>{v.available ? t("adm.ai_connected") : t("adm.ai_nokey")}</Badge></div>)}</div>
         <div className="alert info small">{t("adm.ai_note")}</div>
+        {costs && <section className="card pad col gap-8" aria-labelledby="aic-h">
+          <h3 id="aic-h">{t("aicost.title")}</h3>
+          <div className="grid g4">
+            <div><div className="small muted">{t("aicost.avg")}</div><b className="mono">${costs.avg_per_project_usd.toFixed(3)}</b></div>
+            <div><div className="small muted">{t("aicost.median")}</div><b className="mono">${costs.median_per_project_usd.toFixed(3)}</b></div>
+            <div><div className="small muted">{t("aicost.max")}</div><b className="mono">${costs.max_per_project_usd.toFixed(3)}</b></div>
+            <div><div className="small muted">{t("aicost.unattributed")}</div><b className="mono">${costs.unattributed_usd.toFixed(3)}</b></div>
+          </div>
+          <div className="tiny muted">{t("aicost.hint", { n: costs.projects_with_ai })}</div>
+          <div className="grid g2" style={{ alignItems: "start" }}>
+            <table className="table compact"><thead><tr><th>{t("aicost.col.project")}</th><th className="right">{t("adm.col.calls")}</th><th className="right">$</th></tr></thead>
+              <tbody>{costs.projects.map((r) => <tr key={r.project_id}><td className="small">{r.title}<div className="tiny muted">{r.org}</div></td><td className="right small">{r.calls}</td><td className="right mono small">{r.cost_usd.toFixed(3)}</td></tr>)}</tbody></table>
+            <table className="table compact"><thead><tr><th>{t("aicost.col.org")}</th><th className="right">{t("adm.col.calls")}</th><th className="right">$</th></tr></thead>
+              <tbody>{costs.by_org.map((r) => <tr key={r.org}><td className="small">{r.org}</td><td className="right small">{r.calls}</td><td className="right mono small">{r.cost_usd.toFixed(3)}</td></tr>)}</tbody></table>
+          </div>
+        </section>}
         <table className="table compact card"><thead><tr><th>{t("adm.col.task")}</th><th>{t("adm.col.provider")}</th><th>{t("adm.col.model")}</th><th className="right">{t("adm.col.calls")}</th><th className="right">{t("adm.col.tokens")}</th><th className="right">$</th><th className="right">{t("adm.col.latency")}</th><th className="right">{t("adm.col.failures")}</th></tr></thead>
           <tbody>{ai.usage.map((u, i) => <tr key={i}><td>{u.task}</td><td>{u.provider}</td><td className="small">{u.model}</td><td className="right">{u.calls}</td><td className="right mono">{u.input_tokens}/{u.output_tokens}</td><td className="right mono">{u.cost_usd}</td><td className="right">{u.avg_latency_ms} ms</td><td className="right">{u.failures}</td></tr>)}</tbody></table>
       </div>}

@@ -12,6 +12,7 @@ import CommandDrawer from "../components/CommandDrawer";
 import AlternativesDrawer from "../components/AlternativesDrawer";
 import RenderGallery from "../components/RenderGallery";
 import TrustPanel from "../components/TrustPanel";
+import ProjectAiCost from "../components/ProjectAiCost";
 import PilotPanel from "../components/PilotPanel";
 import { AccuracyBadge, Badge, Empty, Loading, Modal, PriceStatus, useToast } from "../components/ui";
 
@@ -90,6 +91,7 @@ export default function Results() {
               : <><CheckCircle2 size={18} color="var(--sage-ink)" /><b>{t("res.real")}</b></>}
             <AccuracyBadge level={project.accuracy_level} /><Badge tone={cur.mode === "concept" ? "warn" : "sage"}>{cur.mode === "concept" ? t("res.mode_concept") : t("res.mode_real")}</Badge>
           </div>
+          <ProjectAiCost pid={pid!} />
         </div>
         <div className="checks">
           <Check ok={!est.budget || est.budget.within} title={t("res.check.budget")} sub={est.budget ? (est.budget.within ? t("res.check.budget_ok") : t("res.check.budget_over", { v: amd(est.budget.delta) })) : `${t(`enum.tier.${cur.tier}`)} · ${amd(est.totals.known)}`} />
