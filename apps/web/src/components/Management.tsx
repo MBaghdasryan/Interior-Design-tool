@@ -210,12 +210,13 @@ export function ProductEditor({ open, supplierId, productId, onClose, onSaved }:
 interface SP { id: string; product_id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
 
 /** Supplier's catalogue with manual add / edit / archive (next to file import and feeds). */
-export function SupplierProducts({ supplierId, supplierName, items, onChange }: { supplierId: string; supplierName: string; items: SP[]; onChange: () => void }) {
+export function SupplierProducts({ supplierId, supplierName, items, onChange, openNew = 0 }: { supplierId: string; supplierName: string; items: SP[]; onChange: () => void; openNew?: number }) {
   const { t } = useT();
   const run = useRun();
   const [edit, setEdit] = useState<{ id: string | null } | null>(null);
   const [q, setQ] = useState("");
   const close = useCallback(() => setEdit(null), []);
+  useEffect(() => { if (openNew) setEdit({ id: null }); }, [openNew]);  // «Add product» in the cabinet header
   const rows = items.filter((p) => !q || `${p.sku} ${p.name}`.toLowerCase().includes(q.toLowerCase()));
   return (
     <section className="card col" aria-labelledby="sprod-h">

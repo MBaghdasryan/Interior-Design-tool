@@ -52,6 +52,7 @@ with sync_playwright() as p:
     pg.get_by_role("button", name="Save profile").click()
     pg.wait_for_selector("text=Awaiting verification")
     check(True, "profile saved → pending verification")
+    pg.wait_for_selector("[role=tablist]")  # with a supplier row the full cabinet replaces the onboarding-only view
     pg.get_by_role("checkbox").check()
     pg.get_by_role("button", name="Accept", exact=True).click()
     pg.wait_for_timeout(800)
@@ -59,6 +60,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(800)
     check("Onboarding is incomplete" in pg.inner_text("body"), "submit without a catalogue is refused")
     pg.goto(B + "/app/supplier")  # with a supplier row the full cabinet renders
+    pg.get_by_role("tab", name="Feed, files and verification").click()
     pg.wait_for_selector("#sas-h")
     pg.locator("input[type=file][aria-label='Upload']").set_input_files({"name": "chair.glb", "mimeType": "model/gltf-binary", "buffer": glb()})
     pg.wait_for_selector("text=chair.glb")

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Building2, Save } from "lucide-react";
+import { Building2, CheckCircle2, FolderKanban, Hourglass, Plus, Save, Wallet } from "lucide-react";
 import { api, ApiError, type Project } from "../lib/api";
 import { amd } from "../lib/format";
 import { useT } from "../i18n";
-import { AccuracyBadge, Empty, Loading, useToast } from "../components/ui";
-import { projectLink } from "./Dashboard";
+import { Empty, Kpi, Loading, monthly, useToast } from "../components/ui";
+import { ProjectsBoard } from "./Dashboard";
 import AiUsageCard from "../components/AiUsageCard";
 import { useMe } from "../components/AppShell";
 import { OrgPicker, TeamCard } from "../components/Management";
@@ -27,11 +27,13 @@ export default function BureauCabinet() {
   const [err, setErr] = useState("");
   const [tb, setTb] = useState<Record<string, string>>({});
   const canManage = !!me?.roles.includes("bureau_admin") || !!me?.roles.includes("platform_admin");
+  const reload = () => api<Ov>(withQs("/bureau/overview", qs)).then(setOv).catch(() => {});
   useEffect(() => {
     setOv(null); setErr("");
     if (isPlatform && !orgId && !ownBureau) return;
     api<Ov>(withQs("/bureau/overview", qs)).then((o) => { setOv(o); setTb(o.org.settings.title_block || {}); }).catch((e: ApiError) => setErr(e.message));
   }, [qs, isPlatform, orgId, ownBureau]);
+  const active = ov ? ov.projects.filter((p) => !["approved", "ordered"].includes(p.status)).length : 0;
   const save = async () => { try { await api(withQs("/bureau/settings", qs), { method: "PUT", json: { title_block: tb } }); toast(t("bur.saved")); } catch (x) { toast((x as Error).message, true); } };
   const picker = isPlatform && <OrgPicker kind="bureau" value={orgId} onChange={(v) => setSp(v ? { org: v } : {})} />;
   if (isPlatform && !orgId && !ownBureau) return <div className="col gap-16"><h1><Building2 size={26} /> {t("nav.bureau")}</h1>{picker}<Empty>{t("mg.pick_bureau")}</Empty></div>;
@@ -40,18 +42,22 @@ export default function BureauCabinet() {
   return (
     <ScopeCtx.Provider value={{ qs }}>
       <div className="col gap-16">
-        <div className="row between wrap gap-12"><div><h1><Building2 size={26} /> {ov.org.name}</h1><p className="muted">{t("bur.lead")}</p></div>{picker}</div>
+        <div className="row between wrap gap-12">
+          <div><h1>{t("bur.hello", { name: me?.name.split(" ")[0] || "" })}</h1><p className="muted" style={{ margin: 0 }}><Building2 size={15} /> {ov.org.name} · {t("dash.lead_n", { n: active })}</p></div>
+          <div className="row gap-8 wrap">{picker}{!orgId && <Link to="/app/new" className="btn primary lg"><Plus size={18} /> {t("nav.new")}</Link>}</div>
+        </div>
         {orgId && <div className="alert info small">{t("mg.viewing_as_platform", { name: ov.org.name })}</div>}
         <div className="grid g4">
-          <div className="card kpi"><div><div className="v">{ov.projects.length}</div><div className="muted small">{t("bur.projects")}</div></div></div>
-          <div className="card kpi"><div><div className="v">{ov.status_counts.ready || 0}</div><div className="muted small">{t("bur.waiting")}</div></div></div>
-          <div className="card kpi"><div><div className="v">{ov.status_counts.approved || 0}</div><div className="muted small">{t("bur.approved")}</div></div></div>
-          <div className="card kpi"><div><div className="v">{amd(ov.pipeline_value)}</div><div className="muted small">{t("bur.pipeline")}</div></div></div>
+          <Kpi icon={<FolderKanban size={20} />} value={ov.projects.length} label={t("bur.projects")} series={monthly(ov.projects, (p) => p.created_at)} sub={t("dash.k.by_month")} />
+          <Kpi icon={<Wallet size={20} />} value={amd(ov.pipeline_value)} label={t("bur.pipeline")} series={monthly(ov.projects, (p) => p.updated_at, 6, (p) => p.total || 0)} tone="sage" sub={t("dash.k.budget_hint")} />
+          <Kpi icon={<Hourglass size={20} />} value={ov.status_counts.ready || 0} label={t("bur.waiting")} />
+          <Kpi icon={<CheckCircle2 size={20} />} value={(ov.status_counts.approved || 0) + (ov.status_counts.ordered || 0)} label={t("bur.approved")} />
         </div>
-        {orgId || ownBureau ? <AiUsageCard canEdit={canManage} /> : null}
+        {ov.projects.length ? <ProjectsBoard items={ov.projects} onChanged={reload} /> : <Empty>{t("mg.no_projects")}</Empty>}
         <div className="grid g2" style={{ alignItems: "start" }}>
+          {canManage ? <TeamCard orgId={orgId} /> : <div className="card pad col gap-6"><h3>{t("bur.team")}</h3>{ov.members.map((m) => <div key={m.email + m.role} className="small">{m.name} <span className="muted">{m.email}</span></div>)}</div>}
           <div className="col gap-16">
-            {canManage ? <TeamCard orgId={orgId} /> : <div className="card pad col gap-6"><h3>{t("bur.team")}</h3>{ov.members.map((m) => <div key={m.email + m.role} className="small">{m.name} <span className="muted">{m.email}</span></div>)}</div>}
+            {orgId || ownBureau ? <AiUsageCard canEdit={canManage} /> : null}
             <div className="card pad col gap-10">
               <h3>{t("bur.titleblock")}</h3>
               <p className="small muted">{t("bur.titleblock_lead")}</p>
@@ -61,8 +67,6 @@ export default function BureauCabinet() {
               {canManage && <button className="btn primary" onClick={save}><Save size={16} /> {t("common.save")}</button>}
             </div>
           </div>
-          <div className="card pad col gap-6"><h3>{t("dash.projects")}</h3>{!ov.projects.length && <div className="small muted">{t("mg.no_projects")}</div>}
-            {ov.projects.map((p) => <Link key={p.id} to={projectLink(p)} className="row between small" style={{ padding: "6px 0" }}><span>{p.title}</span><AccuracyBadge level={p.accuracy_level} /></Link>)}</div>
         </div>
       </div>
     </ScopeCtx.Provider>

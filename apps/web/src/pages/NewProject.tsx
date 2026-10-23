@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Armchair, CloudUpload, Database, FileText, Globe2, Info, Palette, Plus, ScanLine, ShoppingCart, Sparkles, Users, Wallet, X } from "lucide-react";
+import { ArrowRight, Armchair, Box, CloudUpload, Database, FileText, Globe2, Image as ImageIcon, Info, Palette, PenTool, Plus, ScanLine, ShoppingCart, Sparkles, Trash2, Truck, Users, Video, Wallet, X } from "lucide-react";
 import { api, fileUrl, uploadAsset, type Project, type Schemas } from "../lib/api";
 import { kb, styleName, tierName } from "../lib/format";
 import { LANGS, useT } from "../i18n";
@@ -13,6 +13,8 @@ const STYLE_PALETTES: Record<string, string[]> = {
   contemporary: ["#f2f0ed", "#cfc8bf", "#8c8279", "#c97f63"], warm_minimal: ["#efe6da", "#d9c9b7", "#b98f6a", "#8a5a3c"], soft_scandi: ["#f4f1ec", "#e3d8c8", "#c8b08f", "#8f9f7e"],
   classic: ["#f3eee6", "#ddd2c2", "#b8a17f", "#7c6a55"], modern_loft: ["#3a3532", "#6b4a3a", "#a4593c", "#c9b8a3"],
 };
+const FORMATS: [LucideIcon, string, string][] = [[ImageIcon, "photo", "JPG, PNG, HEIC"], [Video, "video", "MP4, MOV"], [FileText, "pdf", "PDF"], [PenTool, "cad", "DWG, DXF"], [Box, "bim", "IFC, RVT"], [ScanLine, "scan", "USDZ, OBJ"]];
+const LEVELS: [string, LucideIcon][] = [["concept", Box], ["verified", ImageIcon], ["production", Truck]];
 const COLORS = ["#e8dccb", "#f1efea", "#c9c6c1", "#8f9f7e", "#c97f63", "#2e2e2e"];
 const TIERS = ["economy", "comfort", "business", "premium"];
 const FAMILY = ["single", "couple", "kids", "other"];
@@ -84,6 +86,11 @@ function Intake({ pid }: { pid: string }) {
     load();
   };
   const remove = async (id: string) => { await api(`/projects/${pid}/assets/${id}`, { method: "DELETE" }); load(); };
+  const removeAll = async () => {
+    if (!p?.assets?.length || !confirm(t("up.confirm_remove_all", { n: p.assets.length }))) return;
+    for (const a of p.assets) await api(`/projects/${pid}/assets/${a.id}`, { method: "DELETE" }).catch(() => {});
+    load();
+  };
   const recognize = async () => {
     setBusy(true);
     try { await api(`/projects/${pid}/recognize`, { method: "POST" }); toast(t("up.recognize_started")); setTimeout(() => nav(`/app/p/${pid}/geometry`), 600); } catch (x) { toast((x as Error).message, true); }
@@ -102,6 +109,9 @@ function Intake({ pid }: { pid: string }) {
   if (!p) return <Loading />;
   const toggle = (k: "styles" | "colors", v: string) => setPrefs({ ...prefs, [k]: prefs[k].includes(v) ? prefs[k].filter((x: string) => x !== v) : [...prefs[k], v] });
   const confirmed = !!p.base_scene?.confirmed;
+  const isPlan = (a: { kind: string }) => ["plan_image", "plan_pdf", "dwg", "dxf", "ifc", "rvt", "lidar"].includes(a.kind);
+  const photos = (p.assets || []).filter((a) => !isPlan(a));
+  const plans = (p.assets || []).filter(isPlan);
 
   return (
     <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1.25fr) minmax(360px, 0.9fr)", alignItems: "start" }}>
@@ -118,28 +128,34 @@ function Intake({ pid }: { pid: string }) {
           <CloudUpload size={40} color="var(--ink-2)" />
           <h3 className="mt-8">{t("up.drop")}</h3>
           <p className="muted">{t("up.or_click")}</p>
+          <div className="fmt-row mt-16" aria-hidden>{FORMATS.map(([I, k, sub]) => <div key={k} className="fmt"><span className="ic"><I size={20} /></span><b className="tiny">{t(`up.fmt.${k}`)}</b><span className="tiny muted">{sub}</span></div>)}</div>
           <p className="muted small mt-16">{t("up.formats")}</p>
           {busy && <div className="mt-8"><span className="spinner" /></div>}
           <ApsCapabilities compact />
-          <input ref={fileRef} type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.pdf,.dwg,.dxf,.ifc,.rvt" onChange={(e) => e.target.files && upload(e.target.files)} />
+          <input ref={fileRef} type="file" multiple hidden accept=".jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.pdf,.dwg,.dxf,.ifc,.rvt,.usdz,.obj" onChange={(e) => e.target.files && upload(e.target.files)} />
         </div>
         <div className="row between wrap"><h3>{t("up.files")} <span className="muted">{p.assets?.length || 0}</span></h3>
           <div className="row"><button className="btn sm" onClick={demoGeometry} title={t("up.demo_geo_hint")}>{t("up.demo_geo")}</button>
+            {!!p.assets?.length && <button className="btn sm danger" onClick={removeAll}><Trash2 size={14} /> {t("up.remove_all")}</button>}
             <button className="btn sm primary" disabled={!p.assets?.length || busy} onClick={recognize}><ScanLine size={15} /> {t("up.recognize")}</button></div></div>
-        <div className="grid g4">
-          {p.assets?.map((a) => (
-            <div key={a.id} className="col gap-4">
-              <div className="file-tile">
-                {["photo", "plan_image"].includes(a.kind) ? <img src={fileUrl(a.url)} alt={a.filename} /> : <div className="col" style={{ alignItems: "center" }}><FileText size={30} /><Badge>{a.kind.toUpperCase()}</Badge></div>}
-                <button className="x" onClick={() => remove(a.id)} aria-label={t("common.delete")}><X size={14} /></button>
-              </div>
-              <div className="small nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{a.filename}</div>
-              <div className="tiny muted">{kb(a.size)}{a.aps?.status ? ` · APS: ${a.aps.status}` : ""}</div>
-              {a.quality?.warnings?.length ? <div className="tiny" style={{ color: "#8a5d00" }}>⚠ {t("estimate.has_warnings", { n: a.quality.warnings.length })}</div> : null}
-              {a.scan_status && <div className="tiny muted">{a.scan_status === "clean" ? "🛡 " : ""}{t(`scan.${a.scan_status}`)}</div>}
+        {([["photos", photos], ["plans", plans]] as const).map(([k, list]) => list.length > 0 && (
+          <div key={k} className="col gap-8">
+            <b className="small">{t(`up.group.${k}`)} <span className="muted">{list.length}</span></b>
+            <div className="grid g4">
+              {list.map((a) => (
+                <div key={a.id} className="col gap-4">
+                  <div className="file-tile">
+                    {["photo", "plan_image"].includes(a.kind) ? <img src={fileUrl(a.url)} alt={a.filename} /> : <div className="col" style={{ alignItems: "center" }}><FileText size={30} /><Badge>{a.kind.toUpperCase()}</Badge></div>}
+                    <button className="x" onClick={() => remove(a.id)} aria-label={`${t("common.delete")}: ${a.filename}`}><X size={14} /></button>
+                  </div>
+                  <div className="small nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{a.filename}</div>
+                  <div className="tiny muted">{kb(a.size)}{a.aps?.status ? ` · APS: ${a.aps.status}` : ""}</div>
+                  {a.quality?.warnings?.length ? <div className="tiny" style={{ color: "#8a5d00" }}>⚠ {t("estimate.has_warnings", { n: a.quality.warnings.length })}</div> : null}
+                  {a.scan_status && <div className="tiny muted">{a.scan_status === "clean" ? "🛡 " : ""}{t(`scan.${a.scan_status}`)}</div>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>))}
         {p.base_scene && (
           <div className={`alert ${confirmed ? "sage" : "warn"}`}><Info size={18} /><div className="grow">{t("up.geo_state", { v: p.base_scene.version, state: confirmed ? t("up.geo_confirmed") : t("up.geo_needs") })}</div>
             <Link className="btn sm" to={`/app/p/${pid}/geometry`}>{confirmed ? t("common.open") : t("up.check")}</Link></div>
@@ -147,6 +163,12 @@ function Intake({ pid }: { pid: string }) {
       </div>
 
       <aside className="col gap-10">
+        <div className="card pad col gap-8">
+          <b>{t("up.level")}</b>
+          <div className="grid g3" style={{ gap: 8 }}>{LEVELS.map(([k, I]) => <div key={k} className={`level-card ${p.accuracy_level === k ? "on" : ""}`} aria-current={p.accuracy_level === k}>
+            <I size={20} /><b className="small">{t(`enum.accuracy.${k}`).split(" · ")[0]}</b><span className="tiny muted">{t(`landing.level.${k}`)}</span></div>)}</div>
+          <span className="tiny muted">{t("up.level_hint")}</span>
+        </div>
         <PilotPanel pid={pid} />
         <div className="card pad row" style={{ background: "var(--sage-soft)", borderColor: "#cfd8c3" }}>
           <Sparkles size={22} color="var(--sage-ink)" />

@@ -36,7 +36,7 @@ def _supplier_for(p: Principal, db: Session, supplier_id: str | None = None) -> 
 @router.get("/api/v1/supplier/overview")
 def supplier_overview(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
     sup = _supplier_for(p, db, supplier_id)
-    variants = db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id)).all()
+    variants = db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id, m.Product.status == "active")).all()
     refs = {f"pv:{v.id}": v for v in variants}
     used = Counter()
     projects = set()
@@ -45,12 +45,24 @@ def supplier_overview(supplier_id: str | None = None, p: Principal = Depends(req
             if o.get("product_variant_id") in refs:
                 used[o["product_variant_id"]] += 1
                 projects.add(ver.variant_id)
-    top = [{"sku": refs[r].sku, "name": refs[r].product.name_ru, "placements": n} for r, n in used.most_common(10)]
+    top = [{"sku": refs[r].sku, "name": refs[r].product.name_ru, "placements": n, "image_url": refs[r].image_url, "category": refs[r].product.category,
+            "price": refs[r].price, "color_hex": refs[r].color_hex} for r, n in used.most_common(10)]
     rfqs = db.scalars(select(m.RFQ).where(m.RFQ.supplier_id == sup.id).order_by(m.RFQ.created_at.desc()).limit(50)).all()
-    return {"supplier": {"id": sup.id, "org_id": sup.org_id, "name": sup.name, "is_demo": sup.is_demo, "commission_pct": sup.commission_pct, "delivery": sup.delivery},
+    from datetime import datetime, timedelta, timezone
+
+    stale_before = datetime.now(timezone.utc) - timedelta(days=14)
+    orders = db.scalars(select(m.Order).where(m.Order.supplier_id == sup.id, m.Order.status != "cart")).all()
+
+    def _old(d):
+        return d is None or (d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d) < stale_before
+    attention = {"rfq_new": sum(1 for r in rfqs if r.status == "sent"), "orders_to_confirm": sum(1 for o in orders if o.status == "requested"),
+                 "stale_prices": sum(1 for v in variants if v.price is not None and _old(v.price_checked_at)), "no_dims": sum(1 for v in variants if not v.width_mm)}
+    active_orders = sum(1 for o in orders if o.status not in ("closed", "cancelled", "refunded"))
+    return {"supplier": {"id": sup.id, "org_id": sup.org_id, "name": sup.name, "is_demo": sup.is_demo, "commission_pct": sup.commission_pct, "delivery": sup.delivery,
+                         "verification": sup.verification},
             "products": len(variants), "with_price": sum(1 for v in variants if v.price is not None), "with_dims": sum(1 for v in variants if v.width_mm),
             "with_3d": sum(1 for v in variants if v.model3d_url), "in_stock": sum(1 for v in variants if v.stock_status == "in_stock"),
-            "placements": sum(used.values()), "variants_using": len(projects), "top": top,
+            "placements": sum(used.values()), "variants_using": len(projects), "top": top, "attention": attention, "active_orders": active_orders,
             "rfqs": [{"id": r.id, "status": r.status, "items": len(r.items), "created_at": r.created_at.isoformat(), "message": r.message} for r in rfqs]}
 
 
@@ -242,10 +254,14 @@ def supplier_products(supplier_id: str | None = None, p: Principal = Depends(req
 def bureau_overview(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     org = _bureau_org(p, db, org_id)
     members = db.scalars(select(m.Membership).where(m.Membership.org_id == org.id)).all()
-    projects = db.scalars(select(m.Project).where(m.Project.org_id == org.id)).all()
+    projects = db.scalars(select(m.Project).where(m.Project.org_id == org.id).order_by(m.Project.updated_at.desc())).all()
+    from .projects import _cover
+
+    totals = {v.project_id: (v.metrics or {}).get("total") for v in db.scalars(select(m.DesignVariant).where(
+        m.DesignVariant.project_id.in_([x.id for x in projects]), m.DesignVariant.status.in_(["selected", "approved"])))}
     return {"org": {"id": org.id, "name": org.name, "settings": org.settings},
             "members": [{"name": ms.user.name, "email": ms.user.email, "role": ms.role} for ms in members],
-            "projects": [project_dict(x) for x in projects],
+            "projects": [{**project_dict(x), "cover": _cover(db, x.id), "total": totals.get(x.id)} for x in projects],
             "status_counts": dict(Counter(x.status for x in projects)),
             "pipeline_value": sum((v.metrics or {}).get("total", 0) for v in db.scalars(select(m.DesignVariant).where(
                 m.DesignVariant.project_id.in_([x.id for x in projects]), m.DesignVariant.status.in_(["selected", "approved"]))))}

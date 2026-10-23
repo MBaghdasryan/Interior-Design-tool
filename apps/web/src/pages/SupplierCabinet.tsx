@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
-import { BarChart3, Box, Boxes, Image, RefreshCw, Rss, Ruler, Tag } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { BarChart3, Box, Boxes, FileText, Image, Plus, RefreshCw, Rss, Ruler, Tag, Truck } from "lucide-react";
 import { api, ApiError, type Schemas } from "../lib/api";
-import { amd, dt } from "../lib/format";
+import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
-import { Badge, Empty, Loading, Switch, useToast } from "../components/ui";
+import { Badge, Empty, Kpi, Loading, Switch, useToast } from "../components/ui";
 import { AssetsCard, CustomRatesCard, OnboardingCard, PartnerDataCard } from "../components/SupplierPartner";
 import { SupplierPicker, SupplierProducts, TeamCard } from "../components/Management";
 import { useMe } from "../components/AppShell";
 import { ScopeCtx, useScope, withQs } from "../lib/scope";
 
-interface Ov { supplier: { id: string; org_id?: string | null; name: string; is_demo: boolean; commission_pct: number }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number }[]; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
+interface Ov { supplier: { id: string; org_id?: string | null; name: string; is_demo: boolean; commission_pct: number; verification?: string }; products: number; with_price: number; with_dims: number; with_3d: number; in_stock: number; placements: number; variants_using: number; top: { sku: string; name: string; placements: number; image_url: string; category: string; price: number | null; color_hex: string }[]; attention?: { rfq_new: number; orders_to_confirm: number; stale_prices: number; no_dims: number }; active_orders?: number; rfqs: { id: string; status: string; items: number; created_at: string; message: string }[] }
 interface P { id: string; product_id: string; sku: string; name: string; category: string; price: number | null; price_status: string; stock: string; dims: number[]; has_3d: boolean; color_hex: string }
 
 export default function SupplierCabinet() {
@@ -31,6 +31,9 @@ function Cabinet({ picker }: { picker: ReactNode }) {
   const [ov, setOv] = useState<Ov | null>(null);
   const [items, setItems] = useState<P[]>([]);
   const [err, setErr] = useState("");
+  const [tab, setTab] = useState<"overview" | "products" | "catalog" | "company">("overview");
+  const [add, setAdd] = useState(0);
+  const nav = useNavigate();
   const load = useCallback(() => api<Ov>(withQs("/supplier/overview", qs)).then((o) => { setOv(o); setErr(""); }).catch((e: ApiError) => setErr(e.code)), [qs]);
   const loadItems = useCallback(() => api<P[]>(withQs("/supplier/products", qs)).then(setItems).catch(() => {}), [qs]);
   useEffect(() => { load(); loadItems(); }, [load, loadItems]);
@@ -47,42 +50,65 @@ function Cabinet({ picker }: { picker: ReactNode }) {
   if (!ov) return <Loading />;
   const q = (n: number) => (ov.products ? Math.round((n / ov.products) * 100) : 0);
   const quality: [string, number, typeof Tag][] = [["supc.q.price", ov.with_price, Tag], ["supc.q.dims", ov.with_dims, Ruler], ["supc.q.model", ov.with_3d, Box], ["supc.q.stock", ov.in_stock, Image]];
+  const att = ov.attention || { rfq_new: 0, orders_to_confirm: 0, stale_prices: 0, no_dims: 0 };
+  const reload = () => { load(); loadItems(); };
+  const attention: [string, number, typeof Tag, () => void][] = [
+    ["supc.att.rfq", att.rfq_new, FileText, () => nav(`/app/supplier/demand${qs ? `?supplier=${encodeURIComponent(ov.supplier.id)}` : ""}`)],
+    ["supc.att.orders", att.orders_to_confirm, Truck, () => nav(`/app/supplier/demand${qs ? `?supplier=${encodeURIComponent(ov.supplier.id)}` : ""}`)],
+    ["supc.att.prices", att.stale_prices, Tag, () => setTab("products")],
+    ["supc.att.dims", att.no_dims, Ruler, () => setTab("products")],
+  ];
   return (
     <div className="col gap-16">
-      <div className="row between wrap gap-12"><div><h1>{t("supc.title")}</h1><div className="muted">{ov.supplier.name} {ov.supplier.is_demo && <Badge tone="danger">DEMO</Badge>}</div></div>{picker}</div>
+      <div className="row between wrap gap-12">
+        <div><h1>{t("supc.hello", { name: me?.name.split(" ")[0] || "" })}</h1><div className="muted">{ov.supplier.name} {ov.supplier.is_demo && <Badge tone="danger">DEMO</Badge>} · {t("supc.lead_n", { r: att.rfq_new, o: ov.active_orders ?? 0 })}</div></div>
+        <div className="row gap-8 wrap">{picker}<button className="btn primary lg" onClick={() => { setTab("products"); setAdd((x) => x + 1); }}><Plus size={18} /> {t("mg.product_new")}</button></div>
+      </div>
       {qs && <div className="alert info small">{t("mg.viewing_as_platform", { name: ov.supplier.name })}</div>}
       <div className="grid g4">
-        <div className="card kpi"><div className="ico"><Boxes size={22} /></div><div><div className="v">{ov.products}</div><div className="muted small">{t("supc.skus")}</div></div></div>
-        <div className="card kpi"><div className="ico"><BarChart3 size={22} /></div><div><div className="v">{ov.placements}</div><div className="muted small">{t("supc.placements", { n: ov.variants_using })}</div></div></div>
-        <div className="card kpi"><div className="ico"><Tag size={22} /></div><div><div className="v">{ov.rfqs.length}</div><div className="muted small">{t("supc.rfqs")}</div></div></div>
-        <div className="card kpi"><div className="ico"><Box size={22} /></div><div><div className="v">{ov.supplier.commission_pct}%</div><div className="muted small">{t("supc.commission")}</div></div></div>
+        <Kpi icon={<Boxes size={20} />} value={ov.products} label={t("supc.skus")} />
+        <Kpi icon={<BarChart3 size={20} />} value={ov.placements} label={t("supc.placements", { n: ov.variants_using })} />
+        <Kpi icon={<Truck size={20} />} value={ov.active_orders ?? 0} label={t("supc.k.orders")} />
+        <Kpi icon={<Tag size={20} />} value={`${ov.supplier.commission_pct}%`} label={t("supc.commission")} />
       </div>
-      <div className="grid g2" style={{ alignItems: "start" }}>
-        <div className="card pad col gap-10">
-          <h3>{t("supc.quality")}</h3>
-          <p className="small muted">{t("supc.quality_lead")}</p>
-          {quality.map(([k, n, I]) => (
-            <div key={k} className="row"><span className="row gap-6" style={{ width: 200 }}><I size={15} /> {t(k)}</span><div className="grow progress"><i style={{ width: `${q(n)}%` }} /></div><b className="small mono">{q(n)}%</b></div>
-          ))}
-          <div className="divider" />
-          <b>{t("supc.top")}</b>
-          {ov.top.length ? ov.top.map((x) => <div key={x.sku} className="row between small"><span>{x.name} <span className="muted">{x.sku}</span></span><b>{x.placements}</b></div>) : <div className="small muted">{t("supc.no_top")}</div>}
+      <div className="tabs" role="tablist">{(["overview", "products", "catalog", "company"] as const).map((k) => <button key={k} role="tab" aria-selected={tab === k} className={`tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{t(`supc.tab.${k}`)}</button>)}</div>
+      {tab === "overview" && <>
+        {ov.supplier.verification && ov.supplier.verification !== "verified" && <OnboardingCard onChange={load} />}
+        <div className="dash-grid">
+          <section className="card pad col gap-12" aria-labelledby="top-h">
+            <div className="row between"><h3 id="top-h">{t("supc.top")}</h3><button className="btn sm ghost" onClick={() => setTab("products")}>{t("supc.all_products")}</button></div>
+            {ov.top.length ? <div className="grid g4">{ov.top.slice(0, 4).map((x) => <article key={x.sku} className="card flat pcard">
+              <div className="img" style={x.image_url ? { backgroundImage: `url(${x.image_url})` } : { background: `linear-gradient(135deg, ${x.color_hex || "#d9c9b7"}, #f6f1ea)` }} />
+              <div className="bd"><b className="small">{x.name}</b><div className="tiny muted">{catName(x.category)} · {x.sku}</div>
+                <div className="row between small"><span>{t("supc.used_n", { n: x.placements })}</span><b className="mono">{x.price ? amd(x.price) : ""}</b></div>
+                <div className="bar"><i style={{ width: `${(x.placements / Math.max(1, ov.top[0].placements)) * 100}%` }} /></div></div></article>)}</div>
+              : <div className="small muted">{t("supc.no_top")}</div>}
+          </section>
+          <aside className="card pad col gap-8 attention" aria-labelledby="att-h">
+            <h3 id="att-h">{t("supc.att.title")}</h3>
+            {attention.map(([k, n, I, go]) => <button key={k} className="att-row" onClick={go} disabled={!n}><span className="ico"><I size={16} /></span><span className="grow small">{t(k)}</span><b className={n ? "att-n" : "muted"}>{n}</b></button>)}
+          </aside>
         </div>
-        <div className="card pad col gap-10">
-          <h3>{t("supc.inbox")}</h3>
-          {!ov.rfqs.length && <div className="small muted">{t("supc.no_rfq")}</div>}
-          {ov.rfqs.map((r) => <div key={r.id} className="card flat pad"><div className="row between"><b className="small">{t("supc.items", { n: r.items })}</b><Badge>{t(`enum.rfq.${r.status}`)}</Badge></div><div className="tiny muted mt-8">{dt(r.created_at)}</div>
-            {r.status === "sent" && <div className="row mt-8"><button className="btn sm primary" onClick={() => respond(r.id, "quoted")}>{t("supc.send_quote")}</button><button className="btn sm" onClick={() => respond(r.id, "declined")}>{t("supc.decline")}</button></div>}</div>)}
+        <div className="grid g2" style={{ alignItems: "start" }}>
+          <section className="card pad col gap-10" aria-labelledby="inbox-h">
+            <div className="row between"><h3 id="inbox-h">{t("supc.inbox")}</h3><Link className="small" to={`/app/supplier/demand${qs ? `?supplier=${encodeURIComponent(ov.supplier.id)}` : ""}`}>{t("supc.all_requests")}</Link></div>
+            {!ov.rfqs.length && <div className="small muted">{t("supc.no_rfq")}</div>}
+            {ov.rfqs.slice(0, 5).map((r) => <div key={r.id} className="card flat pad"><div className="row between"><b className="small">{t("supc.items", { n: r.items })}</b><Badge tone={r.status === "sent" ? "warn" : ""}>{t(`enum.rfq.${r.status}`)}</Badge></div><div className="tiny muted mt-8">{dt(r.created_at)}</div>
+              {r.status === "sent" && <div className="row mt-8"><button className="btn sm primary" onClick={() => respond(r.id, "quoted")}>{t("supc.send_quote")}</button><button className="btn sm" onClick={() => respond(r.id, "declined")}>{t("supc.decline")}</button></div>}</div>)}
+          </section>
+          <section className="card pad col gap-10" aria-labelledby="quality-h">
+            <h3 id="quality-h">{t("supc.quality")}</h3>
+            <p className="small muted" style={{ margin: 0 }}>{t("supc.quality_lead")}</p>
+            {quality.map(([k, n, I]) => (
+              <div key={k} className="row"><span className="row gap-6" style={{ width: 200 }}><I size={15} /> {t(k)}</span><div className="grow bar"><i style={{ width: `${q(n)}%` }} /></div><b className="small mono">{q(n)}%</b></div>
+            ))}
+          </section>
         </div>
-      </div>
-      <OnboardingCard onChange={load} />
-      <SupplierOrders />
-      <AssetsCard products={items} />
-      <PartnerDataCard />
-      <CustomRatesCard />
-      <FeedCard />
-      <SupplierProducts supplierId={ov.supplier.id} supplierName={ov.supplier.name} items={items} onChange={() => { load(); loadItems(); }} />
-      {canTeam && (qs ? ov.supplier.org_id && <TeamCard orgId={ov.supplier.org_id} /> : <TeamCard />)}
+        <SupplierOrders />
+      </>}
+      {tab === "products" && <SupplierProducts supplierId={ov.supplier.id} supplierName={ov.supplier.name} items={items} onChange={reload} openNew={add} />}
+      {tab === "catalog" && <><FeedCard /><AssetsCard products={items} />{ov.supplier.verification === "verified" && <OnboardingCard onChange={load} />}</>}
+      {tab === "company" && <>{canTeam && (qs ? ov.supplier.org_id && <TeamCard orgId={ov.supplier.org_id} /> : <TeamCard />)}<PartnerDataCard /><CustomRatesCard /></>}
     </div>
   );
 }

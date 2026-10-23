@@ -33,10 +33,8 @@ export default function Dashboard({ listOnly = false }: { listOnly?: boolean }) 
   const { t } = useT();
   const { me } = useMe();
   const [items, setItems] = useState<Project[] | null>(null);
-  const [sel, setSel] = useState<string>("");
   const load = () => api<Project[]>("/projects").then(setItems).catch(() => setItems([]));
   useEffect(() => { load(); }, []);
-  const del = useDeleteProject(load);
   const roles = new Set(me?.roles || []);
   const stats = useMemo(() => {
     const xs = items || [];
@@ -50,8 +48,6 @@ export default function Dashboard({ listOnly = false }: { listOnly?: boolean }) 
   // suppliers and the catalogue operator do not design projects: their home is their cabinet
   if (!roles.has("platform_admin") && (roles.has("supplier_admin") || roles.has("supplier_catalog") || roles.has("manufacturer"))) return <Navigate to="/app/supplier" replace />;
   if (!roles.has("platform_admin") && roles.has("platform_ops")) return <Navigate to="/app/admin?tab=sources" replace />;
-  const focus = items?.find((p) => p.id === sel) || items?.[0];
-  const recent = (items || []).slice(0, listOnly ? 200 : 6);
   return (
     <div className="col gap-16">
       <div className="row between wrap gap-12">
@@ -67,7 +63,20 @@ export default function Dashboard({ listOnly = false }: { listOnly?: boolean }) 
         <Kpi icon={<Wallet size={20} />} value={amd(stats.budget)} label={t("dash.k.budget")} series={stats.sBudget} sub={t("dash.k.budget_hint")} />
         <Kpi icon={<CheckCircle2 size={20} />} value={stats.approved} label={t("dash.k.approved")} series={stats.sApproved} tone="sage" sub={t("dash.k.by_month_updated")} />
       </div>}
-      {!items ? <Loading /> : !items.length ? <Empty>{t("dash.empty")} <Link to="/app/new" className="btn sm primary">{t("dash.create_first")}</Link></Empty> : (
+      {!items ? <Loading /> : !items.length ? <Empty>{t("dash.empty")} <Link to="/app/new" className="btn sm primary">{t("dash.create_first")}</Link></Empty>
+        : <ProjectsBoard items={items} listOnly={listOnly} onChanged={load} />}
+    </div>
+  );
+}
+
+/** Project cards with cover, progress and delete, plus the stage timeline of the hovered project (mockups 15 and 20). */
+export function ProjectsBoard({ items, listOnly = false, onChanged }: { items: Project[]; listOnly?: boolean; onChanged: () => void }) {
+  const { t } = useT();
+  const [sel, setSel] = useState<string>("");
+  const del = useDeleteProject(onChanged);
+  const focus = items.find((p) => p.id === sel) || items[0];
+  const recent = items.slice(0, listOnly ? 200 : 6);
+  return (
         <div className={listOnly ? "" : "dash-grid"}>
           <section className={listOnly ? "" : "card pad col gap-12"} aria-labelledby="recent-h">
             {!listOnly && <div className="row between"><h3 id="recent-h">{t("dash.recent")}</h3><Link to="/app/projects" className="small">{t("dash.all_projects")} <ArrowRight size={13} /></Link></div>}
@@ -107,7 +116,5 @@ export default function Dashboard({ listOnly = false }: { listOnly?: boolean }) 
             <Link className="btn sm" to={projectLink(focus)}>{t("dash.open")} <ArrowRight size={14} /></Link>
           </aside>}
         </div>
-      )}
-    </div>
   );
 }

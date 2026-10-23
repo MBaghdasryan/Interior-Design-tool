@@ -100,7 +100,7 @@ export const pages: Dict = {
   "supc.upload": e("Վերբեռնել կատալոգ / գնացուցակ", "Загрузить каталог / прайс", "Upload catalogue / price list"),
   "supc.skus": e("արտիկուլ կատալոգում", "SKU в каталоге", "SKUs in catalogue"),
   "supc.placements": e("ներառում նախագծերում ({n} տարբերակ)", "включений в проекты ({n} вариантов)", "placements in projects ({n} variants)"),
-  "supc.rfqs": e("գնային հարցում", "запросов предложений", "quote requests"), "supc.commission": e("գործընկերային միջնորդավճար", "партнёрская комиссия", "partner commission"),
+  "supc.commission": e("գործընկերային միջնորդավճար", "партнёрская комиссия", "partner commission"),
   "supc.quality": e("Կատալոգի տվյալների որակ", "Качество данных каталога", "Catalogue data quality"),
   "supc.quality_lead": e("ԱԲ-ն կարող է օգտագործել միայն գնով և չափսերով դիրքեր․ 3D մոդելներն անհրաժեշտ են վերջնական ռենդերի համար։", "ИИ может использовать только позиции с ценой и размерами; 3D-модели нужны для финальных рендеров.", "AI can only use items with price and dimensions; 3D models are needed for final renders."),
   "supc.q.price": e("Գինը նշված է", "Цена указана", "Price present"), "supc.q.dims": e("Չափսերը նշված են", "Размеры указаны", "Dimensions present"),
@@ -112,7 +112,6 @@ export const pages: Dict = {
   "supc.col.name": e("Անվանում", "Название", "Name"), "supc.col.3d": e("3D", "3D", "3D"),
 
   // bureau
-  "bur.lead": e("Ստուդիա՝ թիմ, նախագծեր, աշխատանքային ալբոմների white-label կնիք։", "Студия: команда, проекты, white-label штамп рабочих альбомов.", "Studio: team, projects, white-label title block for drawing sets."),
   "bur.projects": e("նախագիծ", "проектов", "projects"), "bur.waiting": e("սպասում են հաստատման", "ждут согласования", "awaiting approval"), "bur.approved": e("հաստատված", "утверждено", "approved"),
   "bur.pipeline": e("ընթացիկ կոմպլեկտավորման գումար", "сумма комплектации в работе", "procurement value in progress"),
   "bur.titleblock": e("Ալբոմի կնիք (white-label)", "Штамп альбома (white-label)", "Album title block (white-label)"),
