@@ -226,6 +226,11 @@ def register(body: RegisterIn, request: Request, response: Response, db: Session
     db.add_all([org, user])
     db.flush()
     db.add(m.Membership(user_id=user.id, org_id=org.id, role=ORG_KINDS[body.org_kind]))
+    from ..commerce import billing, tariffs
+
+    default_plan = tariffs.get_tariffs(db).default_plan  # None = pilot without limits
+    if default_plan and any(x.key == default_plan for x in tariffs.plans_for(tariffs.get_tariffs(db), org.kind)):
+        billing.assign_plan(db, org, default_plan)
     _audit(db, user.id, "auth.register", request, org_kind=body.org_kind)
     db.commit()
     db.refresh(user)

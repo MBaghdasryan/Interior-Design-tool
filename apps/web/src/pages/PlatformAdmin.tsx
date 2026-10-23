@@ -1,11 +1,12 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Activity, Bot, Boxes, Building2, Globe2, PenTool, ScrollText, ShieldAlert, Store, Users, Wallet, Workflow } from "lucide-react";
+import { Activity, Bot, Boxes, Building2, CreditCard, Globe2, Inbox, PenTool, ScrollText, ShieldAlert, Store, Users, Wallet, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
 import { amd as amdFmt, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import FinanceTab from "../components/FinanceTab";
+import BillingAdmin, { ApplicationsAdmin } from "../components/BillingAdmin";
 import { useMe } from "../components/AppShell";
 import { OrgsAdmin, SuppliersAdmin, UsersAdmin } from "../components/Management";
 
@@ -16,7 +17,7 @@ interface Hist { runs: { at: string; kind: string; status: string; found: number
 interface Costs { projects_with_ai: number; avg_per_project_usd: number; median_per_project_usd: number; max_per_project_usd: number; unattributed_usd: number;
   projects: { project_id: string; title: string; org: string; calls: number; cost_usd: number }[]; by_org: { org: string; calls: number; cost_usd: number }[] }
 interface Ai { providers: Record<string, { available: boolean; model: string }>; usage: { task: string; provider: string; model: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: number; avg_latency_ms: number; failures: number }[] }
-type Tab = "users" | "orgs" | "suppliers" | "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
+type Tab = "users" | "orgs" | "suppliers" | "applications" | "billing" | "sources" | "jobs" | "ai" | "aps" | "audit" | "quarantine" | "finance" | "partners";
 interface Quarantined { at: string; project_id: string; filename: string; sha256: string; signature: string }
 
 const OPS_TABS: Tab[] = ["sources", "jobs", "partners"];  // the catalogue operator works with the catalogue only
@@ -73,7 +74,7 @@ export default function PlatformAdmin() {
   const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["users", Users], ["orgs", Building2], ["suppliers", Store], ["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
+  const tabs: [Tab, typeof Bot][] = [["users", Users], ["orgs", Building2], ["suppliers", Store], ["applications", Inbox], ["billing", CreditCard], ["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -87,6 +88,8 @@ export default function PlatformAdmin() {
       {tab === "users" && <UsersAdmin />}
       {tab === "orgs" && <OrgsAdmin />}
       {tab === "suppliers" && <SuppliersAdmin />}
+      {tab === "applications" && <ApplicationsAdmin />}
+      {tab === "billing" && <BillingAdmin />}
       {tab === "sources" && (
         <div className="col gap-10">
           <div className="alert info small">{stats.integrations.external_fetch_live ? t("adm.live_on") : t("adm.live_off")}</div>

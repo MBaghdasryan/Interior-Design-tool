@@ -201,11 +201,12 @@ def test_tariffs_plan_limit_and_revenue_report(client, admin, designer):
     client.put(f"/api/v1/admin/orgs/{org_id}/plan", headers=admin, json={"plan": None})
     assert client.post("/api/v1/projects", headers=designer, json={"title": "Unlimited again"}).status_code == 200
     # revenue only from the ledger: an offline invoice paid by bank transfer
+    before = client.get("/api/v1/admin/revenue", headers=admin).json()["totals"].get("subscription", 0)
     body = {"stream": "subscription", "amount_amd": 25_000, "reference": "INV-2026-001", "org_id": org_id}
     t1 = client.post("/api/v1/admin/revenue/manual", headers=admin, json=body).json()["txn_id"]
     assert client.post("/api/v1/admin/revenue/manual", headers=admin, json=body).json()["txn_id"] == t1  # idempotent
     rep = client.get("/api/v1/admin/revenue", headers=admin).json()
-    assert rep["totals"]["subscription"] == 25_000 and "credits" in rep["totals"]
+    assert rep["totals"]["subscription"] - before == 25_000 and "credits" in rep["totals"]
     with SessionLocal() as db:
         db.query(m.Project).filter(m.Project.title == "Unlimited again").delete()
         db.query(m.PlatformSetting).filter_by(key="tariffs").delete()

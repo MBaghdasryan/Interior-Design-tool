@@ -70,7 +70,13 @@ def reconcile(db: Session) -> dict:
     refunded = int(db.scalar(select(func.coalesce(func.sum(m.Payment.amount_amd), 0)).where(m.Payment.status == "refunded")) or 0)
     cash_in = int(db.scalar(select(func.coalesce(func.sum(m.LedgerEntry.debit), 0)).where(m.LedgerEntry.account == "cash", m.LedgerEntry.kind == "capture")) or 0)
     cash_back = int(db.scalar(select(func.coalesce(func.sum(m.LedgerEntry.credit), 0)).where(m.LedgerEntry.account == "cash", m.LedgerEntry.kind == "refund")) or 0)
-    return {"balanced": not unbalanced and total_d == total_c, "transactions": len(per_txn), "unbalanced": unbalanced[:20],
+    # platform charges (subscriptions, credit packs) settle on the acquirer account
+    billed = int(db.scalar(select(func.coalesce(func.sum(m.BillingPayment.amount_amd), 0)).where(m.BillingPayment.status.in_(("paid", "refunded", "cancelled")),
+                                                                                                    m.BillingPayment.paid_at.is_not(None))) or 0)
+    billed_cash = int(db.scalar(select(func.coalesce(func.sum(m.LedgerEntry.debit), 0)).where(m.LedgerEntry.account == "cash:acquirer",
+                                                                                              m.LedgerEntry.kind.in_(("subscription", "credits")))) or 0)
+    return {"billing_matches_acquirer": billed == billed_cash, "billed_amd": billed,
+            "balanced": not unbalanced and total_d == total_c, "transactions": len(per_txn), "unbalanced": unbalanced[:20],
             "debit_total": total_d, "credit_total": total_c,
             "payments_match_cash": captured + refunded == cash_in and refunded == cash_back,
             "captured_amd": captured + refunded, "cash_received_amd": cash_in, "refunded_amd": refunded}

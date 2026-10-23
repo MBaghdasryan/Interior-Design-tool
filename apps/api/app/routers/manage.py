@@ -319,6 +319,10 @@ def team_invite(body: InviteIn, org_id: str | None = None, p: Principal = Depend
     org = _team_org(p, db, org_id)
     _check_role(org, body.role)
     email = body.email.strip().lower()
+    from ..commerce.tariffs import check_seat_quota
+
+    if not db.scalar(select(m.Membership.id).where(m.Membership.org_id == org.id, m.Membership.user_id.in_(select(m.User.id).where(m.User.email == email))).limit(1)):
+        check_seat_quota(db, org)  # a new person takes a seat; another role for a member does not
     u = db.scalar(select(m.User).where(m.User.email == email))
     created = False
     if u is None:
@@ -584,6 +588,9 @@ def create_product(body: ProductIn, p: Principal = Depends(require("catalog:writ
     skus = [v.sku for v in body.variants]
     if len(set(skus)) != len(skus):
         raise ApiError(422, "validation", fields=["variants"])
+    from ..commerce.tariffs import check_sku_quota
+
+    check_sku_quota(db, s, len(skus))  # supplier plans limit active SKUs (pricing v1.0 §2.4)
     prod = m.Product(supplier_id=s.id, category=body.category, name_ru=body.name_ru.strip(), name_hy=body.name_hy.strip(), name_en=body.name_en.strip(), brand=body.brand,
                      description=body.description, tier=body.tier, styles=body.styles, unit=body.unit, package_coverage_m2=body.package_coverage_m2,
                      item_type=body.item_type, is_demo=s.is_demo)
@@ -648,9 +655,12 @@ def add_variant(product_id: str, body: VariantIn, p: Principal = Depends(require
     prod = db.get(m.Product, product_id)
     if not prod:
         raise ApiError(404, "product.not_found")
-    _writable_supplier(p, db, prod.supplier_id)
+    s = _writable_supplier(p, db, prod.supplier_id)
     if any(v.sku == body.sku for v in prod.variants):
         raise ApiError(409, "product.sku_exists")
+    from ..commerce.tariffs import check_sku_quota
+
+    check_sku_quota(db, s)
     v = m.ProductVariant(product_id=prod.id, sku=body.sku)
     db.add(v)
     db.flush()

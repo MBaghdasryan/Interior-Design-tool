@@ -100,8 +100,16 @@ class Orchestrator:
         trace_id = uuid.uuid4().hex[:12]
         org_id = budget.org_of_project(db, project_id) if db is not None else None
         providers = self.chain(task)
+        from ..commerce import credits
+
+        operation = credits.TASK_OPERATION.get(task, "")
         try:
-            budget.check(db, org_id) if db is not None else None
+            if db is not None:
+                budget.check(db, org_id)
+                try:
+                    credits.check(db, org_id, operation)
+                except credits.NoCredits as e:
+                    raise budget.QuotaExceeded("credits", e.balance, e.need) from None
         except budget.QuotaExceeded:
             if not stub_on_quota:
                 raise
@@ -116,6 +124,8 @@ class Orchestrator:
                     self._fails[provider.name] = 0
                     self._log(db, project_id, task, version, provider, resp.input_tokens, resp.output_tokens, resp.latency_ms, provider.cost(resp), True, None,
                               org_id=org_id, trace_id=trace_id, model=resp.model)
+                    if db is not None and provider.name != "stub" and operation:  # deterministic rules mode is free
+                        credits.charge(db, org_id, operation, project_id=project_id, ref=trace_id)
                     self._cache[key] = (model.model_dump(), provider.name)
                     while len(self._cache) > self.cache_size:
                         self._cache.popitem(last=False)

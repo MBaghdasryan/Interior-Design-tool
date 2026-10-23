@@ -17,6 +17,7 @@ from ..ai import budget
 from ..ai.orchestrator import PROMPTS_DIR, get_orchestrator
 from ..ai.providers import ImageInput
 from ..catalog.taxonomy import STYLES
+from ..commerce import credits
 from ..scene.model import Scene
 from ..storage import get_storage
 from . import control
@@ -39,6 +40,15 @@ def _log(db: Session, project: m.Project, task: str, provider, model: str, cost:
     db.add(m.AIUsage(project_id=project.id, org_id=project.org_id, task=task, provider=provider.name, model=model, prompt_version=PROMPT_VERSION,
                      input_tokens=tin, output_tokens=tout, latency_ms=latency, cost_usd=cost, ok=ok, error=err))
     db.flush()
+
+
+def _credits_check(db: Session, project: m.Project, provider) -> None:
+    if provider is None or provider.name != "gemini":
+        return
+    try:
+        credits.check(db, project.org_id, "grounded_render")
+    except credits.NoCredits as e:
+        raise budget.QuotaExceeded("credits", e.balance, e.need) from None
 
 
 def _to_jpeg(png: bytes, quality: int = 90) -> bytes:
@@ -146,6 +156,7 @@ def render_room(db: Session, project: m.Project, variant: m.DesignVariant, versi
     if refs:
         prompt += "\n\nREFERENCE PHOTOS (after the guide image, in this order): " + ", ".join(code for code, _, _ in refs)
     budget.check(db, project.org_id)
+    _credits_check(db, project, provider)
     try:
         res = provider.generate(prompt, [(ctrl, "image/png")] + [(b, mime) for _, b, mime in refs])
     except RenderError as e:
@@ -153,6 +164,8 @@ def render_room(db: Session, project: m.Project, variant: m.DesignVariant, versi
         db.commit()
         raise
     _log(db, project, "render_room", provider, res.model, provider.cost(res), res.latency_ms, True, tin=res.input_tokens, tout=res.output_tokens)
+    if provider.name == "gemini":  # local (Blender) renders cost no AI credits
+        credits.charge(db, project.org_id, "grounded_render", project_id=project.id)
     db.commit()
     progress and progress("generate", {"model": res.model, "size": res.meta.get("image_size")})
     render_png = _png(res.image)
@@ -178,8 +191,11 @@ def regenerate_zone(db: Session, project: m.Project, doc: m.Document, object_ids
     manifest = [it for it in meta["manifest"] if it["object_id"] in object_ids]
     prompt = _prompt("render_edit").format(instruction=instruction[:500] or "re-render the products listed below", manifest=_manifest_lines(manifest))
     budget.check(db, project.org_id)
+    _credits_check(db, project, provider)
     res = provider.generate(prompt, [(prev, "image/png"), (mask, "image/png")])
     _log(db, project, "render_edit", provider, res.model, provider.cost(res), res.latency_ms, True, tin=res.input_tokens, tout=res.output_tokens)
+    if provider.name == "gemini":  # local (Blender) renders cost no AI credits
+        credits.charge(db, project.org_id, "grounded_render", project_id=project.id)
     db.commit()
     out = control.composite(prev, _png(res.image), mask)  # outside the mask: previous pixels, guaranteed
     ctrl = st.get(meta["control_key"])

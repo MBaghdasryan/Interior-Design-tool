@@ -67,6 +67,104 @@
     "title": "AlbumIn",
     "type": "object"
    },
+   "ApplicationIn": {
+    "properties": {
+     "categories": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 30,
+      "title": "Categories",
+      "type": "array"
+     },
+     "city": {
+      "default": "",
+      "maxLength": 100,
+      "title": "City",
+      "type": "string"
+     },
+     "company": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Company",
+      "type": "string"
+     },
+     "consent": {
+      "title": "Consent",
+      "type": "boolean"
+     },
+     "contact_name": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "email": {
+      "maxLength": 320,
+      "minLength": 3,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "title": "Email",
+      "type": "string"
+     },
+     "hp": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Hp",
+      "type": "string"
+     },
+     "kind": {
+      "default": "store",
+      "pattern": "^(store|manufacturer|installer)$",
+      "title": "Kind",
+      "type": "string"
+     },
+     "locale": {
+      "default": "hy",
+      "pattern": "^(hy|ru|en)$",
+      "title": "Locale",
+      "type": "string"
+     },
+     "message": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Message",
+      "type": "string"
+     },
+     "phone": {
+      "default": "",
+      "maxLength": 40,
+      "title": "Phone",
+      "type": "string"
+     },
+     "sku_count": {
+      "anyOf": [
+       {
+        "maximum": 10000000.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sku Count"
+     },
+     "website": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Website",
+      "type": "string"
+     }
+    },
+    "required": [
+     "company",
+     "contact_name",
+     "email",
+     "consent"
+    ],
+    "title": "ApplicationIn",
+    "type": "object"
+   },
    "ApproveIn": {
     "properties": {
      "decision": {
@@ -231,6 +329,21 @@
     "title": "Body_upload_asset_api_v1_supplier_assets_post",
     "type": "object"
    },
+   "CancelIn": {
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "title": "CancelIn",
+    "type": "object"
+   },
    "CartIn": {
     "properties": {
      "variant_id": {
@@ -258,6 +371,39 @@
      "mapping"
     ],
     "title": "CategoryMapIn",
+    "type": "object"
+   },
+   "CheckoutIn": {
+    "properties": {
+     "interval": {
+      "default": "month",
+      "pattern": "^(month|year)$",
+      "title": "Interval",
+      "type": "string"
+     },
+     "key": {
+      "maxLength": 40,
+      "minLength": 2,
+      "title": "Key",
+      "type": "string"
+     },
+     "lang": {
+      "default": "hy",
+      "pattern": "^(hy|ru|en)$",
+      "title": "Lang",
+      "type": "string"
+     },
+     "purpose": {
+      "pattern": "^(plan|credits)$",
+      "title": "Purpose",
+      "type": "string"
+     }
+    },
+    "required": [
+     "purpose",
+     "key"
+    ],
+    "title": "CheckoutIn",
     "type": "object"
    },
    "ClientComment": {
@@ -637,6 +783,13 @@
       "minimum": 0.0,
       "title": "Price Amd",
       "type": "integer"
+     },
+     "validity_months": {
+      "default": 12,
+      "maximum": 36.0,
+      "minimum": 1.0,
+      "title": "Validity Months",
+      "type": "integer"
      }
     },
     "required": [
@@ -645,20 +798,6 @@
      "price_amd"
     ],
     "title": "CreditPack",
-    "type": "object"
-   },
-   "DecisionIn": {
-    "properties": {
-     "decision": {
-      "pattern": "^(approved|rejected)$",
-      "title": "Decision",
-      "type": "string"
-     }
-    },
-    "required": [
-     "decision"
-    ],
-    "title": "DecisionIn",
     "type": "object"
    },
    "DeleteIn": {
@@ -838,27 +977,6 @@
      "scene"
     ],
     "title": "GeometryIn",
-    "type": "object"
-   },
-   "GrantIn": {
-    "properties": {
-     "email": {
-      "maxLength": 200,
-      "minLength": 3,
-      "title": "Email",
-      "type": "string"
-     },
-     "role": {
-      "pattern": "^(linguist|verifier)$",
-      "title": "Role",
-      "type": "string"
-     }
-    },
-    "required": [
-     "email",
-     "role"
-    ],
-    "title": "GrantIn",
     "type": "object"
    },
    "HTTPValidationError": {
@@ -1362,6 +1480,76 @@
       "title": "Ai Credits Month",
       "type": "integer"
      },
+     "ai_credits_once": {
+      "default": 0,
+      "minimum": 0.0,
+      "title": "Ai Credits Once",
+      "type": "integer"
+     },
+     "audience": {
+      "default": "bureau",
+      "enum": [
+       "designer",
+       "bureau",
+       "enterprise",
+       "white_label",
+       "supplier",
+       "manufacturer"
+      ],
+      "title": "Audience",
+      "type": "string"
+     },
+     "commission_pct": {
+      "anyOf": [
+       {
+        "maximum": 50.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Commission Pct"
+     },
+     "custom": {
+      "default": false,
+      "title": "Custom",
+      "type": "boolean"
+     },
+     "designer_reward_pct": {
+      "anyOf": [
+       {
+        "maximum": 50.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Designer Reward Pct"
+     },
+     "extra_seat_amd": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Extra Seat Amd"
+     },
+     "features": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Features",
+      "type": "array"
+     },
      "key": {
       "pattern": "^[a-z0-9_]{2,30}$",
       "title": "Key",
@@ -1379,6 +1567,11 @@
       ],
       "title": "Max Projects"
      },
+     "max_render": {
+      "default": "",
+      "title": "Max Render",
+      "type": "string"
+     },
      "name": {
       "maxLength": 60,
       "minLength": 1,
@@ -1389,6 +1582,23 @@
       "minimum": 0.0,
       "title": "Price Amd Month",
       "type": "integer"
+     },
+     "price_amd_year": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Amd Year"
+     },
+     "price_from": {
+      "default": false,
+      "title": "Price From",
+      "type": "boolean"
      },
      "renders_month": {
       "default": 0,
@@ -1407,6 +1617,42 @@
        }
       ],
       "title": "Seats"
+     },
+     "setup_amd": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Setup Amd"
+     },
+     "sku_limit": {
+      "anyOf": [
+       {
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sku Limit"
+     },
+     "storage_gb": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Storage Gb"
      }
     },
     "required": [
@@ -2040,6 +2286,33 @@
     "title": "RatesIn",
     "type": "object"
    },
+   "RefundIn": {
+    "properties": {
+     "amount_amd": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Amount Amd"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "title": "RefundIn",
+    "type": "object"
+   },
    "RegenIn": {
     "properties": {
      "instruction": {
@@ -2395,6 +2668,38 @@
     "title": "SourcePatch",
     "type": "object"
    },
+   "StorageAddon": {
+    "properties": {
+     "gb": {
+      "exclusiveMinimum": 0.0,
+      "title": "Gb",
+      "type": "integer"
+     },
+     "key": {
+      "pattern": "^[a-z0-9_]{2,30}$",
+      "title": "Key",
+      "type": "string"
+     },
+     "price_amd_month": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Amd Month"
+     }
+    },
+    "required": [
+     "key",
+     "gb"
+    ],
+    "title": "StorageAddon",
+    "type": "object"
+   },
    "SupplierIn": {
     "properties": {
      "city": {
@@ -2609,6 +2914,14 @@
       "title": "Bureau Plans",
       "type": "array"
      },
+     "credit_costs": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "default": {},
+      "title": "Credit Costs",
+      "type": "object"
+     },
      "credit_packs": {
       "default": [],
       "items": {
@@ -2616,6 +2929,22 @@
       },
       "title": "Credit Packs",
       "type": "array"
+     },
+     "credits_enforced": {
+      "default": false,
+      "title": "Credits Enforced",
+      "type": "boolean"
+     },
+     "default_plan": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Plan"
      },
      "export_prices_amd": {
       "additionalProperties": {
@@ -2651,6 +2980,35 @@
        "mode": "off",
        "value": 0.0
       }
+     },
+     "storage_addons": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/StorageAddon"
+      },
+      "title": "Storage Addons",
+      "type": "array"
+     },
+     "supplier_plans": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Plan"
+      },
+      "title": "Supplier Plans",
+      "type": "array"
+     },
+     "trial": {
+      "$ref": "#/components/schemas/Trial",
+      "default": {
+       "credits": 50,
+       "days": 14,
+       "max_projects": 3
+      }
+     },
+     "version": {
+      "default": "1.0 (2026-10)",
+      "title": "Version",
+      "type": "string"
      },
      "white_label_license_amd_month": {
       "default": 0,
@@ -2699,6 +3057,31 @@
      "to"
     ],
     "title": "TransitionIn",
+    "type": "object"
+   },
+   "Trial": {
+    "properties": {
+     "credits": {
+      "default": 50,
+      "minimum": 0.0,
+      "title": "Credits",
+      "type": "integer"
+     },
+     "days": {
+      "default": 14,
+      "maximum": 60.0,
+      "minimum": 0.0,
+      "title": "Days",
+      "type": "integer"
+     },
+     "max_projects": {
+      "default": 3,
+      "minimum": 1.0,
+      "title": "Max Projects",
+      "type": "integer"
+     }
+    },
+    "title": "Trial",
     "type": "object"
    },
    "UserPatch": {
@@ -3073,6 +3456,140 @@
     ],
     "title": "VerifyIn",
     "type": "object"
+   },
+   "VposIn": {
+    "properties": {
+     "base_url": {
+      "default": "",
+      "maxLength": 200,
+      "pattern": "^(https://[^\\s]+)?$",
+      "title": "Base Url",
+      "type": "string"
+     },
+     "client_id": {
+      "default": "",
+      "maxLength": 100,
+      "title": "Client Id",
+      "type": "string"
+     },
+     "mode": {
+      "default": "test",
+      "pattern": "^(test|live)$",
+      "title": "Mode",
+      "type": "string"
+     },
+     "order_id_offset": {
+      "default": 0,
+      "maximum": 2000000000.0,
+      "minimum": 0.0,
+      "title": "Order Id Offset",
+      "type": "integer"
+     },
+     "password": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password"
+     },
+     "username": {
+      "default": "",
+      "maxLength": 100,
+      "title": "Username",
+      "type": "string"
+     }
+    },
+    "title": "VposIn",
+    "type": "object"
+   },
+   "app__routers__billing__DecisionIn": {
+    "properties": {
+     "decision": {
+      "pattern": "^(approved|rejected)$",
+      "title": "Decision",
+      "type": "string"
+     },
+     "note": {
+      "default": "",
+      "maxLength": 1000,
+      "title": "Note",
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "title": "DecisionIn",
+    "type": "object"
+   },
+   "app__routers__billing__GrantIn": {
+    "properties": {
+     "credits": {
+      "exclusiveMinimum": 0.0,
+      "maximum": 1000000.0,
+      "title": "Credits",
+      "type": "integer"
+     },
+     "months": {
+      "default": 12,
+      "maximum": 36.0,
+      "minimum": 1.0,
+      "title": "Months",
+      "type": "integer"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "credits",
+     "reason"
+    ],
+    "title": "GrantIn",
+    "type": "object"
+   },
+   "app__routers__glossary__DecisionIn": {
+    "properties": {
+     "decision": {
+      "pattern": "^(approved|rejected)$",
+      "title": "Decision",
+      "type": "string"
+     }
+    },
+    "required": [
+     "decision"
+    ],
+    "title": "DecisionIn",
+    "type": "object"
+   },
+   "app__routers__glossary__GrantIn": {
+    "properties": {
+     "email": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Email",
+      "type": "string"
+     },
+     "role": {
+      "pattern": "^(linguist|verifier)$",
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "email",
+     "role"
+    ],
+    "title": "GrantIn",
+    "type": "object"
    }
   }
  },
@@ -3299,6 +3816,308 @@
     "summary": "Audit Log",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/billing/payments": {
+   "get": {
+    "operationId": "admin_payments_api_v1_admin_billing_payments_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 200,
+       "maximum": 500,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Payments",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/admin/billing/payments/{bid}/cancel": {
+   "post": {
+    "operationId": "admin_cancel_api_v1_admin_billing_payments__bid__cancel_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "bid",
+      "required": true,
+      "schema": {
+       "title": "Bid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CancelIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Cancel",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/admin/billing/payments/{bid}/refund": {
+   "post": {
+    "operationId": "admin_refund_api_v1_admin_billing_payments__bid__refund_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "bid",
+      "required": true,
+      "schema": {
+       "title": "Bid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Refund",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/admin/billing/vpos": {
+   "get": {
+    "operationId": "get_vpos_api_v1_admin_billing_vpos_get",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Vpos",
+    "tags": [
+     "billing"
+    ]
+   },
+   "put": {
+    "operationId": "put_vpos_api_v1_admin_billing_vpos_put",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VposIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Vpos",
+    "tags": [
+     "billing"
     ]
    }
   },
@@ -3855,8 +4674,75 @@
     ]
    }
   },
+  "/api/v1/admin/orgs/{org_id}/credits": {
+   "post": {
+    "operationId": "admin_grant_api_v1_admin_orgs__org_id__credits_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "org_id",
+      "required": true,
+      "schema": {
+       "title": "Org Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__routers__billing__GrantIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Grant",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/api/v1/admin/orgs/{org_id}/plan": {
    "put": {
+    "description": "Platform assignment (invoice, pilot agreement) — no card payment, no paid period.",
     "operationId": "set_org_plan_api_v1_admin_orgs__org_id__plan_put",
     "parameters": [
      {
@@ -4157,7 +5043,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/GrantIn"
+        "$ref": "#/components/schemas/app__routers__glossary__GrantIn"
        }
       }
      },
@@ -4630,6 +5516,130 @@
     "summary": "Stats",
     "tags": [
      "admin"
+    ]
+   }
+  },
+  "/api/v1/admin/supplier-applications": {
+   "get": {
+    "operationId": "list_applications_api_v1_admin_supplier_applications_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Applications",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/admin/supplier-applications/{aid}/decision": {
+   "post": {
+    "description": "Approval creates the supplier organisation and its catalogue owner, and invites the contact as supplier admin.",
+    "operationId": "decide_application_api_v1_admin_supplier_applications__aid__decision_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "aid",
+      "required": true,
+      "schema": {
+       "title": "Aid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__routers__billing__DecisionIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Decide Application",
+    "tags": [
+     "billing"
     ]
    }
   },
@@ -7094,6 +8104,262 @@
     ]
    }
   },
+  "/api/v1/billing": {
+   "get": {
+    "operationId": "my_billing_api_v1_billing_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "My Billing",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/billing/checkout": {
+   "post": {
+    "description": "Free plans switch at once; paid ones start a card payment on the bank's page (the browser is redirected).",
+    "operationId": "start_checkout_api_v1_billing_checkout_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CheckoutIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Start Checkout",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/billing/payments/{bid}/sync": {
+   "post": {
+    "operationId": "sync_payment_api_v1_billing_payments__bid__sync_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "bid",
+      "required": true,
+      "schema": {
+       "title": "Bid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Sync Payment",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/api/v1/billing/trial": {
+   "post": {
+    "operationId": "start_trial_api_v1_billing_trial_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Start Trial",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/api/v1/bureau/ai-budget": {
    "put": {
     "operationId": "bureau_ai_budget_api_v1_bureau_ai_budget_put",
@@ -9237,7 +10503,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/DecisionIn"
+        "$ref": "#/components/schemas/app__routers__glossary__DecisionIn"
        }
       }
      },
@@ -14436,6 +15702,25 @@
     ]
    }
   },
+  "/api/v1/public/pricing": {
+   "get": {
+    "operationId": "public_pricing_api_v1_public_pricing_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Public Pricing",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/api/v1/public/showcase": {
    "get": {
     "description": "Furnished demo scene for the landing page (synthetic demo project only).",
@@ -14453,6 +15738,45 @@
     "summary": "Showcase",
     "tags": [
      "partners"
+    ]
+   }
+  },
+  "/api/v1/public/supplier-applications": {
+   "post": {
+    "operationId": "apply_as_supplier_api_v1_public_supplier_applications_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApplicationIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Apply As Supplier",
+    "tags": [
+     "billing"
     ]
    }
   },

@@ -778,6 +778,70 @@ class GlossaryEntry(TimestampMixin, Base):
 
 
 # the ledger is append-only at the ORM level too (Postgres additionally has a trigger, migration 0009)
+# ---------------------------------------------------------------- billing (pricing v1.0, Ameriabank vPOS)
+class CreditEntry(TimestampMixin, Base):
+    """Immutable AI-credit ledger of an organisation: grants (plan, pack, trial) and spends (one row per AI operation)."""
+    __tablename__ = "credit_entries"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    org_id: Mapped[str] = mapped_column(String(32), index=True)
+    delta: Mapped[int] = mapped_column(Integer)  # + grant, − spend
+    reason: Mapped[str] = mapped_column(String(40))  # grant_plan | grant_pack | grant_trial | grant_free | grant_admin | spend | revoke
+    operation: Mapped[str] = mapped_column(String(40), default="")  # credit-matrix operation for spends
+    project_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ref: Mapped[str] = mapped_column(String(120), default="")
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(120), nullable=True, unique=True)
+
+
+class VposOrderSeq(Base):
+    """Integer OrderIDs required by Ameriabank vPOS (unique per merchant)."""
+    __tablename__ = "vpos_order_seq"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class BillingPayment(TimestampMixin, Base):
+    """A platform charge (subscription or AI-credit pack) paid by card through the acquirer."""
+    __tablename__ = "billing_payments"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    org_id: Mapped[str] = mapped_column(String(32), index=True)
+    user_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    purpose: Mapped[str] = mapped_column(String(20))  # plan | credits
+    item_key: Mapped[str] = mapped_column(String(40))
+    interval: Mapped[str] = mapped_column(String(10), default="")  # month | year (plans)
+    amount_amd: Mapped[int] = mapped_column(BigInteger)
+    provider: Mapped[str] = mapped_column(String(30), default="ameriabank")
+    order_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True)
+    provider_payment_id: Mapped[str] = mapped_column(String(80), default="", index=True)
+    status: Mapped[str] = mapped_column(String(20), default="created")  # created | redirected | paid | declined | cancelled | refunded | error
+    response_code: Mapped[str] = mapped_column(String(20), default="")
+    details: Mapped[dict] = mapped_column(JSON, default=dict)  # masked card, approval code, rrn — never the full card number
+    refunded_amd: Mapped[int] = mapped_column(BigInteger, default=0)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class SupplierApplication(TimestampMixin, Base):
+    """«Become a supplier» request from the public site; the platform approves and invites the company."""
+    __tablename__ = "supplier_applications"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    company: Mapped[str] = mapped_column(String(200))
+    contact_name: Mapped[str] = mapped_column(String(200))
+    email: Mapped[str] = mapped_column(String(320))
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    website: Mapped[str] = mapped_column(String(300), default="")
+    city: Mapped[str] = mapped_column(String(100), default="")
+    kind: Mapped[str] = mapped_column(String(20), default="store")  # store | manufacturer | installer
+    sku_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    categories: Mapped[list] = mapped_column(JSON, default=list)
+    message: Mapped[str] = mapped_column(Text, default="")
+    locale: Mapped[str] = mapped_column(String(5), default="hy")
+    status: Mapped[str] = mapped_column(String(20), default="new")  # new | approved | rejected
+    note: Mapped[str] = mapped_column(Text, default="")
+    org_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+
 from sqlalchemy import event  # noqa: E402
 
 

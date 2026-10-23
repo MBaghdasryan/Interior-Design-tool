@@ -116,7 +116,7 @@ def get_tariffs(p: Principal = Depends(require("audit:read")), db: Session = Dep
 
 
 @router.put("/api/v1/admin/tariffs")
-def put_tariffs(body: tariffs.Tariffs, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+def put_tariffs(body: tariffs.Tariffs, p: Principal = Depends(require("users:manage")), db: Session = Depends(get_db)):
     try:
         t = tariffs.set_tariffs(db, body)
     except ValueError as e:
@@ -139,7 +139,7 @@ class ManualRevenueIn(BaseModel):
 
 
 @router.post("/api/v1/admin/revenue/manual")
-def record_manual_revenue(body: ManualRevenueIn, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+def record_manual_revenue(body: ManualRevenueIn, p: Principal = Depends(require("users:manage")), db: Session = Depends(get_db)):
     """Records money received outside a payment provider (bank transfer against an invoice). Idempotent by reference."""
     txn = ledger.post(db, body.stream, [("cash", body.amount_amd, 0), (f"revenue:{body.stream}", 0, body.amount_amd)],
                       idempotency_key=f"manual:{body.stream}:{body.reference}", memo=f"{body.reference} {body.org_id or ''}".strip())
@@ -153,13 +153,16 @@ class OrgPlanIn(BaseModel):
 
 
 @router.put("/api/v1/admin/orgs/{org_id}/plan")
-def set_org_plan(org_id: str, body: OrgPlanIn, p: Principal = Depends(require("sources:manage")), db: Session = Depends(get_db)):
+def set_org_plan(org_id: str, body: OrgPlanIn, p: Principal = Depends(require("users:manage")), db: Session = Depends(get_db)):
+    """Platform assignment (invoice, pilot agreement) — no card payment, no paid period."""
+    from ..commerce.billing import assign_plan
+
     org = db.get(m.Organization, org_id)
     if not org:
         raise ApiError(404, "not_found")
-    if body.plan and body.plan not in {x.key for x in tariffs.get_tariffs(db).bureau_plans}:
+    if body.plan and body.plan not in {x.key for x in tariffs.plans_for(tariffs.get_tariffs(db), org.kind)}:
         raise ApiError(422, "validation", fields=["plan"])
-    org.settings = {**(org.settings or {}), "plan": body.plan}
+    assign_plan(db, org, body.plan)
     audit(db, p, "org.plan", "organization", org_id, data={"plan": body.plan})
     db.commit()
     return tariffs.plan_usage(db, org)

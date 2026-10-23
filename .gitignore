@@ -24,3 +24,6 @@ apps/api/evals/datasets/real/
 Test-HOME/
 vPOS_*.docx
 *:Zone.Identifier
+
+# owner commercial documents (pricing model, draft partner agreement) — kept out of the repository
+docs/Renovara_Pricing_*.docx

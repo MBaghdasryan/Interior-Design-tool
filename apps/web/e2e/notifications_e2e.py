@@ -59,7 +59,7 @@ with sync_playwright() as p:
     check(pg.locator(".notif-count").count() == 0, "counter cleared after reading")
     pg.goto(B + "/app/account")
     pg.wait_for_selector("#notifications")
-    check(pg.locator("#notifications [role=switch]").count() == 10, "Account lists 9 kinds + digest switch")
+    check(pg.locator("#notifications [role=switch]").count() == 11, "Account lists 10 kinds + digest switch")
     check(not errs, f"no JS errors {errs[:2]}")
     b.close()
 print("FAILURES:", failures) if failures else print("ALL PASS")
