@@ -142,7 +142,11 @@ def score(c: Candidate, *, category: str, style: str | None, tier: str, target_p
         b["dimensions"] = 1.0 if c.w <= max_width else 0.0
     else:
         b["dimensions"] = 0.8 if c.dims_known else 0.5
-    b["style"] = 1.0 if (style and style in c.styles) else (0.5 if not c.styles else 0.3)
+    from .styles import STYLE_BASE
+
+    base = STYLE_BASE.get(style or "")
+    # exact style tag, else the base style the requested style maps to (products carry only five base tags)
+    b["style"] = 1.0 if (style and style in c.styles) else 0.85 if (base and base in c.styles) else (0.5 if not c.styles else 0.3)
     if target_price and c.price_amd:
         ratio = c.price_amd / target_price
         b["budget"] = max(0.0, 1 - abs(1 - ratio) * 0.8)

@@ -211,7 +211,6 @@ export const pages: Dict = {
   "supc.ord.move.delivering": e("Առաքվում է", "Передан в доставку", "Out for delivery"),
   "supc.ord.move.installing": e("Մոնտաժ", "Монтаж начат", "Installation started"),
   "supc.ord.move.cancelled": e("Մերժել", "Отклонить", "Decline"),
-  "adm.tab.finance": e("Ֆինանսներ", "Финансы", "Finance"),
   "fin.saved": e("Պահպանված է", "Сохранено", "Saved"),
   "fin.ledger": e("Հաշվապահական մատյան (կրկնակի գրանցում)", "Журнал проводок (двойная запись)", "Ledger (double entry)"),
   "fin.balanced": e("Հաշվեկշռված է", "Сбалансирован", "Balanced"),

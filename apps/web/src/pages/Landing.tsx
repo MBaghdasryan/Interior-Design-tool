@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Box, Building2, Calculator, Check, CheckCircle2, FileText, Image as ImageIcon, Layers, PackageSearch, ScanLine, Send, ShieldCheck, Sofa,
+import { ArrowRight, Box, Menu, Building2, Calculator, Check, CheckCircle2, FileText, Image as ImageIcon, Layers, PackageSearch, ScanLine, Send, ShieldCheck, Sofa,
   Sparkles, Store, Truck, Users } from "lucide-react";
 import { api, type Scene } from "../lib/api";
 import { amd } from "../lib/format";
@@ -18,14 +18,19 @@ export default function Landing() {
   const { t } = useT();
   const [sc, setSc] = useState<Showcase | null>(null);
   useEffect(() => { api<Showcase>("/public/showcase").then(setSc).catch(() => {}); }, []);
+  const links = <>
+    <a href="#how">{t("landing.nav.how")}</a><a href="#products">{t("landing.nav.designers")}</a><a href="#suppliers">{t("landing.nav.suppliers")}</a>
+    <a href="#pricing">{t("landing.nav.pricing")}</a><a href="#trust">{t("landing.nav.trust")}</a>
+  </>;
   return (
     <div style={{ background: "var(--bg)" }}>
       <nav className="landing-nav" aria-label={t("landing.nav.label")}>
         <div className="brand" style={{ padding: 0 }}><BrandLockup size={34} tagline /></div>
-        <div className="row gap-24 grow hide-sm" style={{ marginLeft: 24, fontWeight: 600, color: "var(--ink-2)" }}>
-          <a href="#how">{t("landing.nav.how")}</a><a href="#products">{t("landing.nav.designers")}</a><a href="#suppliers">{t("landing.nav.suppliers")}</a>
-          <a href="#pricing">{t("landing.nav.pricing")}</a><a href="#trust">{t("landing.nav.trust")}</a>
-        </div>
+        <div className="land-links">{links}</div>
+        <details className="land-more">
+          <summary className="icon-btn" aria-label={t("nav.menu")}><Menu size={18} /></summary>
+          <div className="land-more-pop card" onClick={(e) => (e.currentTarget.parentElement as HTMLDetailsElement).removeAttribute("open")}>{links}</div>
+        </details>
         <LangSwitch compact />
         <Link to="/login" className="btn">{t("landing.signin")}</Link>
         <Link to="/register" className="btn primary">{t("landing.start")} <ArrowRight size={16} /></Link>

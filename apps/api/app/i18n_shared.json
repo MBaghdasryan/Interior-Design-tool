@@ -149,25 +149,175 @@
   "ru": "Туалет",
   "en": "WC"
  },
+ "enum.style.african": {
+  "hy": "Աֆրիկյան",
+  "ru": "Африканский",
+  "en": "African"
+ },
+ "enum.style.american": {
+  "hy": "Ամերիկյան",
+  "ru": "Американский",
+  "en": "American"
+ },
+ "enum.style.antique": {
+  "hy": "Անտիկ",
+  "ru": "Античный",
+  "en": "Antique"
+ },
+ "enum.style.art_deco": {
+  "hy": "Ար-դեկո",
+  "ru": "Ар-деко",
+  "en": "Art Deco"
+ },
+ "enum.style.art_nouveau": {
+  "hy": "Մոդեռն (ար-նուվո)",
+  "ru": "Модерн (ар-нуво)",
+  "en": "Art Nouveau"
+ },
+ "enum.style.baroque": {
+  "hy": "Բարոկո",
+  "ru": "Барокко",
+  "en": "Baroque"
+ },
+ "enum.style.boho": {
+  "hy": "Բոհո",
+  "ru": "Бохо",
+  "en": "Boho"
+ },
+ "enum.style.brutalism": {
+  "hy": "Բրուտալիզմ",
+  "ru": "Брутализм",
+  "en": "Brutalism"
+ },
+ "enum.style.chalet": {
+  "hy": "Շալե",
+  "ru": "Шале",
+  "en": "Chalet"
+ },
+ "enum.style.chinese": {
+  "hy": "Չինական",
+  "ru": "Китайский",
+  "en": "Chinese"
+ },
  "enum.style.classic": {
   "hy": "Նեոդասական",
   "ru": "Неоклассика",
   "en": "Neoclassic"
  },
+ "enum.style.classicism": {
+  "hy": "Կլասիցիզմ",
+  "ru": "Классицизм",
+  "en": "Classicism"
+ },
  "enum.style.contemporary": {
-  "hy": "Ժամանակակից",
-  "ru": "Современный",
+  "hy": "Կոնտեմպորարի",
+  "ru": "Контемпорари",
   "en": "Contemporary"
  },
+ "enum.style.eclectic": {
+  "hy": "Էկլեկտիկա",
+  "ru": "Эклектика",
+  "en": "Eclectic"
+ },
+ "enum.style.eco": {
+  "hy": "Էկո ոճ",
+  "ru": "Эко-стиль",
+  "en": "Eco style"
+ },
+ "enum.style.empire": {
+  "hy": "Ամպիր",
+  "ru": "Ампир",
+  "en": "Empire"
+ },
+ "enum.style.english": {
+  "hy": "Անգլիական",
+  "ru": "Английский",
+  "en": "English"
+ },
+ "enum.style.fusion": {
+  "hy": "Ֆյուժն",
+  "ru": "Фьюжн",
+  "en": "Fusion"
+ },
+ "enum.style.gothic": {
+  "hy": "Գոթական",
+  "ru": "Готический",
+  "en": "Gothic"
+ },
+ "enum.style.grunge": {
+  "hy": "Գրանժ",
+  "ru": "Гранж",
+  "en": "Grunge"
+ },
+ "enum.style.high_tech": {
+  "hy": "Հայ-տեկ",
+  "ru": "Хай-тек",
+  "en": "High-tech"
+ },
+ "enum.style.japandi": {
+  "hy": "Ջապանդի",
+  "ru": "Джапанди",
+  "en": "Japandi"
+ },
+ "enum.style.japanese": {
+  "hy": "Ճապոնական",
+  "ru": "Японский",
+  "en": "Japanese"
+ },
+ "enum.style.kitsch": {
+  "hy": "Քիչ",
+  "ru": "Китч",
+  "en": "Kitsch"
+ },
+ "enum.style.mediterranean": {
+  "hy": "Միջերկրածովյան",
+  "ru": "Средиземноморский",
+  "en": "Mediterranean"
+ },
+ "enum.style.memphis": {
+  "hy": "Մեմֆիս",
+  "ru": "Мемфис",
+  "en": "Memphis"
+ },
+ "enum.style.minimalism": {
+  "hy": "Մինիմալիզմ",
+  "ru": "Минимализм",
+  "en": "Minimalism"
+ },
  "enum.style.modern_loft": {
-  "hy": "Ժամանակակից լոֆթ",
-  "ru": "Современный лофт",
-  "en": "Modern loft"
+  "hy": "Լոֆթ",
+  "ru": "Лофт",
+  "en": "Loft"
+ },
+ "enum.style.moroccan": {
+  "hy": "Մարոկկական",
+  "ru": "Марокканский",
+  "en": "Moroccan"
+ },
+ "enum.style.pop_art": {
+  "hy": "Փոփ-արտ",
+  "ru": "Поп-арт",
+  "en": "Pop art"
+ },
+ "enum.style.provence": {
+  "hy": "Պրովանս",
+  "ru": "Прованс",
+  "en": "Provence"
+ },
+ "enum.style.rococo": {
+  "hy": "Ռոկոկո",
+  "ru": "Рококо",
+  "en": "Rococo"
+ },
+ "enum.style.rustic": {
+  "hy": "Ռուստիկ",
+  "ru": "Рустик",
+  "en": "Rustic"
  },
  "enum.style.soft_scandi": {
-  "hy": "Փափուկ սկանդինավյան",
-  "ru": "Мягкий сканди",
-  "en": "Soft Scandi"
+  "hy": "Սկանդինավյան",
+  "ru": "Скандинавский",
+  "en": "Scandinavian"
  },
  "enum.style.warm_minimal": {
   "hy": "Ջերմ մինիմալիզմ",

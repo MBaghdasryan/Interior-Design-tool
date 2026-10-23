@@ -76,18 +76,7 @@ GROUPS: dict[str, tuple[str, str, str]] = {
     "contingency": ("Резерв", "Պահուստ", "Contingency"),
 }
 
-STYLES: dict[str, dict] = {
-    "warm_minimal": {"ru": "Тёплый минимализм", "hy": "Ջերմ մինիմալիզմ", "en": "Warm minimalism",
-                      "subtitle": "Спокойный, уютный, вне времени", "palette": ["#efe6da", "#d9c9b7", "#b98f6a", "#8a5a3c", "#2e2e2e"]},
-    "modern_loft": {"ru": "Современный лофт", "hy": "Ժամանակակից լոֆտ", "en": "Modern loft",
-                     "subtitle": "Характер и свобода пространства", "palette": ["#3a3532", "#6b4a3a", "#a4593c", "#c9b8a3", "#1f1d1b"]},
-    "soft_scandi": {"ru": "Мягкий сканди", "hy": "Փափուկ սկանդի", "en": "Soft Scandi",
-                     "subtitle": "Лёгкость, свет и натуральные материалы", "palette": ["#f4f1ec", "#e3d8c8", "#c8b08f", "#8f9f7e", "#5c5248"]},
-    "contemporary": {"ru": "Современный", "hy": "Ժամանակակից", "en": "Contemporary",
-                      "subtitle": "Чистые линии и функциональность", "palette": ["#f2f0ed", "#cfc8bf", "#8c8279", "#c97f63", "#2e2e2e"]},
-    "classic": {"ru": "Неоклассика", "hy": "Նեոդասական", "en": "Neoclassic",
-                 "subtitle": "Молдинги, симметрия, благородные оттенки", "palette": ["#f3eee6", "#ddd2c2", "#b8a17f", "#7c6a55", "#3c352e"]},
-}
+from .styles import STYLE_BASE, STYLES  # noqa: E402,F401  (35 styles in four groups)
 
 TIERS = ["economy", "comfort", "business", "premium"]
 

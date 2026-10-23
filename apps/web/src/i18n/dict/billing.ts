@@ -5,6 +5,11 @@ const e = (hy: string, ru: string, en: string): Entry => ({ hy, ru, en });
 // Pricing v1.0, billing (Ameriabank vPOS), landing page (mockup 10), supplier applications.
 export const billing: Dict = {
   "nav.menu": e("Մենյու", "Меню", "Menu"),
+  "nav.finance": e("Ֆինանսներ", "Финансы", "Finance"),
+  "nav.section.finance": e("Ֆինանսներ", "Финансы", "Finance"),
+  "fin.section_lead": e("Հաշվապահական մատյան, եկամուտներ և հաշվարկներ, սակագներ և քարտային վճարումներ", "Журнал проводок, выручка и расчёты, тарифы и платежи картой", "Ledger, revenue and settlements, pricing and card payments"),
+  "fin.tab.ledger": e("Մատյան և եկամուտ", "Журнал и выручка", "Ledger & revenue"),
+  "fin.tab.billing": e("Սակագներ և վճարումներ", "Тарифы и платежи", "Pricing & payments"),
   "nav.billing": e("Սակագին և վճարում", "Тариф и оплата", "Plan & billing"),
   "nav.section.billing": e("Սակագին և վճարում", "Тариф и оплата", "Plan & billing"),
 
@@ -167,7 +172,6 @@ export const billing: Dict = {
   "bill.legal": e("Վճարումները կատարվում են Ամերիաբանկի անվտանգ էջում․ Renovara-ն չի տեսնում և չի պահում քարտի տվյալները։", "Оплата проходит на защищённой странице Америабанка — Renovara не видит и не хранит данные карты.", "Payments happen on Ameriabank's secure page — Renovara never sees or stores card data."),
 
   // admin: tariffs & payments
-  "adm.tab.billing": e("Սակագներ և վճարումներ", "Тарифы и платежи", "Pricing & payments"),
   "adm.tab.applications": e("Մատակարարների հայտեր", "Заявки поставщиков", "Supplier applications"),
   "bil.vpos_title": e("Ամերիաբանկ vPOS", "Америабанк vPOS", "Ameriabank vPOS"),
   "bil.vpos_on": e("միացված", "подключён", "connected"),

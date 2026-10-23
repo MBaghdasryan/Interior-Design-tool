@@ -31,17 +31,61 @@ const groups: Record<string, Entry> = {
   delivery: e("Առաքում", "Доставка", "Delivery"), installation: e("Մոնտաժ և հավաքում", "Монтаж и сборка", "Installation"), contingency: e("Պահուստ", "Резерв", "Contingency"),
 };
 const styles: Record<string, Entry> = {
-  warm_minimal: e("Ջերմ մինիմալիզմ", "Тёплый минимализм", "Warm minimalism"), modern_loft: e("Ժամանակակից լոֆթ", "Современный лофт", "Modern loft"),
-  soft_scandi: e("Փափուկ սկանդինավյան", "Мягкий сканди", "Soft Scandi"), contemporary: e("Ժամանակակից", "Современный", "Contemporary"), classic: e("Նեոդասական", "Неоклассика", "Neoclassic"),
+  warm_minimal: e("Ջերմ մինիմալիզմ", "Тёплый минимализм", "Warm minimalism"), minimalism: e("Մինիմալիզմ", "Минимализм", "Minimalism"),
+  modern_loft: e("Լոֆթ", "Лофт", "Loft"), high_tech: e("Հայ-տեկ", "Хай-тек", "High-tech"), soft_scandi: e("Սկանդինավյան", "Скандинавский", "Scandinavian"),
+  contemporary: e("Կոնտեմպորարի", "Контемпорари", "Contemporary"), classic: e("Նեոդասական", "Неоклассика", "Neoclassic"), eco: e("Էկո ոճ", "Эко-стиль", "Eco style"),
+  japandi: e("Ջապանդի", "Джапанди", "Japandi"), art_deco: e("Ար-դեկո", "Ар-деко", "Art Deco"), pop_art: e("Փոփ-արտ", "Поп-арт", "Pop art"),
+  memphis: e("Մեմֆիս", "Мемфис", "Memphis"), brutalism: e("Բրուտալիզմ", "Брутализм", "Brutalism"), grunge: e("Գրանժ", "Гранж", "Grunge"),
+  antique: e("Անտիկ", "Античный", "Antique"), gothic: e("Գոթական", "Готический", "Gothic"), baroque: e("Բարոկո", "Барокко", "Baroque"),
+  rococo: e("Ռոկոկո", "Рококо", "Rococo"), classicism: e("Կլասիցիզմ", "Классицизм", "Classicism"), empire: e("Ամպիր", "Ампир", "Empire"),
+  art_nouveau: e("Մոդեռն (ար-նուվո)", "Модерн (ар-нуво)", "Art Nouveau"), provence: e("Պրովանս", "Прованс", "Provence"), chalet: e("Շալե", "Шале", "Chalet"),
+  rustic: e("Ռուստիկ", "Рустик", "Rustic"), english: e("Անգլիական", "Английский", "English"), japanese: e("Ճապոնական", "Японский", "Japanese"),
+  moroccan: e("Մարոկկական", "Марокканский", "Moroccan"), mediterranean: e("Միջերկրածովյան", "Средиземноморский", "Mediterranean"),
+  african: e("Աֆրիկյան", "Африканский", "African"), chinese: e("Չինական", "Китайский", "Chinese"), american: e("Ամերիկյան", "Американский", "American"),
+  eclectic: e("Էկլեկտիկա", "Эклектика", "Eclectic"), fusion: e("Ֆյուժն", "Фьюжн", "Fusion"), kitsch: e("Քիչ", "Китч", "Kitsch"), boho: e("Բոհո", "Бохо", "Boho"),
 };
 const styleSub: Record<string, Entry> = {
   warm_minimal: e("Հանգիստ, հարմարավետ, ժամանակից դուրս", "Спокойный, уютный, вне времени", "Calm, cosy, timeless"),
-  modern_loft: e("Բնավորություն և տարածության ազատություն", "Характер и свобода пространства", "Character and open space"),
-  soft_scandi: e("Թեթևություն, լույս և բնական նյութեր", "Лёгкость, свет и натуральные материалы", "Lightness, daylight and natural materials"),
-  contemporary: e("Մաքուր գծեր և ֆունկցիոնալություն", "Чистые линии и функциональность", "Clean lines and function"),
-  classic: e("Կաղապարներ, համաչափություն, ազնիվ երանգներ", "Молдинги, симметрия, благородные оттенки", "Mouldings, symmetry, noble tones"),
+  minimalism: e("Խիստ երկրաչափություն, նվազագույն կահույք, թաքնված պահոցներ", "Строгая геометрия, минимум мебели, скрытое хранение", "Strict geometry, little furniture, hidden storage"),
+  modern_loft: e("Աղյուս, բետոն, բաց խողովակներ և բարձր առաստաղներ", "Кирпич, бетон, открытые трубы, высокие потолки", "Brick, concrete, exposed pipes, high ceilings"),
+  high_tech: e("Քրոմ, ապակի, խելացի տեխնիկա և լուսավորում", "Хром, стекло, умная техника и подсветка", "Chrome, glass, smart devices and LED light"),
+  soft_scandi: e("Բաց փայտ, տեքստիլ, սպիտակ հիմք և վառ շեշտեր", "Светлое дерево, текстиль, белая база и акценты", "Light wood, textiles, white base, bright accents"),
+  contemporary: e("Լակոնիկ, չեզոք, մոդուլային կահույք", "Лаконично, нейтрально, модульная мебель", "Concise, neutral, modular furniture"),
+  classic: e("Համաչափություն և կաղապարներ՝ ժամանակակից նյութերով", "Симметрия и молдинги в современных материалах", "Symmetry and mouldings in modern materials"),
+  eco: e("Փայտ, քար, կավ, բամբուկ և կենդանի բույսեր", "Дерево, камень, глина, бамбук и живые растения", "Wood, stone, clay, bamboo and living plants"),
+  japandi: e("Ճապոնական մինիմալիզմ և սկանդինավյան հարմարավետություն", "Японский минимализм и скандинавский уют, ваби-саби", "Japanese minimalism meets Scandinavian comfort"),
+  art_deco: e("Երկրաչափություն, մարմար, արույր և փայլ", "Геометрия, мрамор, латунь и глянец", "Geometry, marble, brass and gloss"),
+  pop_art: e("Թթվային գույներ, կոմիքսներ, փայլուն պլաստիկ", "Кислотные цвета, комиксы, глянцевый пластик", "Acid colours, comics, glossy plastic"),
+  memphis: e("Վառ երկրաչափություն, անհամաչափություն, 80-ականներ", "Яркая геометрия, асимметрия, эстетика 80-х", "Bright geometry, asymmetry, 1980s spirit"),
+  brutalism: e("Կոպիտ բետոն և մոնումենտալ ձևեր", "Грубый бетон и монументальные формы", "Raw concrete and monumental forms"),
+  grunge: e("Հնեցված դասական՝ պարզ հարդարման վրա", "Состаренная классика на простой отделке", "Aged classic pieces on plain finishes"),
+  antique: e("Սյուներ, կամարներ, ծեփանախշ և մարմար", "Колонны, арки, лепнина и мрамор", "Columns, arches, mouldings and marble"),
+  gothic: e("Սլաքաձև պատուհաններ, մուգ փայտ, դարբնոցային տարրեր", "Стрельчатые окна, тёмное дерево, ковка", "Pointed windows, dark wood, wrought iron"),
+  baroque: e("Պալատական շքեղություն, ոսկեզօծ, թավիշ և հայելիներ", "Дворцовая роскошь, позолота, бархат и зеркала", "Palatial luxury, gilding, velvet, mirrors"),
+  rococo: e("Պաստել, գանգուրներ, ճենապակի և հայելիներ", "Пастель, завитки, фарфор и зеркала", "Pastels, curls, porcelain and mirrors"),
+  classicism: e("Խիստ համաչափություն, սյուներ, զուսպ շքեղություն", "Строгая симметрия, колонны, сдержанная роскошь", "Strict symmetry, columns, restrained luxury"),
+  empire: e("Զինանշաններ, ոսկեզօծ, ծանր վարագույրներ", "Гербы, позолота, тяжёлые драпировки", "Emblems, gilding, heavy drapery"),
+  art_nouveau: e("Սահուն գծեր, բուսական զարդանախշեր, վիտրաժներ", "Плавные линии, растительные орнаменты, витражи", "Flowing lines, floral ornament, stained glass"),
+  provence: e("Պաստել, արևից խունացած փայտ, վուշ և ծաղիկներ", "Пастель, выгоревшее дерево, лён и цветы", "Pastels, sun-bleached wood, linen and florals"),
+  chalet: e("Փայտ, հեծաններ, քարե բուխարի և մորթիներ", "Дерево, балки, каменный камин и шкуры", "Timber, beams, stone fireplace and furs"),
+  rustic: e("Գերաններ, հանգույցավոր տախտակներ, չմշակված քար", "Брёвна, сучковатые доски, необработанный камень", "Logs, knotty boards, rough stone"),
+  english: e("Չեսթերֆիլդ, բուխարի, գրքեր և փայտե պանելներ", "Честерфилд, камин, книги, деревянные панели", "Chesterfield, fireplace, books, wood panels"),
+  japanese: e("Զեն, սյոձի, տատամի, բամբուկ և քար", "Дзен, сёдзи, татами, бамбук и камень", "Zen, shoji, tatami, bamboo and stone"),
+  moroccan: e("Զելիժ խճանկար, կամարներ, գորգեր և լապտերներ", "Мозаика зеллиж, арки, ковры и фонари", "Zellige mosaic, arches, rugs and lanterns"),
+  mediterranean: e("Սպիտակ-կապույտ գամմա, հյուսված կահույք, կերամիկա", "Бело-синяя гамма, плетёная мебель, керамика", "White and blue, rattan furniture, ceramics"),
+  african: e("Կենդանական նախշեր, դիմակներ, կաշի, տերակոտա", "Анималистичные принты, маски, кожа, терракота", "Animal prints, masks, leather, terracotta"),
+  chinese: e("Կարմիր, սև և ոսկի, լաք, բամբուկե շիրմաներ", "Красный, чёрный и золото, лак, ширмы", "Red, black and gold, lacquer, screens"),
+  american: e("Տարածք, խոհանոցային կղզի, մեծ կահույք և լույս", "Простор, кухонный остров, крупная мебель", "Open space, kitchen island, large furniture"),
+  eclectic: e("2–3 մոտ ոճերի համադրություն՝ ընդհանուր գաղափարով", "Смешение 2–3 близких стилей с общей идеей", "Two or three related styles, one idea"),
+  fusion: e("Հակադիր ոճերի համարձակ համադրություն", "Смелое сочетание противоположных стилей", "Bold mix of opposite styles"),
+  kitsch: e("Հեգնական հակադիզայն՝ նեոն, պլաստիկ, «ոսկի»", "Ироничный антидизайн: неон, пластик, «позолота»", "Ironic anti-design: neon, plastic, fake gold"),
+  boho: e("Ձեռքի աշխատանք, վինտաժ, գորգեր և բույսեր", "Хендмейд, винтаж, ковры и растения", "Handmade, vintage, rugs and plants"),
   economy: e("Խելամիտ բյուջե, նույն լուծումները", "Разумный бюджет, те же решения", "Sensible budget, same solutions"),
   premium: e("Բարձր դասի նյութեր և արտադրանք", "Материалы и изделия высокого класса", "High-end materials and pieces"),
+};
+const styleGroups: Record<string, Entry> = {
+  modern: e("Ժամանակակից", "Современные", "Modern"), classic: e("Դասական և պատմական", "Классические и исторические", "Classic & historic"),
+  ethnic: e("Էթնիկ և ազգային", "Этнические и национальные", "Ethnic & national"), mixed: e("Խառը", "Смешанные", "Mixed"),
 };
 const tiers: Record<string, Entry> = { economy: e("Էկոնոմ", "Эконом", "Economy"), comfort: e("Կոմֆորտ", "Комфорт", "Comfort"), business: e("Բիզնես", "Бизнес", "Business"), premium: e("Պրեմիում", "Премиум", "Premium"),
   optimal: e("Օպտիմալ", "Оптимальный", "Optimal") };
@@ -69,6 +113,7 @@ for (const [k, v] of Object.entries(cats)) out[`enum.cat.${k}`] = v;
 for (const [k, v] of Object.entries(groups)) out[`enum.group.${k}`] = v;
 for (const [k, v] of Object.entries(styles)) out[`enum.style.${k}`] = v;
 for (const [k, v] of Object.entries(styleSub)) out[`enum.style_sub.${k}`] = v;
+for (const [k, v] of Object.entries(styleGroups)) out[`enum.style_group.${k}`] = v;
 for (const [k, v] of Object.entries(tiers)) out[`enum.tier.${k}`] = v;
 for (const [k, v] of Object.entries(rooms)) out[`enum.room.${k}`] = v;
 for (const [k, v] of Object.entries(roles)) out[`enum.role.${k}`] = v;

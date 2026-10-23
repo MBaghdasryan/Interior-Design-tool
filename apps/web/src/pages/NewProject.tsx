@@ -3,19 +3,15 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, Armchair, Box, CloudUpload, Database, FileText, Globe2, Image as ImageIcon, Info, Palette, PenTool, Plus, ScanLine, ShoppingCart, Sparkles, Trash2, Truck, Users, Video, Wallet, X } from "lucide-react";
 import { api, fileUrl, uploadAsset, type Project, type Schemas } from "../lib/api";
-import { kb, styleName, tierName } from "../lib/format";
+import { kb, tierName } from "../lib/format";
 import { LANGS, useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
 import ApsCapabilities from "../components/ApsCapabilities";
+import { ColorPicker, StylePicker } from "../components/StylePicker";
 import PilotPanel from "../components/PilotPanel";
 
-const STYLE_PALETTES: Record<string, string[]> = {
-  contemporary: ["#f2f0ed", "#cfc8bf", "#8c8279", "#c97f63"], warm_minimal: ["#efe6da", "#d9c9b7", "#b98f6a", "#8a5a3c"], soft_scandi: ["#f4f1ec", "#e3d8c8", "#c8b08f", "#8f9f7e"],
-  classic: ["#f3eee6", "#ddd2c2", "#b8a17f", "#7c6a55"], modern_loft: ["#3a3532", "#6b4a3a", "#a4593c", "#c9b8a3"],
-};
 const FORMATS: [LucideIcon, string, string][] = [[ImageIcon, "photo", "JPG, PNG, HEIC"], [Video, "video", "MP4, MOV"], [FileText, "pdf", "PDF"], [PenTool, "cad", "DWG, DXF"], [Box, "bim", "IFC, RVT"], [ScanLine, "scan", "USDZ, OBJ"]];
 const LEVELS: [string, LucideIcon][] = [["concept", Box], ["verified", ImageIcon], ["production", Truck]];
-const COLORS = ["#e8dccb", "#f1efea", "#c9c6c1", "#8f9f7e", "#c97f63", "#2e2e2e"];
 const TIERS = ["economy", "comfort", "business", "premium"];
 const FAMILY = ["single", "couple", "kids", "other"];
 const SUPP = ["any", "local", "popular", "premium"];
@@ -107,7 +103,6 @@ function Intake({ pid }: { pid: string }) {
     } catch (x) { toast((x as Error).message, true); }
   };
   if (!p) return <Loading />;
-  const toggle = (k: "styles" | "colors", v: string) => setPrefs({ ...prefs, [k]: prefs[k].includes(v) ? prefs[k].filter((x: string) => x !== v) : [...prefs[k], v] });
   const confirmed = !!p.base_scene?.confirmed;
   const isPlan = (a: { kind: string }) => ["plan_image", "plan_pdf", "dwg", "dxf", "ifc", "rvt", "lidar"].includes(a.kind);
   const photos = (p.assets || []).filter((a) => !isPlan(a));
@@ -176,19 +171,10 @@ function Intake({ pid }: { pid: string }) {
           <button className="btn" onClick={() => generate(true)}>{t("up.let_ai")}</button>
         </div>
         <Block icon={Armchair} title={t("up.style")} sub={t("up.style_sub")}>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-            {Object.keys(STYLE_PALETTES).map((s) => (
-              <button key={s} className={`style-tile ${prefs.styles.includes(s) ? "on" : ""}`} onClick={() => toggle("styles", s)}>
-                <div className="img" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gridTemplateRows: "1fr 1fr" }}>
-                  <div style={{ gridRow: "1 / 3", background: STYLE_PALETTES[s][0] }} /><div style={{ background: STYLE_PALETTES[s][2] }} /><div style={{ background: STYLE_PALETTES[s][3] }} />
-                </div>
-                <div className="tiny" style={{ padding: "4px 2px" }}>{styleName(s)}</div>
-              </button>
-            ))}
-          </div>
+          <StylePicker value={prefs.styles} onChange={(v) => setPrefs({ ...prefs, styles: v })} />
         </Block>
         <Block icon={Palette} title={t("up.colors")} sub={t("up.colors_sub")}>
-          <div className="row">{COLORS.map((c) => <button key={c} className={`swatch ${prefs.colors.includes(c) ? "on" : ""}`} style={{ background: c }} onClick={() => toggle("colors", c)} aria-label={c} />)}</div>
+          <ColorPicker value={prefs.colors} styles={prefs.styles} onChange={(v) => setPrefs({ ...prefs, colors: v })} />
         </Block>
         <Block icon={Wallet} title={t("up.budget")} sub={t("up.budget_sub")}>
           <div className="row wrap">{TIERS.map((k) => <button key={k} className={`chip ${prefs.budget_tier === k ? "on" : ""}`} onClick={() => setPrefs({ ...prefs, budget_tier: k })}>{tierName(k)}</button>)}</div>

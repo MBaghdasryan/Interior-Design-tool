@@ -151,7 +151,8 @@ def render_room(db: Session, project: m.Project, variant: m.DesignVariant, versi
     refs = reference_images(db, manifest, fetcher=fetcher)
     st = STYLES.get(variant.style, {})
     finishes = ", ".join(f"{f.surface}: {f.name or f.material_code} {f.color_hex}" for f in scene.finishes if f.room_id == room_id)[:500]
-    prompt = _prompt("render_room").format(style=variant.style, palette=", ".join(st.get("palette", [])), finishes=finishes or "as in the guide",
+    chosen = [c for c in ((project.preferences or {}).get("colors") or []) if isinstance(c, str) and c.startswith("#")][:8]
+    prompt = _prompt("render_room").format(style=st.get("prompt") or variant.style, palette=", ".join(chosen + st.get("palette", [])), finishes=finishes or "as in the guide",
                                            allow_styling="false", manifest=_manifest_lines(manifest))
     if refs:
         prompt += "\n\nREFERENCE PHOTOS (after the guide image, in this order): " + ", ".join(code for code, _, _ in refs)

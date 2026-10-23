@@ -1,12 +1,11 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Activity, Bot, Boxes, Building2, CreditCard, Globe2, Inbox, PenTool, ScrollText, ShieldAlert, Store, Users, Wallet, Workflow } from "lucide-react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { Activity, Bot, Boxes, Building2, Globe2, Inbox, PenTool, ScrollText, ShieldAlert, Store, Users, Workflow } from "lucide-react";
 import { api, apiPage, type Job } from "../lib/api";
 import { amd as amdFmt, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Loading, Switch, useToast } from "../components/ui";
-import FinanceTab from "../components/FinanceTab";
-import BillingAdmin, { ApplicationsAdmin } from "../components/BillingAdmin";
+import { ApplicationsAdmin } from "../components/BillingAdmin";
 import { useMe } from "../components/AppShell";
 import { OrgsAdmin, SuppliersAdmin, UsersAdmin } from "../components/Management";
 
@@ -22,7 +21,15 @@ interface Quarantined { at: string; project_id: string; filename: string; sha256
 
 const OPS_TABS: Tab[] = ["sources", "jobs", "partners"];  // the catalogue operator works with the catalogue only
 
-export default function PlatformAdmin() {
+export default function PlatformAdminRoute() {
+  // finance and tariffs moved to their own section; old links keep working
+  const [sp] = useSearchParams();
+  const tab = sp.get("tab");
+  if (tab === "finance" || tab === "billing") return <Navigate to={`/app/finance?tab=${tab === "finance" ? "ledger" : "billing"}`} replace />;
+  return <PlatformAdmin />;
+}
+
+function PlatformAdmin() {
   const { t } = useT();
   const { me } = useMe();
   const isAdmin = !!me?.roles.includes("platform_admin");
@@ -74,7 +81,7 @@ export default function PlatformAdmin() {
   const history = async (s: Src) => { if (hist?.sid === s.id) return setHist(null); setHist({ sid: s.id, data: await api<Hist>(`/admin/sources/${s.id}/history`) }); };
   const apsAction = async (path: string) => { try { const r = await api(path, { method: "POST" }); toast(JSON.stringify(r)); } catch (x) { toast((x as Error).message, true); } };
   if (!stats) return <Loading />;
-  const tabs: [Tab, typeof Bot][] = [["users", Users], ["orgs", Building2], ["suppliers", Store], ["applications", Inbox], ["billing", CreditCard], ["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["finance", Wallet], ["partners", Store]];
+  const tabs: [Tab, typeof Bot][] = [["users", Users], ["orgs", Building2], ["suppliers", Store], ["applications", Inbox], ["sources", Globe2], ["jobs", Workflow], ["ai", Bot], ["aps", PenTool], ["audit", ScrollText], ["quarantine", ShieldAlert], ["partners", Store]];
   return (
     <div className="col gap-16">
       <h1>{t("adm.title")}</h1>
@@ -89,7 +96,6 @@ export default function PlatformAdmin() {
       {tab === "orgs" && <OrgsAdmin />}
       {tab === "suppliers" && <SuppliersAdmin />}
       {tab === "applications" && <ApplicationsAdmin />}
-      {tab === "billing" && <BillingAdmin />}
       {tab === "sources" && (
         <div className="col gap-10">
           <div className="alert info small">{stats.integrations.external_fetch_live ? t("adm.live_on") : t("adm.live_off")}</div>
@@ -168,7 +174,6 @@ export default function PlatformAdmin() {
         {!aps.enabled && <div className="alert warn small">{t("adm.aps_hint")}</div>}
       </div>}
       {tab === "partners" && <PartnerReview />}
-      {tab === "finance" && <FinanceTab />}
       {tab === "audit" && <div className="card" style={{ overflow: "auto", maxHeight: 600 }}><table className="table compact"><thead><tr><th>{t("adm.col.time")}</th><th>{t("adm.col.action")}</th><th>{t("adm.col.entity")}</th><th>{t("adm.col.data")}</th></tr></thead>
         <tbody>{audit.map((a, i) => <tr key={i}><td className="small nowrap">{dt(a.created_at)}</td><td><b className="small">{a.action}</b></td><td className="small">{a.entity}</td><td className="tiny mono">{JSON.stringify(a.data).slice(0, 120)}</td></tr>)}</tbody></table>
         {auditNext && <div className="row" style={{ justifyContent: "center", padding: 10 }}><button className="btn sm" onClick={() => moreAudit(auditNext)}>{t("common.load_more")}</button></div>}</div>}

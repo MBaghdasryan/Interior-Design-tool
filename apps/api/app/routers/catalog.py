@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from .. import models as m
 from ..catalog.candidates import candidate_from_record, candidate_from_variant
 from ..catalog.pricelist import PriceGuard, _read_table, apply_price_list, guess_mapping, validate_row
-from ..catalog.taxonomy import CATEGORIES, GROUPS, STYLES
+from ..catalog.taxonomy import CATEGORIES, GROUPS, STYLE_BASE, STYLES
 from ..db import get_db
 from ..errors import ApiError
 from ..security import Principal, audit, current_principal, require
@@ -47,8 +47,8 @@ def search(q: str = "", category: str | None = None, group: str | None = None, s
     rows = []
     for v in db.scalars(stmt.order_by(m.Product.category, m.ProductVariant.price).offset(offset).limit(limit)):
         c = candidate_from_variant(v)
-        if style and not v.sku.endswith(style[:3].upper()):
-            continue
+        if style and not ({style, STYLE_BASE.get(style)} & set(v.product.styles or [])) and not v.sku.endswith(style[:3].upper()):
+            continue  # product style tag (or the base the style maps to); DEMO SKUs encode the style in the suffix
         rows.append({**c.dict(), "source": "internal"})
     if include_external:
         es = select(m.ExternalProductRecord).where(m.ExternalProductRecord.review_status != "rejected")

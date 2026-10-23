@@ -30,6 +30,7 @@ import Suppliers from "./pages/Suppliers";
 import SupplierCabinet from "./pages/SupplierCabinet";
 import SupplierDemand from "./pages/SupplierDemand";
 import Billing from "./pages/Billing";
+import Finance from "./pages/Finance";
 import BureauCabinet from "./pages/BureauCabinet";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import Pim from "./pages/Pim";
@@ -70,6 +71,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="supplier" element={<SupplierCabinet />} />
             <Route path="supplier/demand" element={<SupplierDemand />} />
             <Route path="billing" element={<Billing />} />
+            <Route path="finance" element={<Finance />} />
             <Route path="bureau" element={<BureauCabinet />} />
             <Route path="admin" element={<PlatformAdmin />} />
             <Route path="pim" element={<Pim />} />

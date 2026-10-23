@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck } from "lucide-react";
+import { BookOpenCheck, Building2, CreditCard, FolderKanban, Home, Inbox, LayoutGrid, LogOut, MailWarning, Menu, MessageCircle, PlusCircle, Settings2, ShieldCheck, Store, Truck, Wallet } from "lucide-react";
 import { api, auth, type Me } from "../lib/api";
 import { LANGS, setLang, useT, type Lang } from "../i18n";
 import NotificationBell from "./NotificationBell";
@@ -117,6 +117,7 @@ export default function AppShell() {
           {isSupplier && <NavLink to="/app/supplier/demand"><Inbox size={18} /> {t("nav.demand")}</NavLink>}
           {isPlatform && <><div className="section">{t("nav.administration")}</div>
             <NavLink to="/app/admin"><ShieldCheck size={18} /> {t("nav.admin")}</NavLink>
+            {isAdmin && <NavLink to="/app/finance"><Wallet size={18} /> {t("nav.finance")}</NavLink>}
             <NavLink to="/app/pim"><Settings2 size={18} /> {t("nav.pim")}</NavLink></>}
           {(designs || isSupplier) && !isAdmin && <NavLink to="/app/billing"><CreditCard size={18} /> {t("nav.billing")}</NavLink>}
           {isLinguist && <NavLink to="/app/glossary"><BookOpenCheck size={18} /> {t("nav.glossary")}</NavLink>}

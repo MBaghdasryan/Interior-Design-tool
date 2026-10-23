@@ -6,7 +6,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-StyleKey = Literal["warm_minimal", "modern_loft", "soft_scandi", "contemporary", "classic"]
+from ..catalog.styles import STYLES
+
+StyleKey = Literal[tuple(STYLES)]  # type: ignore[valid-type]  # all 35 styles (catalog/styles.py)
 Tier = Literal["economy", "comfort", "business", "premium"]
 
 

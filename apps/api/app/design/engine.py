@@ -83,7 +83,35 @@ def _luma(hex_: str) -> float:
     return colorsys.rgb_to_hls(r, g, b)[1]
 
 
-def rank(pool: list[Candidate], *, cat: str, style: str, tier: str, max_width: float | None, prefer_light: bool | None = None) -> list[Candidate]:
+def _rgb(hex_: str) -> tuple[float, float, float] | None:
+    h = (hex_ or "").lstrip("#")
+    try:
+        return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))  # type: ignore[return-value]
+    except ValueError:
+        return None
+
+
+def color_affinity(hex_: str, colors: list[str]) -> float:
+    """0..1: how close a product colour is to the nearest colour the client chose (1 = same colour)."""
+    c = _rgb(hex_)
+    best = 0.0
+    for x in colors:
+        p = _rgb(x)
+        if c and p:
+            d = sum((a - b) ** 2 for a, b in zip(c, p)) ** 0.5 / 3 ** 0.5
+            best = max(best, 1 - d)
+    return best
+
+
+# colour preference steers what the client sees most: surfaces, upholstery, textiles and decor
+COLOR_LED = {"wall_paint", "wall_panel", "floor_parquet", "floor_laminate", "floor_tile", "wall_tile", "sofa", "armchair", "bed", "rug", "curtains",
+             "dining_chair", "coffee_table", "dining_table", "wardrobe", "kitchen_run", "pendant_light", "artwork"}
+
+
+def rank(pool: list[Candidate], *, cat: str, style: str, tier: str, max_width: float | None, prefer_light: bool | None = None,
+         colors: list[str] | None = None) -> list[Candidate]:
+    if prefer_light is None:
+        prefer_light = STYLES.get(style, {}).get("light")
     base_price = BASE.get(cat, (None, None, None))[2]
     target = base_price * TIER_TARGET.get(tier, 1.0) if base_price else None
     scored = []
@@ -95,13 +123,15 @@ def rank(pool: list[Candidate], *, cat: str, style: str, tier: str, max_width: f
             s += 0.08
         if prefer_light is not None:
             s += (_luma(c.color_hex) - 0.5) * (0.4 if prefer_light else -0.4)
+        if colors and cat in COLOR_LED:
+            s += (color_affinity(c.color_hex, colors) - 0.6) * 0.5
         scored.append((s, c))
     scored.sort(key=lambda x: -x[0])
     return [c for _, c in scored]
 
 
 def select_products(needs: list[dict], primary: dict, fallback: dict, *, style: str, tier: str, concept: bool,
-                    overrides: dict | None = None) -> tuple[dict[str, dict[str, list[Candidate]]], dict]:
+                    overrides: dict | None = None, colors: list[str] | None = None) -> tuple[dict[str, dict[str, list[Candidate]]], dict]:
     chosen: dict[str, dict[str, list[Candidate]]] = {}
     sourcing = {"external": 0, "internal": 0, "demo_fallback": 0, "concept": 0, "missing": []}
     for n in needs:
@@ -111,11 +141,11 @@ def select_products(needs: list[dict], primary: dict, fallback: dict, *, style: 
             lst = [_concept_candidate(cat)]
             sourcing["concept"] += 1
         else:
-            lst = rank(primary.get(cat, []), cat=cat, style=style, tier=tier, max_width=n["max_width_mm"])
+            lst = rank(primary.get(cat, []), cat=cat, style=style, tier=tier, max_width=n["max_width_mm"], colors=colors)
             if lst:
                 sourcing["external" if lst[0].ref.startswith("ext:") else "internal"] += 1
             else:
-                lst = rank(fallback.get(cat, []), cat=cat, style=style, tier=tier, max_width=n["max_width_mm"])
+                lst = rank(fallback.get(cat, []), cat=cat, style=style, tier=tier, max_width=n["max_width_mm"], colors=colors)
                 if lst:
                     sourcing["demo_fallback" if lst[0].is_demo else "internal"] += 1
                 else:
@@ -173,7 +203,9 @@ def metrics_for(scene: Scene, est: dict, issues: list[dict], base_confidence: fl
 def build_variant(db: Session, project: m.Project, base: Scene, needs: list[dict], plan: VariantPlan, pools, *,
                   overrides=None, extras=None, locked: list[SceneObject] | None = None, base_confidence: float = 0.8) -> VariantResult:
     primary, fallback = pools
-    chosen, sourcing = select_products(needs, primary, fallback, style=plan.style, tier=plan.tier, concept=project.product_source == "concept", overrides=overrides)
+    colors = [c for c in ((project.preferences or {}).get("colors") or []) if isinstance(c, str) and c.startswith("#")][:12]
+    chosen, sourcing = select_products(needs, primary, fallback, style=plan.style, tier=plan.tier, concept=project.product_source == "concept", overrides=overrides,
+                                       colors=colors)
     res = furnish(base, chosen, tier=plan.tier, extras=extras, locked=locked)
     scene = res.scene
     apply_finishes(scene, chosen)
