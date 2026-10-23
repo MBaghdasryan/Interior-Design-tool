@@ -294,6 +294,7 @@ class Product(TimestampMixin, Base):
     waste_pct: Mapped[float] = mapped_column(Float, default=0.0)
     parametric: Mapped[dict] = mapped_column(JSON, default=dict)  # ranges, price formula, lead time
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active | archived (hidden from catalogue and design, kept for estimates)
     variants: Mapped[list[ProductVariant]] = relationship(back_populates="product", lazy="selectin", cascade="all, delete-orphan")
     supplier: Mapped[Supplier] = relationship(lazy="joined")
 

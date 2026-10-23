@@ -25,6 +25,11 @@ TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
         "ru": ("Восстановление пароля — {brand}", "Здравствуйте, {name}!\n\nЧтобы задать новый пароль, откройте ссылку (действует {minutes} мин):\n{link}\n\nЕсли вы не запрашивали сброс, проигнорируйте письмо — пароль не изменится.\n— {brand}"),
         "en": ("Reset your password — {brand}", "Hello {name},\n\nOpen this link to set a new password (valid for {minutes} min):\n{link}\n\nIf you did not request this, ignore the message — your password stays the same.\n— {brand}"),
     },
+    "invite": {
+        "hy": ("Ձեզ ավելացրել են «{org}»-ին — {brand}", "Բարև, {name}։\n\nՁեզ ավելացրել են «{org}» կազմակերպությանը։ Գաղտնաբառ սահմանելու համար բացեք հղումը (գործում է {hours} ժամ)՝\n{link}\n— {brand}"),
+        "ru": ("Вас добавили в «{org}» — {brand}", "Здравствуйте, {name}!\n\nВас добавили в организацию «{org}». Чтобы задать пароль, откройте ссылку (действует {hours} ч):\n{link}\n— {brand}"),
+        "en": ("You were added to «{org}» — {brand}", "Hello {name},\n\nYou were added to «{org}». Open this link to set your password (valid for {hours} h):\n{link}\n— {brand}"),
+    },
     "password_changed": {
         "hy": ("Գաղտնաբառը փոխվել է — {brand}", "Բարև, {name}։\n\nՁեր գաղտնաբառը փոխվել է, բոլոր սեսիաները դադարեցվել են։ Եթե դա դուք չեք արել, անմիջապես կապվեք մեզ հետ։\n— {brand}"),
         "ru": ("Пароль изменён — {brand}", "Здравствуйте, {name}!\n\nВаш пароль изменён, все сессии завершены. Если это были не вы — срочно свяжитесь с нами.\n— {brand}"),

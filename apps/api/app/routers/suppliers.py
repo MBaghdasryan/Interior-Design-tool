@@ -31,7 +31,12 @@ def _supplier_org(p: Principal) -> str:
     return org.id
 
 
-def _supplier(p: Principal, db: Session, *, required: bool = True) -> m.Supplier | None:
+def _supplier(p: Principal, db: Session, *, required: bool = True, supplier_id: str | None = None) -> m.Supplier | None:
+    if supplier_id and p.is_platform:  # platform staff viewing a supplier's cabinet
+        sup = db.get(m.Supplier, supplier_id)
+        if required and not sup:
+            raise ApiError(404, "supplier.not_linked")
+        return sup
     sup = db.scalar(select(m.Supplier).where(m.Supplier.org_id == _supplier_org(p)).order_by(m.Supplier.created_at).limit(1))
     if required and not sup:
         raise ApiError(404, "supplier.not_linked")
@@ -52,7 +57,9 @@ def onboarding_state(db: Session, sup: m.Supplier | None) -> dict:
 
 
 @router.get("/api/v1/supplier/onboarding")
-def get_onboarding(p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+def get_onboarding(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    if supplier_id and p.is_platform:
+        return onboarding_state(db, _supplier(p, db, supplier_id=supplier_id))
     _supplier_org(p)
     return onboarding_state(db, _supplier(p, db, required=False))
 
@@ -151,8 +158,8 @@ def asset_dict(a: m.SupplierAsset) -> dict:
 
 
 @router.get("/api/v1/supplier/assets")
-def list_assets(p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+def list_assets(supplier_id: str | None = None, p: Principal = Depends(require("catalog:write")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     return [asset_dict(a) for a in db.scalars(select(m.SupplierAsset).where(m.SupplierAsset.supplier_id == sup.id).order_by(m.SupplierAsset.created_at.desc()))]
 
 
@@ -240,8 +247,8 @@ def _row(r) -> dict:
 
 
 @router.get("/api/v1/supplier/partner-data")
-def partner_data(p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
-    sup = _supplier(p, db)
+def partner_data(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    sup = _supplier(p, db, supplier_id=supplier_id)
     return {k: [_row(r) for r in db.scalars(select(model).where(model.supplier_id == sup.id).order_by(model.created_at))] for k, (model, _) in PARTNER.items()}
 
 

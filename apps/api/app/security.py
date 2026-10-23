@@ -198,13 +198,15 @@ def principal_from_token(token: str | None, db: Session) -> Principal:
     if not sess or sess.user_id != uid or sess.revoked_at is not None or _aware(sess.expires_at) < now:
         raise ApiError(status.HTTP_401_UNAUTHORIZED, "auth.invalid_session")
     user = db.get(m.User, uid)
-    if not user or user.status == "deleted":
+    if not user or user.status in ("deleted", "suspended"):
         raise ApiError(status.HTTP_401_UNAUTHORIZED, "auth.invalid_session")
     if (now - _aware(sess.last_seen_at)).total_seconds() > 60:  # throttle writes
         sess.last_seen_at = now
         db.commit()
     roles: dict[str, set[str]] = {}
     for ms in user.memberships:
+        if (ms.org.settings or {}).get("suspended"):
+            continue  # roles in a suspended organisation stop working
         roles.setdefault(ms.org_id, set()).add(ms.role)
     return Principal(user=user, roles=roles, session_id=sid)
 

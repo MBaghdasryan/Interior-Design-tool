@@ -20,7 +20,13 @@ router = APIRouter(tags=["partners"])
 
 
 # ------------------------------------------------------------------ supplier cabinet
-def _supplier_for(p: Principal, db: Session) -> m.Supplier:
+def _supplier_for(p: Principal, db: Session, supplier_id: str | None = None) -> m.Supplier:
+    """The caller's supplier; platform staff open any supplier's cabinet by supplier_id."""
+    if supplier_id and p.is_platform:
+        sup = db.get(m.Supplier, supplier_id)
+        if not sup:
+            raise ApiError(404, "supplier.not_linked")
+        return sup
     sup = db.scalar(select(m.Supplier).where(m.Supplier.org_id.in_(p.org_ids)).limit(1)) if p.org_ids else None
     if not sup:
         raise ApiError(404, "supplier.not_linked")
@@ -28,8 +34,8 @@ def _supplier_for(p: Principal, db: Session) -> m.Supplier:
 
 
 @router.get("/api/v1/supplier/overview")
-def supplier_overview(p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
-    sup = _supplier_for(p, db)
+def supplier_overview(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    sup = _supplier_for(p, db, supplier_id)
     variants = db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id)).all()
     refs = {f"pv:{v.id}": v for v in variants}
     used = Counter()
@@ -50,10 +56,10 @@ def supplier_overview(p: Principal = Depends(require("catalog:read")), db: Sessi
 
 # ------------------------------------------------------------------ supplier orders (P2-1)
 @router.get("/api/v1/supplier/orders")
-def supplier_orders(p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
+def supplier_orders(supplier_id: str | None = None, p: Principal = Depends(require("rfq:respond")), db: Session = Depends(get_db)):
     from .commerce import order_dict
 
-    sup = _supplier_for(p, db)
+    sup = _supplier_for(p, db, supplier_id)
     rows = db.scalars(select(m.Order).where(m.Order.supplier_id == sup.id, m.Order.status != "cart").order_by(m.Order.created_at.desc()).limit(100)).all()
     return [order_dict(db, o) | {"project_id": o.project_id} for o in rows]
 
@@ -122,8 +128,8 @@ def _feed_out(sup: m.Supplier) -> dict:
 
 
 @router.get("/api/v1/supplier/feed")
-def get_feed(p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
-    return _feed_out(_supplier_for(p, db))
+def get_feed(supplier_id: str | None = None, p: Principal = Depends(require("supplier:manage")), db: Session = Depends(get_db)):
+    return _feed_out(_supplier_for(p, db, supplier_id))
 
 
 @router.put("/api/v1/supplier/feed")
@@ -180,22 +186,19 @@ def respond_rfq(rid: str, body: QuoteIn, p: Principal = Depends(require("rfq:res
 
 
 @router.get("/api/v1/supplier/products")
-def supplier_products(p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
-    sup = _supplier_for(p, db)
+def supplier_products(supplier_id: str | None = None, p: Principal = Depends(require("catalog:read")), db: Session = Depends(get_db)):
+    sup = _supplier_for(p, db, supplier_id)
     out = []
-    for v in db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id).limit(500)):
-        out.append({"id": v.id, "sku": v.sku, "name": v.product.name_ru, "category": v.product.category, "price": v.price, "price_status": v.price_status,
+    for v in db.scalars(select(m.ProductVariant).join(m.Product).where(m.Product.supplier_id == sup.id, m.Product.status == "active").limit(2000)):
+        out.append({"id": v.id, "product_id": v.product_id, "sku": v.sku, "name": v.product.name_ru, "category": v.product.category, "price": v.price, "price_status": v.price_status,
                     "stock": v.stock_status, "dims": [v.width_mm, v.depth_mm, v.height_mm], "has_3d": bool(v.model3d_url), "color_hex": v.color_hex})
     return out
 
 
 # ------------------------------------------------------------------ bureau cabinet
 @router.get("/api/v1/bureau/overview")
-def bureau_overview(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    orgs = [db.get(m.Organization, oid) for oid in p.org_ids]
-    org = next((o for o in orgs if o and o.kind == "bureau"), None)
-    if not org:
-        raise ApiError(404, "bureau.not_found")
+def bureau_overview(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+    org = _bureau_org(p, db, org_id)
     members = db.scalars(select(m.Membership).where(m.Membership.org_id == org.id)).all()
     projects = db.scalars(select(m.Project).where(m.Project.org_id == org.id)).all()
     return {"org": {"id": org.id, "name": org.name, "settings": org.settings},
@@ -206,7 +209,13 @@ def bureau_overview(p: Principal = Depends(current_principal), db: Session = Dep
                 m.DesignVariant.project_id.in_([x.id for x in projects]), m.DesignVariant.status.in_(["selected", "approved"]))))}
 
 
-def _bureau_org(p: Principal, db: Session) -> m.Organization:
+def _bureau_org(p: Principal, db: Session, org_id: str | None = None) -> m.Organization:
+    """The caller's bureau; platform staff open any bureau's cabinet by org_id."""
+    if org_id and p.is_platform:
+        org = db.get(m.Organization, org_id)
+        if not org or org.kind != "bureau":
+            raise ApiError(404, "bureau.not_found")
+        return org
     org = next((o for o in (db.get(m.Organization, oid) for oid in p.org_ids) if o and o.kind == "bureau"), None)
     if not org:
         raise ApiError(404, "bureau.not_found")
@@ -214,11 +223,11 @@ def _bureau_org(p: Principal, db: Session) -> m.Organization:
 
 
 @router.get("/api/v1/bureau/ai-usage")
-def bureau_ai_usage(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
+def bureau_ai_usage(org_id: str | None = None, p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
     """AI spend of the organisation (today / month, by task and provider) against its budget."""
     from ..ai.budget import summary
 
-    return summary(db, _bureau_org(p, db).id)
+    return summary(db, _bureau_org(p, db, org_id).id)
 
 
 class AiBudgetIn(BaseModel):

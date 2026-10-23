@@ -876,6 +876,40 @@
     "title": "IndexIn",
     "type": "object"
    },
+   "InviteIn": {
+    "properties": {
+     "email": {
+      "maxLength": 320,
+      "minLength": 3,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "title": "Email",
+      "type": "string"
+     },
+     "locale": {
+      "default": "hy",
+      "pattern": "^(hy|ru|en)$",
+      "title": "Locale",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "email",
+     "name",
+     "role"
+    ],
+    "title": "InviteIn",
+    "type": "object"
+   },
    "LocationIn": {
     "properties": {
      "address": {
@@ -995,6 +1029,24 @@
     "title": "MePatch",
     "type": "object"
    },
+   "MembershipIn": {
+    "properties": {
+     "org_id": {
+      "title": "Org Id",
+      "type": "string"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "org_id",
+     "role"
+    ],
+    "title": "MembershipIn",
+    "type": "object"
+   },
    "MfaVerifyIn": {
     "properties": {
      "backup_code": {
@@ -1031,6 +1083,45 @@
      "mfa_token"
     ],
     "title": "MfaVerifyIn",
+    "type": "object"
+   },
+   "NewUserIn": {
+    "properties": {
+     "email": {
+      "maxLength": 320,
+      "minLength": 3,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "title": "Email",
+      "type": "string"
+     },
+     "locale": {
+      "default": "hy",
+      "pattern": "^(hy|ru|en)$",
+      "title": "Locale",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "org_id": {
+      "title": "Org Id",
+      "type": "string"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "email",
+     "name",
+     "org_id",
+     "role"
+    ],
+    "title": "NewUserIn",
     "type": "object"
    },
    "ObjectsPatch": {
@@ -1123,6 +1214,58 @@
      }
     },
     "title": "OnboardingIn",
+    "type": "object"
+   },
+   "OrgIn": {
+    "properties": {
+     "kind": {
+      "pattern": "^(bureau|supplier)$",
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "kind"
+    ],
+    "title": "OrgIn",
+    "type": "object"
+   },
+   "OrgPatch": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "minLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "pattern": "^(active|suspended)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     }
+    },
+    "title": "OrgPatch",
     "type": "object"
    },
    "OrgPlanIn": {
@@ -1313,6 +1456,241 @@
      "size"
     ],
     "title": "PresignIn",
+    "type": "object"
+   },
+   "ProductIn": {
+    "properties": {
+     "brand": {
+      "default": "",
+      "maxLength": 120,
+      "title": "Brand",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "description": {
+      "default": "",
+      "maxLength": 4000,
+      "title": "Description",
+      "type": "string"
+     },
+     "item_type": {
+      "default": "serial",
+      "pattern": "^(serial|made_to_order|parametric|service|material|kit|custom)$",
+      "title": "Item Type",
+      "type": "string"
+     },
+     "name_en": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Name En",
+      "type": "string"
+     },
+     "name_hy": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Name Hy",
+      "type": "string"
+     },
+     "name_ru": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Name Ru",
+      "type": "string"
+     },
+     "package_coverage_m2": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Package Coverage M2"
+     },
+     "styles": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Styles",
+      "type": "array"
+     },
+     "supplier_id": {
+      "title": "Supplier Id",
+      "type": "string"
+     },
+     "tier": {
+      "default": "comfort",
+      "pattern": "^(economy|comfort|business|premium)$",
+      "title": "Tier",
+      "type": "string"
+     },
+     "unit": {
+      "default": "pcs",
+      "pattern": "^(pcs|m2|pack|l|kg|m)$",
+      "title": "Unit",
+      "type": "string"
+     },
+     "variants": {
+      "items": {
+       "$ref": "#/components/schemas/VariantIn"
+      },
+      "minItems": 1,
+      "title": "Variants",
+      "type": "array"
+     }
+    },
+    "required": [
+     "supplier_id",
+     "category",
+     "name_ru"
+    ],
+    "title": "ProductIn",
+    "type": "object"
+   },
+   "ProductPatch": {
+    "properties": {
+     "brand": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Brand"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "maxLength": 4000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "name_en": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name En"
+     },
+     "name_hy": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name Hy"
+     },
+     "name_ru": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name Ru"
+     },
+     "package_coverage_m2": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Package Coverage M2"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "pattern": "^(active|archived)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     },
+     "styles": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Styles"
+     },
+     "tier": {
+      "anyOf": [
+       {
+        "pattern": "^(economy|comfort|business|premium)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tier"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "pattern": "^(pcs|m2|pack|l|kg|m)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "title": "ProductPatch",
     "type": "object"
    },
    "ProfileIn": {
@@ -1842,6 +2220,19 @@
     "title": "RfqIn",
     "type": "object"
    },
+   "RoleIn": {
+    "properties": {
+     "role": {
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role"
+    ],
+    "title": "RoleIn",
+    "type": "object"
+   },
    "ServiceIn": {
     "properties": {
      "category": {
@@ -1993,6 +2384,190 @@
     "title": "SourcePatch",
     "type": "object"
    },
+   "SupplierIn": {
+    "properties": {
+     "city": {
+      "default": "Ереван",
+      "maxLength": 100,
+      "title": "City",
+      "type": "string"
+     },
+     "commission_pct": {
+      "default": 0,
+      "maximum": 50.0,
+      "minimum": 0.0,
+      "title": "Commission Pct",
+      "type": "number"
+     },
+     "email": {
+      "default": "",
+      "maxLength": 200,
+      "title": "Email",
+      "type": "string"
+     },
+     "kind": {
+      "default": "store",
+      "pattern": "^(store|manufacturer|installer)$",
+      "title": "Kind",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 2,
+      "title": "Name",
+      "type": "string"
+     },
+     "org_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Org Id"
+     },
+     "phone": {
+      "default": "",
+      "maxLength": 40,
+      "title": "Phone",
+      "type": "string"
+     },
+     "verification": {
+      "default": "verified",
+      "pattern": "^(pending|verified|rejected)$",
+      "title": "Verification",
+      "type": "string"
+     },
+     "website": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Website",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "SupplierIn",
+    "type": "object"
+   },
+   "SupplierPatch": {
+    "properties": {
+     "city": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "City"
+     },
+     "commission_pct": {
+      "anyOf": [
+       {
+        "maximum": 50.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Commission Pct"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "kind": {
+      "anyOf": [
+       {
+        "pattern": "^(store|manufacturer|installer)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kind"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "minLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "org_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Org Id"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone"
+     },
+     "verification": {
+      "anyOf": [
+       {
+        "pattern": "^(pending|verified|rejected)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Verification"
+     },
+     "website": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Website"
+     }
+    },
+    "title": "SupplierPatch",
+    "type": "object"
+   },
    "SupplierStatusIn": {
     "properties": {
      "note": {
@@ -2115,6 +2690,49 @@
     "title": "TransitionIn",
     "type": "object"
    },
+   "UserPatch": {
+    "properties": {
+     "locale": {
+      "anyOf": [
+       {
+        "pattern": "^(hy|ru|en)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Locale"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "pattern": "^(active|suspended)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     }
+    },
+    "title": "UserPatch",
+    "type": "object"
+   },
    "ValidationError": {
     "properties": {
      "ctx": {
@@ -2153,6 +2771,276 @@
      "type"
     ],
     "title": "ValidationError",
+    "type": "object"
+   },
+   "VariantIn": {
+    "properties": {
+     "color": {
+      "default": "",
+      "maxLength": 80,
+      "title": "Color",
+      "type": "string"
+     },
+     "color_hex": {
+      "default": "#cccccc",
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Color Hex",
+      "type": "string"
+     },
+     "currency": {
+      "default": "AMD",
+      "pattern": "^(AMD|USD|EUR|RUB)$",
+      "title": "Currency",
+      "type": "string"
+     },
+     "depth_mm": {
+      "default": 0,
+      "maximum": 20000.0,
+      "minimum": 0.0,
+      "title": "Depth Mm",
+      "type": "number"
+     },
+     "height_mm": {
+      "default": 0,
+      "maximum": 20000.0,
+      "minimum": 0.0,
+      "title": "Height Mm",
+      "type": "number"
+     },
+     "image_url": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Image Url",
+      "type": "string"
+     },
+     "lead_time_days": {
+      "anyOf": [
+       {
+        "maximum": 365.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lead Time Days"
+     },
+     "material": {
+      "default": "",
+      "maxLength": 120,
+      "title": "Material",
+      "type": "string"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "sku": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Sku",
+      "type": "string"
+     },
+     "stock_status": {
+      "default": "unknown",
+      "pattern": "^(in_stock|to_order|out_of_stock|unknown)$",
+      "title": "Stock Status",
+      "type": "string"
+     },
+     "url": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Url",
+      "type": "string"
+     },
+     "width_mm": {
+      "default": 0,
+      "maximum": 20000.0,
+      "minimum": 0.0,
+      "title": "Width Mm",
+      "type": "number"
+     }
+    },
+    "required": [
+     "sku"
+    ],
+    "title": "VariantIn",
+    "type": "object"
+   },
+   "VariantPatch": {
+    "properties": {
+     "color": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color"
+     },
+     "color_hex": {
+      "anyOf": [
+       {
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color Hex"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "pattern": "^(AMD|USD|EUR|RUB)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "depth_mm": {
+      "anyOf": [
+       {
+        "maximum": 20000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Depth Mm"
+     },
+     "height_mm": {
+      "anyOf": [
+       {
+        "maximum": 20000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Height Mm"
+     },
+     "image_url": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Image Url"
+     },
+     "lead_time_days": {
+      "anyOf": [
+       {
+        "maximum": 365.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lead Time Days"
+     },
+     "material": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Material"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "sku": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sku"
+     },
+     "stock_status": {
+      "anyOf": [
+       {
+        "pattern": "^(in_stock|to_order|out_of_stock|unknown)$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stock Status"
+     },
+     "url": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "width_mm": {
+      "anyOf": [
+       {
+        "maximum": 20000.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Width Mm"
+     }
+    },
+    "title": "VariantPatch",
     "type": "object"
    },
    "VerifyIn": {
@@ -2718,6 +3606,194 @@
     "summary": "Ledger Export Xlsx",
     "tags": [
      "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/organizations": {
+   "get": {
+    "operationId": "list_organizations_api_v1_admin_organizations_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "kind",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Kind",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Organizations",
+    "tags": [
+     "manage"
+    ]
+   },
+   "post": {
+    "operationId": "create_organization_api_v1_admin_organizations_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrgIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Organization",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/organizations/{oid}": {
+   "patch": {
+    "operationId": "patch_organization_api_v1_admin_organizations__oid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "oid",
+      "required": true,
+      "schema": {
+       "title": "Oid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OrgPatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch Organization",
+    "tags": [
+     "manage"
     ]
    }
   },
@@ -3607,6 +4683,239 @@
     "tags": [
      "suppliers"
     ]
+   },
+   "post": {
+    "operationId": "create_supplier_api_v1_admin_suppliers_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Supplier",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/suppliers/all": {
+   "get": {
+    "operationId": "all_suppliers_api_v1_admin_suppliers_all_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "All Suppliers",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/suppliers/{sid}": {
+   "delete": {
+    "description": "A supplier with orders is kept (history, ledger); otherwise it is removed with its catalogue.",
+    "operationId": "delete_supplier_api_v1_admin_suppliers__sid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Supplier",
+    "tags": [
+     "manage"
+    ]
+   },
+   "patch": {
+    "operationId": "patch_supplier_api_v1_admin_suppliers__sid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "sid",
+      "required": true,
+      "schema": {
+       "title": "Sid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierPatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch Supplier",
+    "tags": [
+     "manage"
+    ]
    }
   },
   "/api/v1/admin/suppliers/{sid}/verification": {
@@ -3774,6 +5083,580 @@
     "summary": "Put Tariffs",
     "tags": [
      "payments"
+    ]
+   }
+  },
+  "/api/v1/admin/users": {
+   "get": {
+    "operationId": "list_users_api_v1_admin_users_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Q",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Org Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "role",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Role",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 200,
+       "maximum": 500,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Users",
+    "tags": [
+     "manage"
+    ]
+   },
+   "post": {
+    "operationId": "create_user_api_v1_admin_users_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NewUserIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create User",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}": {
+   "delete": {
+    "description": "Deletion goes through the privacy flow (grace period, then anonymisation) — never a silent hard delete.",
+    "operationId": "delete_user_api_v1_admin_users__uid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete User",
+    "tags": [
+     "manage"
+    ]
+   },
+   "patch": {
+    "operationId": "patch_user_api_v1_admin_users__uid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserPatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch User",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}/memberships": {
+   "post": {
+    "operationId": "add_membership_api_v1_admin_users__uid__memberships_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MembershipIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Membership",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}/memberships/{mid}": {
+   "delete": {
+    "operationId": "remove_membership_api_v1_admin_users__uid__memberships__mid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Remove Membership",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}/reset-mfa": {
+   "post": {
+    "description": "Lost phone: the second factor is removed; enforced roles must enrol again at the next sign-in.",
+    "operationId": "admin_reset_mfa_api_v1_admin_users__uid__reset_mfa_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Reset Mfa",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}/reset-password": {
+   "post": {
+    "operationId": "admin_reset_password_api_v1_admin_users__uid__reset_password_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Reset Password",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/admin/users/{uid}/revoke-sessions": {
+   "post": {
+    "operationId": "admin_revoke_sessions_api_v1_admin_users__uid__revoke_sessions_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Admin Revoke Sessions",
+    "tags": [
+     "manage"
     ]
    }
   },
@@ -5263,6 +7146,22 @@
     "operationId": "bureau_ai_usage_api_v1_bureau_ai_usage_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -5309,6 +7208,22 @@
    "get": {
     "operationId": "bureau_overview_api_v1_bureau_overview_get",
     "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
      {
       "in": "header",
       "name": "authorization",
@@ -5929,6 +7844,304 @@
     "tags": [
      "catalog"
     ]
+   },
+   "post": {
+    "operationId": "create_product_api_v1_catalog_products_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProductIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Product",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/catalog/products/{product_id}": {
+   "delete": {
+    "description": "Archived, not erased: existing estimates and albums keep referring to it; catalogue and design skip it.",
+    "operationId": "archive_product_api_v1_catalog_products__product_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Archive Product",
+    "tags": [
+     "manage"
+    ]
+   },
+   "patch": {
+    "operationId": "patch_product_api_v1_catalog_products__product_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProductPatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch Product",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/catalog/products/{product_id}/detail": {
+   "get": {
+    "operationId": "product_detail_api_v1_catalog_products__product_id__detail_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Detail",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/catalog/products/{product_id}/variants": {
+   "post": {
+    "operationId": "add_variant_api_v1_catalog_products__product_id__variants_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VariantIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Variant",
+    "tags": [
+     "manage"
+    ]
    }
   },
   "/api/v1/catalog/search/image": {
@@ -6216,6 +8429,126 @@
     "summary": "Taxonomy",
     "tags": [
      "catalog"
+    ]
+   }
+  },
+  "/api/v1/catalog/variants/{vid}": {
+   "delete": {
+    "operationId": "delete_variant_api_v1_catalog_variants__vid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vid",
+      "required": true,
+      "schema": {
+       "title": "Vid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Variant",
+    "tags": [
+     "manage"
+    ]
+   },
+   "patch": {
+    "operationId": "patch_variant_api_v1_catalog_variants__vid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "vid",
+      "required": true,
+      "schema": {
+       "title": "Vid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VariantPatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Patch Variant",
+    "tags": [
+     "manage"
     ]
    }
   },
@@ -11973,6 +14306,22 @@
     "operationId": "list_assets_api_v1_supplier_assets_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -12392,6 +14741,22 @@
     "operationId": "get_feed_api_v1_supplier_feed_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -12597,6 +14962,22 @@
    "get": {
     "operationId": "get_onboarding_api_v1_supplier_onboarding_get",
     "parameters": [
+     {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
      {
       "in": "header",
       "name": "authorization",
@@ -12806,6 +15187,22 @@
     "operationId": "supplier_orders_api_v1_supplier_orders_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -12985,6 +15382,22 @@
     "operationId": "supplier_overview_api_v1_supplier_overview_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -13032,6 +15445,22 @@
     "operationId": "partner_data_api_v1_supplier_partner_data_get",
     "parameters": [
      {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
+     {
       "in": "header",
       "name": "authorization",
       "required": false,
@@ -13078,6 +15507,22 @@
    "get": {
     "operationId": "supplier_products_api_v1_supplier_products_get",
     "parameters": [
+     {
+      "in": "query",
+      "name": "supplier_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier Id"
+      }
+     },
      {
       "in": "header",
       "name": "authorization",
@@ -13306,6 +15751,295 @@
     "summary": "Delete Partner Row",
     "tags": [
      "suppliers"
+    ]
+   }
+  },
+  "/api/v1/team": {
+   "get": {
+    "operationId": "team_api_v1_team_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Team",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/team/invite": {
+   "post": {
+    "description": "Adds an existing account to the organisation, or creates one and e-mails a link to set the password.",
+    "operationId": "team_invite_api_v1_team_invite_post",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InviteIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Team Invite",
+    "tags": [
+     "manage"
+    ]
+   }
+  },
+  "/api/v1/team/{mid}": {
+   "delete": {
+    "operationId": "team_remove_api_v1_team__mid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Team Remove",
+    "tags": [
+     "manage"
+    ]
+   },
+   "patch": {
+    "operationId": "team_role_api_v1_team__mid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "mid",
+      "required": true,
+      "schema": {
+       "title": "Mid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "org_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Org Id"
+      }
+     },
+     {
+      "in": "header",
+      "name": "authorization",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RoleIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Team Role",
+    "tags": [
+     "manage"
     ]
    }
   }
