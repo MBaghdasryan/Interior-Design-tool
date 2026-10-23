@@ -2,7 +2,7 @@
 preview and validation, external-records review queue."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -215,3 +215,61 @@ def analogs(ref: str = Query(pattern=r"^(pv|ext):[0-9a-f]{32}$"), limit: int = Q
     if r["base"] is None:
         raise ApiError(404, "product.not_found")
     return r
+
+
+# ------------------------------------------------------------------ product images through the platform
+IMAGE_TYPES = ("image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")
+
+
+def _image_hosts(db: Session) -> set[str]:
+    from urllib.parse import urlparse
+
+    def host(v: str) -> str | None:
+        h = urlparse(v if "://" in v else f"https://{v}").hostname
+        return h.lower().removeprefix("www.") if h else None
+
+    vals = [s.domain for s in db.scalars(select(m.ExternalSource)) if s.domain] + [w for w in db.scalars(select(m.Supplier.website)) if w]
+    return {h for h in map(host, vals) if h}
+
+
+@router.get("/media")
+def product_image(request: Request, u: str = Query(min_length=8, max_length=1000), db: Session = Depends(get_db)):
+    """Shop images are served from our origin: the CSP stays strict and visitors' IPs never reach the shop. Only hosts of
+    registered sources/suppliers; re-encoded to JPEG; cached. A miss is fetched only when live external fetching is on."""
+    import hashlib
+    import io
+    from urllib.parse import urlparse
+
+    from fastapi.responses import Response as Raw
+    from PIL import Image
+
+    from ..catalog.net import FetchBlocked, SafeFetcher
+    from ..config import get_settings
+    from ..ratelimit import check as rate_check
+    from ..storage import get_storage
+
+    pu = urlparse(u)
+    host = (pu.hostname or "").lower().removeprefix("www.")
+    if pu.scheme not in ("https", "http") or not host or not any(host == h or host.endswith(f".{h}") for h in _image_hosts(db)):
+        raise ApiError(404, "not_found")
+    key = f"media/cache/{hashlib.sha256(u.encode()).hexdigest()}.jpg"
+    st = get_storage()
+    try:
+        data = st.get(key)
+    except Exception:  # noqa: BLE001 — cache miss
+        data = None
+    if data is None:
+        if not get_settings().external_fetch_live:
+            raise ApiError(404, "not_found")
+        rate_check(f"media:{request.client.host if request.client else '-'}", 120, 60)
+        try:
+            r = SafeFetcher().fetch(u, allowed_hosts=[pu.hostname], max_bytes=5_000_000, allowed_types=IMAGE_TYPES, retries=0)
+            img = Image.open(io.BytesIO(r.content))
+            img.thumbnail((800, 800))
+            out = io.BytesIO()
+            img.convert("RGB").save(out, "JPEG", quality=82, optimize=True)
+            data = out.getvalue()
+        except (FetchBlocked, OSError, ValueError):
+            raise ApiError(404, "not_found") from None
+        st.put(key, data, "image/jpeg")
+    return Raw(data, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=604800", "X-Content-Type-Options": "nosniff"})

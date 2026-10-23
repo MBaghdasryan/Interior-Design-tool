@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { BarChart3, Box, Boxes, FileText, Image, Plus, RefreshCw, Rss, Ruler, Tag, Truck } from "lucide-react";
-import { api, ApiError, type Schemas } from "../lib/api";
+import { api, ApiError, productBg, type Schemas } from "../lib/api";
 import { amd, catName, dt } from "../lib/format";
 import { useT } from "../i18n";
 import { Badge, Empty, Kpi, Loading, Switch, useToast } from "../components/ui";
@@ -78,7 +78,7 @@ function Cabinet({ picker }: { picker: ReactNode }) {
           <section className="card pad col gap-12" aria-labelledby="top-h">
             <div className="row between"><h3 id="top-h">{t("supc.top")}</h3><button className="btn sm ghost" onClick={() => setTab("products")}>{t("supc.all_products")}</button></div>
             {ov.top.length ? <div className="grid g4">{ov.top.slice(0, 4).map((x) => <article key={x.sku} className="card flat pcard">
-              <div className="img" style={x.image_url ? { backgroundImage: `url(${x.image_url})` } : { background: `linear-gradient(135deg, ${x.color_hex || "#d9c9b7"}, #f6f1ea)` }} />
+              <div className="img" style={productBg(x.image_url, x.color_hex)} />
               <div className="bd"><b className="small">{x.name}</b><div className="tiny muted">{catName(x.category)} · {x.sku}</div>
                 <div className="row between small"><span>{t("supc.used_n", { n: x.placements })}</span><b className="mono">{x.price ? amd(x.price) : ""}</b></div>
                 <div className="bar"><i style={{ width: `${(x.placements / Math.max(1, ov.top[0].placements)) * 100}%` }} /></div></div></article>)}</div>

@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, Armchair, Box, CheckCircle2, DoorOpen, Flower2, Lamp, LayoutPanelTop, Lock, Maximize2, Minus, MousePointer2, Plus, Redo2, Repeat, RotateCw,
   Ruler, Save, Search, Share2, Sparkles, SquareDashed, Trash2, Undo2, Unlock } from "lucide-react";
-import { api, type Finish, type Project, type Room, type SceneObject, type Variant } from "../lib/api";
+import { api, productBg, type Finish, type Project, type Room, type SceneObject, type Variant } from "../lib/api";
 import { amd, catName, n1, variantTitle } from "../lib/format";
 import { ruleMessage } from "../lib/messages";
 import { useT } from "../i18n";
@@ -252,7 +252,7 @@ function ProductCard({ it, onClick, cta }: { it: Item; onClick: () => void; cta:
   const { t } = useT();
   return (
     <button className="strip-card" onClick={onClick} title={cta}>
-      <div className="img" style={it.image_url ? { backgroundImage: `url(${it.image_url})` } : { background: `linear-gradient(135deg, ${it.color_hex || "#d9c9b7"}, #f6f1ea)` }} />
+      <div className="img" style={productBg(it.image_url, it.color_hex)} />
       <div className="col gap-4" style={{ padding: "8px 10px", textAlign: "left" }}>
         <b className="small clamp2">{it.name}</b>
         <span className="tiny muted">{it.w ? `${Math.round(it.w)}×${Math.round(it.d)}×${Math.round(it.h)} ${t("common.mm")}` : catName(it.category)}</span>
@@ -304,7 +304,7 @@ function FinishPicker({ cats, onPick }: { cats: string[]; onPick: (it: Item) => 
   if (!items.length) return <div className="small muted">{t("common.nothing_found")}</div>;
   return <div className="col gap-6">{items.map((it) => (
     <button key={it.ref} className="finish-row" onClick={() => onPick(it)}>
-      <span className="sw" style={it.image_url ? { backgroundImage: `url(${it.image_url})`, backgroundSize: "cover" } : { background: it.color_hex }} />
+      <span className="sw" style={productBg(it.image_url, it.color_hex)} />
       <span className="grow" style={{ textAlign: "left" }}><span className="small">{it.name}</span><br /><span className="tiny muted">{catName(it.category)} · {it.supplier_name}</span></span>
       <span className="col" style={{ alignItems: "flex-end" }}><b className="small mono">{it.price_amd == null ? t("common.on_request") : amd(it.price_amd)}</b><PriceStatus s={it.price_status} /></span>
     </button>))}</div>;

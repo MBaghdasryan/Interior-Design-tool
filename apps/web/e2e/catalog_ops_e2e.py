@@ -36,6 +36,7 @@ with sync_playwright() as p:
             pg.screenshot(path=f"{OUT}/admin_history.png", full_page=True)
         else:
             pg.goto(B + "/app/supplier")
+            pg.get_by_role("tab", name="Feed, files and verification").click()  # the feed lives in its own cabinet tab
             pg.wait_for_selector("#feed-h")
             feed = pg.locator("section[aria-labelledby=feed-h]")
             url = feed.locator("input[type=url]")

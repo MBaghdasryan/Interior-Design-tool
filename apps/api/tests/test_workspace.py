@@ -154,3 +154,24 @@ def test_partner_referral_funnel(client, designer, admin):
     with SessionLocal() as db:
         db.query(m.PlatformSetting).filter_by(key="tariffs").delete()
         db.commit()
+
+
+def test_product_images_only_from_registered_shops(client, monkeypatch):
+    import io
+
+    from PIL import Image
+
+    from app.config import get_settings
+    from app.storage import get_storage
+
+    assert client.get("/api/v1/catalog/media", params={"u": "https://evil.example.com/x.png"}).status_code == 404  # not a registered shop
+    assert client.get("/api/v1/catalog/media", params={"u": "http://127.0.0.1/admin.png"}).status_code == 404
+    url = "https://vlv.am/public/uploads/images/test.webp"
+    monkeypatch.setattr(get_settings(), "external_fetch_live", False)
+    assert client.get("/api/v1/catalog/media", params={"u": url}).status_code == 404  # live fetching off and nothing cached
+    import hashlib
+    buf = io.BytesIO()
+    Image.new("RGB", (20, 20), "#c97f63").save(buf, "JPEG")
+    get_storage().put(f"media/cache/{hashlib.sha256(url.encode()).hexdigest()}.jpg", buf.getvalue(), "image/jpeg")
+    r = client.get("/api/v1/catalog/media", params={"u": url})
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"

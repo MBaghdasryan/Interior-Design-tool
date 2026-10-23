@@ -106,6 +106,15 @@ export async function uploadAsset(pid: string, f: File, extra: Record<string, st
 }
 
 /** Signed file URLs are absolute to the API base; rewrite to the current origin (dev proxy). */
+/** CSS background for a product picture: shop images go through the platform (strict CSP, no visitor IPs to shops);
+ *  the colour gradient underneath shows when the picture is not available. */
+export function productBg(u: string | null | undefined, color = "#d9c9b7"): { backgroundImage: string; backgroundSize: string; backgroundPosition: string } {
+  const grad = `linear-gradient(135deg, ${color}, #f6f1ea)`;
+  if (!u) return { backgroundImage: grad, backgroundSize: "cover", backgroundPosition: "center" };
+  const src = /^https?:\/\//.test(u) ? `/api/v1/catalog/media?u=${encodeURIComponent(u)}` : fileUrl(u);
+  return { backgroundImage: `url("${src}"), ${grad}`, backgroundSize: "cover", backgroundPosition: "center" };
+}
+
 export function fileUrl(u?: string | null): string {
   if (!u) return "#";
   const i = u.indexOf("/api/v1/files/");

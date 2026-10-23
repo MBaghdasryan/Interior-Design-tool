@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Check, CheckCircle2, MessageSquare, Send, ShoppingCart } from "lucide-react";
-import { api, fileUrl, type SceneObject, type Variant } from "../lib/api";
+import { api, fileUrl, productBg, type SceneObject, type Variant } from "../lib/api";
 import { amd, catName, lineName, variantTitle } from "../lib/format";
 import { useT } from "../i18n";
 import BeforeAfter from "../components/BeforeAfter";
@@ -75,7 +75,7 @@ export default function ClientViewer() {
           <div className="card" style={{ overflow: "hidden" }}><PlanView scene={scene} height={360} hotspots onHotspot={(o) => { setAnchor(o); setTab("talk"); }} /></div>
           <p className="small muted">{t("cv.plan_hint")}</p>
           {est.lines.filter((l) => l.ref && ["furniture", "custom", "lighting", "plumbing"].includes(l.group)).map((l) => (
-            <div key={l.id} className="product-row"><div className="thumb" style={l.image_url ? { backgroundImage: `url(${l.image_url})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: l.color_hex || "#eee" }} /><div><b className="small">{lineName(l)}</b><div className="tiny muted">{catName(l.category)} · {l.supplier}</div><PriceStatus s={l.price_status} /></div><b className="mono small">{l.total === null ? t("common.on_request") : amd(l.total)}</b></div>
+            <div key={l.id} className="product-row"><div className="thumb" style={productBg(l.image_url, l.color_hex || "#eee")} /><div><b className="small">{lineName(l)}</b><div className="tiny muted">{catName(l.category)} · {l.supplier}</div><PriceStatus s={l.price_status} /></div><b className="mono small">{l.total === null ? t("common.on_request") : amd(l.total)}</b></div>
           ))}
         </>}
         {tab === "cost" && <div className="card pad"><div className="muted small">{t("cv.estimate")}</div><div style={{ fontSize: 26, fontWeight: 800 }} className="mono">{amd(est.totals.known)}</div>

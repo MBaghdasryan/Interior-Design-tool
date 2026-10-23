@@ -1638,6 +1638,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product Image
+         * @description Shop images are served from our origin: the CSP stays strict and visitors' IPs never reach the shop. Only hosts of
+         *     registered sources/suppliers; re-encoded to JPEG; cached. A miss is fetched only when live external fetching is on.
+         */
+        get: operations["product_image_api_v1_catalog_media_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/catalog/products": {
         parameters: {
             query?: never;
@@ -9105,6 +9126,37 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["Body_import_preview_api_v1_catalog_import_preview_post"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_image_api_v1_catalog_media_get: {
+        parameters: {
+            query: {
+                u: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
