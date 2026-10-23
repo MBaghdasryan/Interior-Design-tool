@@ -4250,6 +4250,8 @@ export interface components {
         };
         /** ObjectsPatch */
         ObjectsPatch: {
+            /** Finishes */
+            finishes?: Record<string, never>[] | null;
             /**
              * Note
              * @default Ручное редактирование
@@ -4257,6 +4259,8 @@ export interface components {
             note?: string;
             /** Objects */
             objects: Record<string, never>[];
+            /** Rooms */
+            rooms?: components["schemas"]["RoomPatch"][] | null;
         };
         /** OnboardingIn */
         OnboardingIn: {
@@ -4729,6 +4733,15 @@ export interface components {
         RoleIn: {
             /** Role */
             role: string;
+        };
+        /** RoomPatch */
+        RoomPatch: {
+            /** Ceiling Height */
+            ceiling_height?: number | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
         };
         /** ServiceIn */
         ServiceIn: {

@@ -1255,6 +1255,20 @@
    },
    "ObjectsPatch": {
     "properties": {
+     "finishes": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finishes"
+     },
      "note": {
       "default": "Ручное редактирование",
       "title": "Note",
@@ -1266,6 +1280,20 @@
       },
       "title": "Objects",
       "type": "array"
+     },
+     "rooms": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/RoomPatch"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rooms"
      }
     },
     "required": [
@@ -2515,6 +2543,45 @@
      "role"
     ],
     "title": "RoleIn",
+    "type": "object"
+   },
+   "RoomPatch": {
+    "properties": {
+     "ceiling_height": {
+      "anyOf": [
+       {
+        "maximum": 6000.0,
+        "minimum": 2000.0,
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ceiling Height"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     }
+    },
+    "required": [
+     "id"
+    ],
+    "title": "RoomPatch",
     "type": "object"
    },
    "ServiceIn": {

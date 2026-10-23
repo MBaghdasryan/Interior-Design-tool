@@ -152,20 +152,16 @@ export const projects: Dict = {
   "apr.note_ph": e("Մեկնաբանություն հաստատմանը", "Комментарий к утверждению", "Approval comment"), "apr.approve": e("Հաստատել", "Утвердить", "Approve"),
 
   // editor
-  "ed.title": e("Խմբագրիչ · {name}", "Редактор · {name}", "Editor · {name}"),
   "ed.meta": e("Վերսիա {n}{state}", "Версия {n}{state}", "Version {n}{state}"),
   "ed.unsaved": e(" · կան չպահպանված փոփոխություններ", " · есть несохранённые изменения", " · unsaved changes"), "ed.saved": e(" · պահպանված է", " · сохранено", " · saved"), "ed.saving": e(" · պահպանվում է…", " · сохраняем…", " · saving…"),
   "ed.undo": e("Հետարկել", "Отменить", "Undo"), "ed.redo": e("Վերադարձնել", "Повторить", "Redo"), "ed.autosave": e("Ինքնապահպանում", "Автосохранение", "Autosave"),
   "ed.autosave_note": e("Ինքնապահպանում", "Автосохранение", "Autosave"), "ed.manual_note": e("Ձեռքով խմբագրում", "Ручное редактирование", "Manual edit"),
   "ed.save_version": e("Պահպանել վերսիան", "Сохранить версию", "Save version"),
-  "ed.tab.2d": e("2D հատակագիծ", "2D-план", "2D plan"), "ed.tab.3d": e("3D", "3D", "3D"), "ed.tab.electric": e("Էլեկտրականություն և լույս", "Электрика и свет", "Electrical & lighting"),
   "ed.help": e("Քաշեք առարկաները (քայլ 25 մմ) · R — պտտել · Ctrl+Z / Ctrl+Shift+Z · կողպված առարկաները ԱԲ-ն չի փոխում", "Перетаскивайте предметы (шаг 25 мм) · R — повернуть · Ctrl+Z / Ctrl+Shift+Z · заблокированные предметы ИИ не меняет", "Drag items (25 mm grid) · R — rotate · Ctrl+Z / Ctrl+Shift+Z · AI never changes locked items"),
   "ed.locked": e("կողպված", "заблокирован", "locked"),
   "ed.obj_meta": e("{dims} մմ · պտույտ {r}° · {mode}", "{dims} мм · поворот {r}° · {mode}", "{dims} mm · rotation {r}° · {mode}"),
   "ed.mode_concept": e("կոնցեպտ", "концепт", "concept"), "ed.mode_real": e("իրական ապրանք", "реальный товар", "real product"),
   "ed.rotate": e("90°", "90°", "90°"), "ed.lock": e("Կողպել", "Заблокировать", "Lock"), "ed.unlock": e("Ապակողպել", "Разблокировать", "Unlock"), "ed.analog": e("Համարժեք", "Аналог", "Alternative"),
-  "ed.pick": e("Ընտրեք առարկա հատակագծում կամ 3D-ում։", "Выберите предмет на плане или в 3D.", "Pick an item on the plan or in 3D."),
-  "ed.estimate": e("Վերսիայի նախահաշիվ", "Смета версии", "Version estimate"), "ed.estimate_note": e("Վերահաշվարկվում է յուրաքանչյուր պահպանման ժամանակ", "Пересчитывается детерминированно при каждом сохранении", "Recalculated deterministically on every save"),
   "ed.checks": e("Կանոնների ստուգումներ ({n})", "Проверки правил ({n})", "Rule checks ({n})"), "ed.no_issues": e("Խախտումներ չկան", "Нарушений нет", "No issues"), "ed.after_save": e("Ստուգումները կթարմացվեն պահպանումից հետո", "Проверки обновятся после сохранения", "Checks update after saving"),
 
   // documents

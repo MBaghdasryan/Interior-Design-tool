@@ -16,6 +16,7 @@ interface Props {
   hotspots?: boolean;
   onHotspot?: (o: SceneObject) => void;
   mask?: { walls: Record<string, string>; rooms: Record<string, string>; openings: Record<string, string> };
+  dims?: boolean;  // dimension chains along the top and left (room borders and overall size), mm
 }
 
 const ZONE: Record<string, string> = { day: "#f3e3d3", night: "#e5eadc", wet: "#dde8ef", service: "#efe9df", outdoor: "#eef0ea" };
@@ -34,7 +35,7 @@ function labelPoint(poly: Pt[]): Pt { const xs = poly.map((p) => p[0]), ys = pol
 function inside([x, y]: Pt, poly: Pt[]) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi || 1e-9) + xi) c = !c; } return c; }
 function area(poly: Pt[]) { let s = 0; for (let i = 0; i < poly.length; i++) { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length]; s += x1 * y2 - x2 * y1; } return Math.abs(s) / 2e6; }
 
-export default function PlanView({ scene, mode = "readonly", issues = [], selected, onSelect, onMove, height = 520, hotspots, onHotspot, mask }: Props) {
+export default function PlanView({ scene, mode = "readonly", issues = [], selected, onSelect, onMove, height = 520, hotspots, onHotspot, mask, dims }: Props) {
   const { t } = useT();
   /** System-recognised rooms show the localised room type; user-renamed rooms keep their name. */
   const roomLabel = (r: { name: string; type: string; source: string }) => (r.source === "manual" ? r.name : t(`enum.room.${r.type}`));
@@ -46,9 +47,19 @@ export default function PlanView({ scene, mode = "readonly", issues = [], select
     scene.walls.forEach((w) => { xs.push(w.a[0], w.b[0]); ys.push(w.a[1], w.b[1]); });
     scene.rooms.forEach((r) => r.polygon.forEach(([x, y]) => { xs.push(x); ys.push(y); }));
     if (!xs.length) return [0, 0, 10000, 8000];
-    const pad = 700;
+    const pad = dims ? 1300 : 700;
     return [Math.min(...xs) - pad, Math.min(...ys) - pad, Math.max(...xs) - Math.min(...xs) + 2 * pad, Math.max(...ys) - Math.min(...ys) + 2 * pad];
-  }, [scene]);
+  }, [scene, dims]);
+  const chains = useMemo(() => {
+    if (!dims || !scene.rooms.length) return null;
+    const xs = scene.rooms.flatMap((r) => r.polygon.map((p) => p[0])), ys = scene.rooms.flatMap((r) => r.polygon.map((p) => p[1]));
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const breaks = (vals: number[], lo: number, hi: number) => [...new Set(vals.map((v) => Math.round(v / 10) * 10))].filter((v) => v >= lo && v <= hi).sort((a, b) => a - b)
+      .filter((v, i, a) => i === 0 || v - a[i - 1] >= 300);
+    const bx = breaks(scene.rooms.flatMap((r) => { const p = r.polygon.map((q) => q[0]); return [Math.min(...p), Math.max(...p)]; }), x0, x1);
+    const by = breaks(scene.rooms.flatMap((r) => { const p = r.polygon.map((q) => q[1]); return [Math.min(...p), Math.max(...p)]; }), y0, y1);
+    return { x0, x1, y0, y1, bx, by };
+  }, [scene, dims]);
   const issueBy = useMemo(() => {
     const m = new Map<string, "block" | "warning">();
     for (const i of issues) if (i.severity !== "pass") for (const id of i.element_ids) if (m.get(id) !== "block") m.set(id, i.severity as "block" | "warning");
@@ -146,6 +157,18 @@ export default function PlanView({ scene, mode = "readonly", issues = [], select
           <text x={o.x} y={o.y + 45} fontSize={120} textAnchor="middle" fill="#a8573a" fontWeight={800}>+</text>
         </g>
       ))}
+      {chains && <g className="dims" style={{ pointerEvents: "none" }} stroke="#6f675f" fill="#57514b" fontSize={130} textAnchor="middle">
+        {[[chains.y0 - 450, chains.bx], [chains.y0 - 850, [chains.x0, chains.x1]]].map(([y, b], k) => (b as number[]).slice(1).map((x, i) => {
+          const a = (b as number[])[i];
+          return <g key={`h${k}-${i}`}><line x1={a} y1={y as number} x2={x} y2={y as number} strokeWidth={10} /><line x1={a} y1={(y as number) - 80} x2={a} y2={(y as number) + 80} strokeWidth={10} />
+            <line x1={x} y1={(y as number) - 80} x2={x} y2={(y as number) + 80} strokeWidth={10} /><text x={(a + x) / 2} y={(y as number) - 60} stroke="none" fontWeight={k ? 700 : 500}>{Math.round(x - a)}</text></g>;
+        }))}
+        {[[chains.x0 - 450, chains.by], [chains.x0 - 850, [chains.y0, chains.y1]]].map(([xx, b], k) => (b as number[]).slice(1).map((y, i) => {
+          const a = (b as number[])[i], x = xx as number;
+          return <g key={`v${k}-${i}`}><line x1={x} y1={a} x2={x} y2={y} strokeWidth={10} /><line x1={x - 80} y1={a} x2={x + 80} y2={a} strokeWidth={10} /><line x1={x - 80} y1={y} x2={x + 80} y2={y} strokeWidth={10} />
+            <text x={x - 60} y={(a + y) / 2} stroke="none" fontWeight={k ? 700 : 500} transform={`rotate(-90 ${x - 60} ${(a + y) / 2})`}>{Math.round(y - a)}</text></g>;
+        }))}
+      </g>}
     </svg>
   );
 }

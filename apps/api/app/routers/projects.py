@@ -29,7 +29,7 @@ from ..jobs.runner import enqueue, job_dict
 from ..pagination import page
 from ..ratelimit import check as rate_check
 from ..scene.geometry import footprint, room_area_m2, scale_scene, wall_length
-from ..scene.model import ControlDimension, Scene, SceneObject
+from ..scene.model import ControlDimension, Scene, SceneObject, SurfaceFinish
 from ..scene.recognize import confidence_mask, overall_confidence
 from ..scene.rules import run_rules, summarize
 from ..scene.svg import render_svg
@@ -664,9 +664,22 @@ def change_command(pid: str, vid: str, body: CommandIn, p: Principal = Depends(c
 
 
 # ------------------------------------------------------------------ manual refinement
+class RoomPatch(BaseModel):
+    id: str
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    ceiling_height: float | None = Field(default=None, ge=2000, le=6000)
+
+
 class ObjectsPatch(BaseModel):
     objects: list[dict]
+    finishes: list[dict] | None = None  # floor / walls / ceiling … per room
+    rooms: list[RoomPatch] | None = None  # name and ceiling height
     note: str = "Ручное редактирование"
+
+
+# which catalogue categories may cover which surface
+SURFACE_CATEGORIES = {"floor": {"floor_parquet", "floor_laminate", "floor_tile"}, "walls": {"wall_paint", "wall_panel"}, "ceiling": {"wall_paint", "drywall"},
+                      "accent_wall": {"wall_panel", "wall_paint"}, "apron": {"wall_tile"}, "wet_walls": {"wall_tile"}}
 
 
 @router.put("/{pid}/variants/{vid}/objects")
@@ -677,9 +690,58 @@ def save_objects(pid: str, vid: str, body: ObjectsPatch, p: Principal = Depends(
     ver = db.get(m.DesignVersion, v.current_version_id)
     sc = Scene.model_validate(ver.scene)
     old = sc.model_copy(deep=True)
-    sc.objects = [SceneObject.model_validate(o) for o in body.objects]
-    for o in sc.objects:
-        o.source = "manual" if o.source != "manual" else o.source
+    rooms = {r.id: r for r in sc.rooms}
+    known = {o.id: o for o in old.objects}
+    objs = []
+    for raw in body.objects:
+        o = SceneObject.model_validate(raw)
+        if o.room_id not in rooms:
+            raise ApiError(422, "validation", fields=["objects.room_id"])
+        if o.id not in known or o.product_variant_id != known[o.id].product_variant_id:
+            # added from the catalogue or switched product: name, size and colour come from the product, never from the client
+            c = resolve(db, o.product_variant_id) if o.product_variant_id else None
+            if not c:
+                raise ApiError(404, "product.not_found")
+            o.category, o.name, o.color_hex = c.category, c.name, c.color_hex
+            if c.w and c.d:
+                o.w, o.d, o.h = c.w, c.d, c.h or o.h
+            o.mode = "real"
+        o.source = "manual"
+        objs.append(o)
+    used = {o.code for o in objs if o.code}
+    n = 1
+    for o in objs:
+        if not o.code:
+            while f"Н-{n:02d}" in used:
+                n += 1
+            o.code = f"Н-{n:02d}"
+            used.add(o.code)
+    sc.objects = objs
+    for rp in body.rooms or []:
+        r = rooms.get(rp.id)
+        if not r:
+            raise ApiError(422, "validation", fields=["rooms.id"])
+        if rp.name is not None:
+            r.name, r.source = rp.name.strip(), "manual"
+        if rp.ceiling_height is not None:
+            r.ceiling_height = rp.ceiling_height
+    if body.finishes is not None:
+        fins = []
+        for raw in body.finishes:
+            fin = SurfaceFinish.model_validate(raw)
+            if fin.room_id not in rooms:
+                raise ApiError(422, "validation", fields=["finishes.room_id"])
+            if fin.product_variant_id:
+                c = resolve(db, fin.product_variant_id)
+                if not c:
+                    raise ApiError(404, "product.not_found")
+                if c.category not in SURFACE_CATEGORIES.get(fin.surface, set()):
+                    raise ApiError(422, "catalog.same_category_only")
+                fin.name, fin.color_hex = c.name, c.color_hex
+            fins.append(fin)
+        for i, fin in enumerate(fins, 1):
+            fin.material_code = f"M-{i:02d}"
+        sc.finishes = fins
     from ..scene.layout import _electrical  # sockets follow furniture
 
     _electrical(sc)

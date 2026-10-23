@@ -5,6 +5,7 @@ import { catName, pct } from "../lib/format";
 import { stepDetail, stepTitle } from "../lib/messages";
 import { useT } from "../i18n";
 import { Badge, useToast } from "./ui";
+import { Zoomable } from "./Lightbox";
 
 export interface RenderItem { code: string; object_id: string; type: string; name: string; sku: string; supplier: string; url: string; color_hex: string; mode: string }
 export interface Render {
@@ -50,7 +51,9 @@ export default function RenderGallery({ pid, vid, roomId, readOnly }: { pid: str
       {!r && !busy && <div className="alert info small">{t("render.empty")}</div>}
       {r && <>
         <figure className="card" style={{ overflow: "hidden", margin: 0 }}>
-          <img src={fileUrl(r.url)} alt={t("render.alt")} style={{ width: "100%", display: "block", aspectRatio: `${r.width} / ${r.height}`, objectFit: "cover" }} />
+          <Zoomable items={renders.map((x) => ({ kind: "image" as const, src: fileUrl(x.url), caption: t("render.caption", { model: x.model, w: x.width, h: x.height }) }))}>
+            <img src={fileUrl(r.url)} alt={t("render.alt")} style={{ width: "100%", display: "block", aspectRatio: `${r.width} / ${r.height}`, objectFit: "cover" }} />
+          </Zoomable>
           <figcaption className="pad small row between wrap">
             <span className="muted">{t("render.caption", { model: r.model, w: r.width, h: r.height })}</span>
             {r.grounding.score === null || r.grounding.verified === false ? <Badge tone="warn">{t("render.not_verified")}</Badge>

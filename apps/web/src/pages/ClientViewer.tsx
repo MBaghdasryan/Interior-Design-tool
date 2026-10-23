@@ -11,6 +11,7 @@ import { EstimateSummary, Notices } from "../components/EstimateView";
 import { AccuracyBadge, Badge, Loading, PriceStatus, useToast } from "../components/ui";
 import { LangSwitch, Logo } from "../components/AppShell";
 import { STAGES, stageIndex } from "./Dashboard";
+import { Zoomable } from "../components/Lightbox";
 
 interface CV { project: { title: string; address: string; area_m2: number; accuracy_level: string; status: string }; variants: Variant[]; comments: { id: string; body: string; author_name: string; variant_id: string | null; anchor: { object_id?: string }; created_at: string }[] }
 
@@ -59,9 +60,9 @@ export default function ClientViewer() {
             <h3 id="cv-stages">{t("dash.stages")}</h3>
             <ol className="stages">{STAGES.map((s, i) => { const k = stageIndex(d.project.status); return <li key={s} className={i < k ? "done" : i === k ? "now" : ""}><span className="dot2">{i < k && <Check size={12} />}</span><b className="small">{t(`dash.stage.${s}`)}</b></li>; })}</ol>
           </section>
-          {(v.renders || []).map((r) => (
+          {(v.renders || []).map((r, i) => (
             <figure key={r.room_id} className="card" style={{ overflow: "hidden", margin: 0 }}>
-              <img src={fileUrl(r.url)} alt={t("render.alt")} loading="lazy" style={{ width: "100%", display: "block", aspectRatio: `${r.width} / ${r.height}` }} />
+              <Zoomable index={i} items={(v.renders || []).map((x) => ({ kind: "image" as const, src: fileUrl(x.url), caption: t(`enum.room.${scene.rooms.find((y) => y.id === x.room_id)?.type || "living"}`) }))}><img src={fileUrl(r.url)} alt={t("render.alt")} loading="lazy" style={{ width: "100%", display: "block", aspectRatio: `${r.width} / ${r.height}` }} /></Zoomable>
               <figcaption className="pad small muted">{t(`enum.room.${scene.rooms.find((x) => x.id === r.room_id)?.type || "living"}`)} · {t("render.note")}</figcaption>
             </figure>
           ))}

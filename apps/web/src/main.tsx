@@ -13,6 +13,7 @@ import "@fontsource/noto-sans-armenian/700.css";
 import "./styles.css";
 import AppShell, { Protected } from "./components/AppShell";
 import { ToastProvider } from "./components/ui";
+import { LightboxProvider } from "./components/Lightbox";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -43,6 +44,7 @@ import Glossary from "./pages/Glossary";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ToastProvider>
+      <LightboxProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -81,6 +83,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
+      </LightboxProvider>
     </ToastProvider>
   </StrictMode>,
 );

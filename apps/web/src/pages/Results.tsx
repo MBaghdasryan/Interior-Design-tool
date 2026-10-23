@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowRight, Box, CalendarClock, CheckCircle2, ExternalLink, FileText, Image, LayoutPanelTop, ListChecks, Pencil, Receipt, Share2, ShoppingCart, Sparkles, Store, Truck, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, Box, CalendarClock, CheckCircle2, ExternalLink, FileText, Image, LayoutPanelTop, ListChecks, Maximize2, Pencil, Receipt, Share2, ShoppingCart, Sparkles, Store, Truck, Wrench } from "lucide-react";
 import { api, fileUrl, type Doc, type Project, type Scene, type Variant } from "../lib/api";
 import { amd, catName, lineName, m2, n1, pct, roomType, variantSubtitle, variantTitle } from "../lib/format";
 import { ruleMessage } from "../lib/messages";
@@ -11,6 +11,7 @@ import EstimateView, { EstimateSummary } from "../components/EstimateView";
 import CommandDrawer from "../components/CommandDrawer";
 import AlternativesDrawer from "../components/AlternativesDrawer";
 import RenderGallery from "../components/RenderGallery";
+import { useLightbox, Zoomable } from "../components/Lightbox";
 import TrustPanel from "../components/TrustPanel";
 import ProjectAiCost from "../components/ProjectAiCost";
 import PilotPanel from "../components/PilotPanel";
@@ -32,6 +33,7 @@ export default function Results() {
   const [approveOpen, setApproveOpen] = useState(false);
   const [view3d, setView3d] = useState(false);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const openBig = useLightbox();
 
   const load = useCallback(async (keep?: string) => {
     const p = await api<Project>(`/projects/${pid}`);
@@ -78,6 +80,7 @@ export default function Results() {
   const xlsx = docs.find((d) => d.kind === "xlsx");
   const feas = cur.metrics.feasibility;
   const stock = (s?: string, days?: number | null) => (s === "in_stock" ? t("common.in_stock") : s === "to_order" ? (days ? t("common.to_order_days", { n: days }) : t("common.to_order")) : t("common.stock_unknown"));
+  const thumbRooms = scene.rooms.filter((r) => ["kitchen_living", "bedroom", "bathroom", "kids", "living"].includes(r.type)).slice(0, 4);
   const tabs: [Tab, typeof Box, string][] = [["plan", LayoutPanelTop, t("res.tab.plan")], ["visuals", Image, t("res.tab.visuals")], ["products", Box, t("res.tab.products", { n: scene.objects.length })],
     ["estimate", Receipt, t("res.tab.estimate")], ["suppliers", Store, t("res.tab.suppliers")], ["timeline", CalendarClock, t("res.tab.timeline")], ["checks", ListChecks, `${t("res.tab.checks")}${blocks ? ` (${blocks})` : ""}`]];
 
@@ -102,11 +105,14 @@ export default function Results() {
 
       <div className="grid g3">
         {variants.map((v) => (
-          <div key={v.id} className={`variant-card ${v.id === cur.id ? "on" : ""}`} onClick={() => select(v)} role="button" tabIndex={0} aria-pressed={v.id === cur.id}>
-            {v.id === cur.id ? <Scene3D scene={scene} height="100%" interactive={false} cutaway /> : <VariantThumb pid={pid!} vid={v.id} />}
-            <div className="cap"><b>{variantTitle(v)}</b><span className="small">{variantSubtitle(v)}</span><div className="small mono" style={{ opacity: 0.9 }}>{amd(v.metrics.total)}</div></div>
-            {v.id === cur.id && <div className="tick"><CheckCircle2 size={18} /></div>}
-            {v.status === "approved" && <div className="mode"><Badge tone="dark">{t("res.approved")}</Badge></div>}
+          <div key={v.id} className="variant-wrap">
+            <div className={`variant-card ${v.id === cur.id ? "on" : ""}`} onClick={() => select(v)} role="button" tabIndex={0} aria-pressed={v.id === cur.id}>
+              {v.id === cur.id ? <Scene3D scene={scene} height="100%" interactive={false} cutaway /> : <VariantThumb pid={pid!} vid={v.id} />}
+              <div className="cap"><b>{variantTitle(v)}</b><span className="small">{variantSubtitle(v)}</span><div className="small mono" style={{ opacity: 0.9 }}>{amd(v.metrics.total)}</div></div>
+              {v.id === cur.id && <div className="tick"><CheckCircle2 size={18} /></div>}
+              {v.status === "approved" && <div className="mode"><Badge tone="dark">{t("res.approved")}</Badge></div>}
+            </div>
+            {v.id === cur.id && <button className="icon-btn expand" aria-label={t("lb.open")} title={t("lb.open")} onClick={() => openBig([{ kind: "view", caption: variantTitle(cur), render: () => <Scene3D scene={scene} height="100%" cutaway quality="high" /> }])}><Maximize2 size={16} /></button>}
           </div>
         ))}
       </div>
@@ -132,14 +138,18 @@ export default function Results() {
           {tab === "plan" && (
             <div className="grid" style={{ gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", alignItems: "start" }}>
               <div className="col gap-10">
-                <div className="canvas-wrap">{view3d ? <Scene3D scene={scene} height={420} /> : <PlanView scene={scene} height={420} hotspots onHotspot={(o) => setAlt(o.id)} issues={issues} />}</div>
+                <div className="canvas-wrap" style={{ position: "relative" }}>{view3d ? <Scene3D scene={scene} height={420} /> : <PlanView scene={scene} height={420} hotspots onHotspot={(o) => setAlt(o.id)} issues={issues} />}
+                  <button className="icon-btn expand" aria-label={t("lb.open")} title={t("lb.open")} onClick={() => openBig([
+                    { kind: "view", caption: t("res.tab.plan"), render: () => <PlanView scene={scene} height="100%" hotspots issues={issues} /> },
+                    { kind: "view", caption: t("res.show_3d"), render: () => <Scene3D scene={scene} height="100%" quality="high" /> }], view3d ? 1 : 0)}><Maximize2 size={16} /></button></div>
                 <div className="row wrap"><button className="btn sm" onClick={() => setView3d(!view3d)}><Box size={14} /> {view3d ? t("res.show_plan") : t("res.show_3d")}</button><span className="small muted">{t("res.plus_hint")}</span></div>
               </div>
               <div className="col gap-10">
                 <b>{t("res.explication")}</b>
                 {scene.rooms.map((r) => <div key={r.id} className="row between small"><span className="row gap-6"><span className="badge terra" style={{ borderRadius: 999, width: 22, justifyContent: "center" }}>{r.number}</span>{r.source === "manual" ? r.name : roomType(r.type)}</span><span className="mono">{n1(area(r.polygon))} {t("common.m2")}</span></div>)}
-                <div className="grid g2 mt-8">{scene.rooms.filter((r) => ["kitchen_living", "bedroom", "bathroom", "kids", "living"].includes(r.type)).slice(0, 4).map((r) => (
-                  <div key={r.id} className="canvas-wrap" style={{ height: 150 }}><Scene3D scene={scene} mode="room" roomId={r.id} height={150} interactive={false} /><span className="label-pill" style={{ left: 8, top: "auto", bottom: 8, padding: "3px 10px", fontSize: 12, background: "rgba(46,46,46,.7)" }}>{roomType(r.type)}</span></div>))}</div>
+                <div className="grid g2 mt-8">{thumbRooms.map((r, i) => (
+                  <Zoomable key={r.id} className="canvas-wrap" style={{ height: 150 }} index={i} items={thumbRooms.map((x) => ({ kind: "view" as const, caption: roomType(x.type), render: () => <Scene3D scene={scene} mode="room" roomId={x.id} height="100%" quality="high" /> }))}>
+                    <Scene3D scene={scene} mode="room" roomId={r.id} height={150} interactive={false} /><span className="label-pill" style={{ left: 8, top: "auto", bottom: 8, padding: "3px 10px", fontSize: 12, background: "rgba(46,46,46,.7)" }}>{roomType(r.type)}</span></Zoomable>))}</div>
               </div>
             </div>
           )}
@@ -244,7 +254,9 @@ function Visuals({ scene, pid, vid }: { scene: Scene; pid: string; vid: string }
     <div className="col gap-10">
       <div className="row wrap">{rooms.map((r) => <button key={r.id} className={`chip ${room === r.id ? "on" : ""}`} onClick={() => setRoom(r.id)}>{roomType(r.type)}</button>)}</div>
       {room && cams.length > 0 && <RenderGallery pid={pid} vid={vid} roomId={room} />}
-      <div className="grid g3">{cams.map((c, i) => <div key={c.id} className="canvas-wrap" style={{ height: 300 }}><Scene3D scene={scene} mode="room" roomId={room} cameraIndex={i} height={300} quality="high" /></div>)}</div>
+      <div className="grid g3">{cams.map((c, i) => <Zoomable key={c.id} className="canvas-wrap" style={{ height: 300 }} index={i}
+        items={cams.map((_, j) => ({ kind: "view" as const, caption: `${roomType(rooms.find((x) => x.id === room)?.type || "living")} · ${j + 1}`, render: () => <Scene3D scene={scene} mode="room" roomId={room} cameraIndex={j} height="100%" quality="high" /> }))}>
+        <Scene3D scene={scene} mode="room" roomId={room} cameraIndex={i} height={300} quality="high" interactive={false} /></Zoomable>)}</div>
       <div className="alert info small">{t("res.visuals_note")}</div>
     </div>
   );
